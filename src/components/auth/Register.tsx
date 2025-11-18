@@ -198,9 +198,10 @@ export default function Register() {
                             <div key={step.id} className="flex flex-col items-center flex-1">
                                 <div
                                     className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold mb-2 transition-all ${index <= currentStepIndex
-                                            ? 'bg-orange-500 text-white'
+                                            ? 'text-white'
                                             : 'bg-gray-200 text-gray-400'
                                         }`}
+                                    style={{ backgroundColor: index <= currentStepIndex ? '#0a3d5c' : '' }}
                                 >
                                     {index + 1}
                                 </div>
@@ -211,8 +212,8 @@ export default function Register() {
                     {/* Progress Line */}
                     <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
                         <div
-                            className="h-full bg-orange-500 transition-all duration-300"
-                            style={{ width: `${progress}%` }}
+                            className="h-full transition-all duration-300"
+                            style={{ width: `${progress}%`, backgroundColor: '#0a3d5c' }}
                         />
                     </div>
                 </div>
@@ -244,13 +245,14 @@ export default function Register() {
                                             setError('');
                                         }}
                                         className={`p-4 rounded-2xl border-2 transition-all flex items-center justify-between ${formData.userType === type
-                                                ? 'border-orange-500 bg-orange-50'
-                                                : 'border-gray-200 bg-white hover:border-orange-200'
+                                                ? 'border-gray-800 bg-blue-50'
+                                                : 'border-gray-200 bg-white hover:border-blue-200'
                                             }`}
+                                        style={formData.userType === type ? { borderColor: '#0a3d5c', backgroundColor: '#f0f8ff' } : {}}
                                     >
                                         <span className="text-left font-semibold text-gray-800">{type}</span>
                                         {formData.userType === type && (
-                                            <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
+                                            <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#0a3d5c' }}>
                                                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                                 </svg>
@@ -283,7 +285,18 @@ export default function Register() {
                                     onChange={handleChange}
                                     placeholder="Your Company"
                                     autoFocus
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    style={{ 
+                                        '--tw-ring-color': '#0a3d5c'
+                                    } as any}
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
                                 />
                             </div>
 
@@ -298,7 +311,15 @@ export default function Register() {
                                     value={formData.projectName}
                                     onChange={handleChange}
                                     placeholder="Your Project"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
                                 />
                             </div>
 
@@ -313,7 +334,15 @@ export default function Register() {
                                     value={formData.companyNIF}
                                     onChange={handleChange}
                                     placeholder="NIF"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
                                 />
                             </div>
 
@@ -328,7 +357,15 @@ export default function Register() {
                                     value={formData.companyTelephone}
                                     onChange={handleChange}
                                     placeholder="+1 (555) 000-0000"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
                                 />
                             </div>
 
@@ -345,7 +382,15 @@ export default function Register() {
                                     placeholder="e.g., 25"
                                     min="0"
                                     max="100"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
                                 />
                             </div>
 
@@ -360,7 +405,15 @@ export default function Register() {
                                     value={formData.percentageRoyalties}
                                     onChange={handleChange}
                                     placeholder="e.g., 25% + 5%"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
                                 />
                             </div>
 
@@ -375,7 +428,15 @@ export default function Register() {
                                     value={formData.royaltyExample}
                                     onChange={handleChange}
                                     placeholder="e.g., $5,000"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
                                 />
                             </div>
 
@@ -390,7 +451,15 @@ export default function Register() {
                                     value={formData.totalSale}
                                     onChange={handleChange}
                                     placeholder="e.g., $100,000"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
                                 />
                             </div>
                         </div>
@@ -407,14 +476,20 @@ export default function Register() {
                                 <label
                                     onDragOver={(e) => {
                                         e.preventDefault();
-                                        e.currentTarget.classList.add('bg-orange-50', 'border-orange-400');
+                                        e.currentTarget.classList.add('bg-blue-50', 'border-blue-400');
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                        e.currentTarget.style.backgroundColor = '#f0f8ff';
                                     }}
                                     onDragLeave={(e) => {
-                                        e.currentTarget.classList.remove('bg-orange-50', 'border-orange-400');
+                                        e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400');
+                                        e.currentTarget.style.borderColor = '';
+                                        e.currentTarget.style.backgroundColor = '';
                                     }}
                                     onDrop={(e) => {
                                         e.preventDefault();
-                                        e.currentTarget.classList.remove('bg-orange-50', 'border-orange-400');
+                                        e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400');
+                                        e.currentTarget.style.borderColor = '';
+                                        e.currentTarget.style.backgroundColor = '';
                                         if (e.dataTransfer.files?.[0]) {
                                             const file = e.dataTransfer.files[0];
                                             const reader = new FileReader();
@@ -477,14 +552,20 @@ export default function Register() {
                                 <label
                                     onDragOver={(e) => {
                                         e.preventDefault();
-                                        e.currentTarget.classList.add('bg-orange-50', 'border-orange-400');
+                                        e.currentTarget.classList.add('bg-blue-50', 'border-blue-400');
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                        e.currentTarget.style.backgroundColor = '#f0f8ff';
                                     }}
                                     onDragLeave={(e) => {
-                                        e.currentTarget.classList.remove('bg-orange-50', 'border-orange-400');
+                                        e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400');
+                                        e.currentTarget.style.borderColor = '';
+                                        e.currentTarget.style.backgroundColor = '';
                                     }}
                                     onDrop={(e) => {
                                         e.preventDefault();
-                                        e.currentTarget.classList.remove('bg-orange-50', 'border-orange-400');
+                                        e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400');
+                                        e.currentTarget.style.borderColor = '';
+                                        e.currentTarget.style.backgroundColor = '';
                                         if (e.dataTransfer.files?.[0]) {
                                             const file = e.dataTransfer.files[0];
                                             const reader = new FileReader();
@@ -504,7 +585,7 @@ export default function Register() {
                                     {formData.photoPreview ? (
                                         <div className="w-full flex justify-center">
                                             <div className="w-32 h-32">
-                                                <img src={formData.photoPreview} alt="Photo preview" className="w-full h-full object-cover rounded-full border-2 border-orange-500" />
+                                                <img src={formData.photoPreview} alt="Photo preview" className="w-full h-full object-cover rounded-full" style={{ borderColor: '#0a3d5c', borderWidth: '2px' }} />
                                                 <p className="text-sm text-green-600 text-center mt-2">✓ {formData.photo}</p>
                                             </div>
                                         </div>
@@ -553,7 +634,15 @@ export default function Register() {
                                     onChange={handleChange}
                                     placeholder="John Doe"
                                     autoFocus
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
                                 />
                             </div>
 
@@ -568,7 +657,15 @@ export default function Register() {
                                     value={formData.personalEmail}
                                     onChange={handleChange}
                                     placeholder="you@example.com"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
                                 />
                             </div>
 
@@ -583,7 +680,15 @@ export default function Register() {
                                     value={formData.telephone}
                                     onChange={handleChange}
                                     placeholder="+1 (555) 000-0000"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
                                 />
                             </div>
 
@@ -599,7 +704,15 @@ export default function Register() {
                                         setFormData((prev) => ({ ...prev, country: e.target.value }));
                                         setError('');
                                     }}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
                                 >
                                     <option value="">Select a country</option>
                                     <option value="Portugal">Portugal</option>
@@ -625,7 +738,15 @@ export default function Register() {
                                     value={formData.city}
                                     onChange={handleChange}
                                     placeholder="Lisbon"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition mb-1"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition mb-1"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
                                 />
                             </div>
                         </div>
@@ -713,7 +834,15 @@ export default function Register() {
                                     value={formData.factSheet}
                                     onChange={handleChange}
                                     placeholder="Add fact sheet information"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
                                 />
                             </div>
 
@@ -729,7 +858,15 @@ export default function Register() {
                                     value={formData.technicalSheet}
                                     onChange={handleChange}
                                     placeholder="Add technical sheet information"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
                                 />
                             </div>
 
@@ -748,7 +885,15 @@ export default function Register() {
                                     }}
                                     placeholder="Describe your pitch and project"
                                     rows={4}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
                                 />
                             </div>
                         </div>
@@ -771,7 +916,10 @@ export default function Register() {
                     <button
                         onClick={handleNext}
                         disabled={loading}
-                        className="flex-1 flex items-center justify-center gap-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 flex items-center justify-center gap-1 px-4 py-2 text-white font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ backgroundColor: '#0a3d5c' }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#062a3d'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a3d5c'}
                     >
                         {loading ? (
                             'Submitting...'
@@ -793,13 +941,16 @@ export default function Register() {
                 <div className="mt-6 space-y-3 text-center">
                     <p className="text-sm text-gray-600">
                         Already have an account?{' '}
-                        <a href="/login" className="text-orange-500 hover:text-orange-600 font-medium">
+                        <a href="/login" className="font-medium" style={{ color: '#0a3d5c' }}>
                             Login here
                         </a>
                     </p>
                     <button
                         onClick={() => window.location.href = '/'}
-                        className="w-full px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all"
+                        className="w-full px-4 py-2 border font-semibold rounded-lg transition-all"
+                        style={{ borderColor: '#0a3d5c', color: '#0a3d5c' }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
                         Go to Home
                     </button>

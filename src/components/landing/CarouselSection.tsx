@@ -395,14 +395,14 @@ export default function CarouselSection() {
               <ChevronLeft size={24} />
             </button>
 
-            <div className="relative h-[400px] flex items-center justify-center" style={{ perspective: '1200px' }}>
+            <div className="relative flex items-center justify-center" style={{ perspective: '1200px', minHeight: '500px' }}>
               {/* Previous Previous Image - Very Small - Clickable */}
               <img
                 src={carouselImages[visible.prevprev]}
                 alt="Previous Previous"
                 onClick={() => setCurrentIndex(visible.prevprev)}
                 className="hidden lg:block absolute w-[400px] h-[340px] object-cover rounded-lg opacity-60 transition-all duration-700 cursor-pointer hover:opacity-75 border-8 p-2 bg-white border-[#0a3d5c]"
-                style={{ transform: 'translateX(-540px) rotateY(25deg) scale(0.6)', zIndex: 0 }}
+                style={{ transform: 'translateX(-540px) rotateY(25deg) scale(0.6) translateY(0)', zIndex: 0 }}
               />
               {/* Previous Image - Clickable */}
               <img
@@ -410,7 +410,7 @@ export default function CarouselSection() {
                 alt="Previous"
                 onClick={() => setCurrentIndex(visible.prev)}
                 className="hidden lg:block absolute w-[550px] h-[350px] object-cover rounded-lg opacity-80 transition-all duration-700 cursor-pointer hover:opacity-100 border-8 p-2 bg-white border-[#0a3d5c]"
-                style={{ transform: 'translateX(-240px) rotateY(25deg) scale(0.8)', zIndex: 1 }}
+                style={{ transform: 'translateX(-240px) rotateY(25deg) scale(0.8) translateY(0)', zIndex: 1 }}
               />
 
               {/* Current Image - Large with Shadow */}
@@ -418,7 +418,7 @@ export default function CarouselSection() {
                 src={carouselImages[visible.current]}
                 alt="Current"
                 className={`relative w-full md:w-[600px] lg:w-[700px] h-[250px] md:h-[350px] lg:h-[400px] object-cover rounded-2xl transition-all duration-700 shadow-[0_20px_60px_rgba(0,0,0,0.4)] ${isAnimating ? 'carousel-scale-animate' : ''} border-8 p-2 bg-white border-[#0a3d5c]`}
-                style={{ zIndex: 10 }}
+                style={{ zIndex: 10, transform: 'translateY(0)' }}
               />
 
               {/* Next Image - Very Small - Clickable */}
@@ -427,7 +427,7 @@ export default function CarouselSection() {
                 alt="Next"
                 onClick={() => setCurrentIndex(visible.next)}
                 className="hidden lg:block absolute w-[550px] h-[350px] object-cover rounded-lg opacity-80 transition-all duration-700 cursor-pointer hover:opacity-100 border-8 p-2 bg-white border-[#0a3d5c]"
-                style={{ transform: 'translateX(240px) rotateY(-25deg) scale(0.8)', zIndex: 1 }}
+                style={{ transform: 'translateX(240px) rotateY(-25deg) scale(0.8) translateY(0)', zIndex: 1 }}
               />
               {/* Next Next Image - Very Small - Clickable */}
               <img
@@ -435,7 +435,7 @@ export default function CarouselSection() {
                 alt="Next Next"
                 onClick={() => setCurrentIndex(visible.nextnext)}
                 className="hidden lg:block absolute w-[400px] h-[340px] object-cover rounded-lg opacity-60 transition-all duration-700 cursor-pointer hover:opacity-75 border-8 p-2 bg-white border-[#0a3d5c]"
-                style={{ transform: 'translateX(540px) rotateY(-25deg) scale(0.6)', zIndex: 0 }}
+                style={{ transform: 'translateX(540px) rotateY(-25deg) scale(0.6) translateY(0)', zIndex: 0 }}
               />
             </div>
 

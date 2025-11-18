@@ -58,7 +58,15 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+              onFocus={(e) => {
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                e.currentTarget.style.borderColor = '#0a3d5c';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.borderColor = '#d1d5db';
+              }}
             />
           </div>
 
@@ -72,14 +80,25 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+              onFocus={(e) => {
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                e.currentTarget.style.borderColor = '#0a3d5c';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.borderColor = '#d1d5db';
+              }}
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full text-white font-semibold py-2 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: '#0a3d5c' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#062a3d'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a3d5c'}
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
@@ -88,13 +107,16 @@ export default function Login() {
         <div className="mt-6 space-y-3 text-center">
           <p className="text-sm text-gray-600">
             Don't have an account?{' '}
-            <a href="/register" className="text-orange-500 hover:text-orange-600 font-medium">
+            <a href="/register" className="font-medium" style={{ color: '#0a3d5c' }}>
               Register here
             </a>
           </p>
           <button
             onClick={() => window.location.href = '/'}
-            className="w-full px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all"
+            className="w-full px-4 py-2 border font-semibold rounded-lg transition-all"
+            style={{ borderColor: '#0a3d5c', color: '#0a3d5c' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
           >
             Go to Home
           </button>
