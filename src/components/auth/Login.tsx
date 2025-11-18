@@ -85,13 +85,19 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-6 space-y-3 text-center">
           <p className="text-sm text-gray-600">
             Don't have an account?{' '}
             <a href="/register" className="text-orange-500 hover:text-orange-600 font-medium">
               Register here
             </a>
           </p>
+          <button
+            onClick={() => window.location.href = '/'}
+            className="w-full px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all"
+          >
+            Go to Home
+          </button>
         </div>
       </Card>
     </div>
