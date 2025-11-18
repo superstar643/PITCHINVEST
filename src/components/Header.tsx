@@ -7,7 +7,7 @@ const Header: React.FC = () => {
       <div className="mx-auto px-[15%] py-4">
         <div className="flex items-center justify-between">
           <img 
-            src="https://d64gsuwffb70l.cloudfront.net/68e6db9c514e82404b06d2a1_1763422866636_b8015e58.jpeg"
+            src="assets/logo.png"
             alt="Pitch Invest Logo"
             className="h-10 cursor-pointer"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}

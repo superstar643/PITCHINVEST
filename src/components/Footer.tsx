@@ -106,7 +106,7 @@ const Footer: React.FC = () => {
         
         <div className="border-t border-gray-200 pt-8">
           <p className="text-center text-gray-600 text-sm">
-            © 2024 Pitch Invest. All rights reserved. | Excellence in Innovation Investment
+            © 2025 Pitch Invest. All rights reserved. | Excellence in Innovation Investment
           </p>
         </div>
       </div>

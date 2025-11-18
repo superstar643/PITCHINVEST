@@ -1,4 +1,5 @@
 import React from 'react';
+import { ThumbsUp, Eye } from 'lucide-react';
 
 interface UserCardProps {
   name: string;
@@ -26,7 +27,7 @@ const UserCard: React.FC<UserCardProps> = ({
   commission, productImage1, productImage2, approvalRate, likes, views 
 }) => {
   return (
-    <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
+    <div className="bg-white rounded-md shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
       {/* Header with background */}
       <div className="relative h-20" style={{backgroundImage: `url(${headerBg})`, backgroundSize: 'cover', backgroundPosition: 'center'}}>
         <div className="absolute -bottom-8 left-4">
@@ -51,10 +52,10 @@ const UserCard: React.FC<UserCardProps> = ({
 
         <div className="flex gap-2 mb-3">
           <button className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg transition">
-            Mensagem &gt;
+            Message
           </button>
           <button className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">
-            Investir
+            Invest
           </button>
         </div>
 
@@ -81,9 +82,15 @@ const UserCard: React.FC<UserCardProps> = ({
         <div className="bg-gray-50 rounded-lg p-3 text-center">
           <div className="text-xs text-gray-600 mb-1">PUBLIC APPROVAL</div>
           <div className="text-2xl font-bold text-green-600 mb-1">{approvalRate}%</div>
-          <div className="flex justify-center gap-4 text-xs text-gray-600">
-            <span>👍 {likes}</span>
-            <span>👁 {views}</span>
+          <div className="flex justify-center gap-3 text-xs text-gray-600">
+            <button aria-label="Like" className="flex items-center gap-2 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm text-gray-700">
+              <ThumbsUp size={14} />
+              <span>{likes}</span>
+            </button>
+            <button aria-label="Views" className="flex items-center gap-2 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm text-gray-700">
+              <Eye size={14} />
+              <span>{views}</span>
+            </button>
           </div>
         </div>
       </div>
