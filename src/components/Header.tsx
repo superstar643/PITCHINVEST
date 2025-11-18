@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from './ui/button';
+import { Link } from 'react-router-dom';
 
 const Header: React.FC = () => {
   return (
@@ -10,23 +11,25 @@ const Header: React.FC = () => {
             src="assets/logo.png"
             alt="Pitch Invest Logo"
             className="h-10 cursor-pointer"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            onClick={() => window.location.href = '/'}
           />
           
           <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              className="text-gray-700 hover:text-[#0a3d5c] font-medium"
-              onClick={() => console.log('Login clicked')}
-            >
-              Login
-            </Button>
-            <Button 
-              className="bg-[#0a3d5c] hover:bg-[#0a3d5c]/90 text-white font-medium px-6"
-              onClick={() => console.log('Sign up clicked')}
-            >
-              Sign Up
-            </Button>
+            <Link to="/login">
+              <Button 
+                variant="ghost" 
+                className="text-gray-700 hover:text-[#0a3d5c] font-medium"
+              >
+                Login
+              </Button>
+            </Link>
+            <Link to="/register">
+              <Button 
+                className="bg-[#0a3d5c] hover:bg-[#0a3d5c]/90 text-white font-medium px-6"
+              >
+                Sign Up
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
