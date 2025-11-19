@@ -184,3 +184,29 @@
   animation: scaleIn 0.6s ease-out;
 }
 
+/* Custom thin scrollbar using main color */
+.custom-scrollbar {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #0a3d5c rgba(0,0,0,0.08);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  height: 8px;
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #0a3d5c;
+  border-radius: 9999px;
+  border: 2px solid rgba(255,255,255,0.0);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #083146; /* slightly darker */
+}
+

@@ -9,6 +9,9 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
+import Gallery from "./pages/Gallery";
+import GalleryDetail from "./pages/GalleryDetail";
+import Auction from "./pages/Auction";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +26,9 @@ const App = () => (
             <Route path="/" element={<Index />} /> 
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/gallery" element={<Gallery />} />
+            <Route path="/gallery/:id" element={<GalleryDetail />} />
+              <Route path="/auction/:id" element={<Auction />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

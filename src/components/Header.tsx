@@ -8,13 +8,21 @@ const Header: React.FC = () => {
       <div className="mx-auto px-[15%] py-4">
         <div className="flex items-center justify-between">
           <img 
-            src="assets/logo.png"
+            src="/assets/logo1.png"
             alt="Pitch Invest Logo"
             className="h-10 cursor-pointer"
             onClick={() => window.location.href = '/'}
           />
           
           <div className="flex items-center gap-4">
+            <Link to="/gallery">
+              <Button 
+                variant="ghost"
+                className="text-[#0a3d5c] hover:bg-[#0a3d5c]/10 font-medium"
+              >
+                Gallery
+              </Button>
+            </Link>
             <Link to="/login">
               <Button 
                 variant="ghost" 

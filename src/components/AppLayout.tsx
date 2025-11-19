@@ -5,13 +5,18 @@ import CarouselSection from './landing/CarouselSection';
 import UsersSection from './landing/UsersSection';
 import Footer from './Footer';
 
-const AppLayout: React.FC = () => {
+
+interface AppLayoutProps {
+  children?: React.ReactNode;
+}
+
+const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <Header />
-      <HeroSection />
-      <CarouselSection />
-      <UsersSection />
+      <main className="flex-1">
+        {children ? children : <><HeroSection /><CarouselSection /><UsersSection /></>}
+      </main>
       <Footer />
     </div>
   );

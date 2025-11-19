@@ -22,7 +22,7 @@ const users = [
   { name: 'Carlos Mendes', startup: 'MobiTech', city: 'Porto', country: 'Portugal', countryFlag: '🇵🇹', avatar: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763421931899_22632b5a.webp', companyLogo: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424850082_fdc48b16.webp', companyName: 'MobiCore', headerBg: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424867071_eca40ee1.webp', investmentPercent: 11, investmentAmount: '2.100000€', commission: 0, productImage1: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424883513_fefbe4f1.webp', productImage2: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424900031_fe90d384.webp', approvalRate: 90.60, likes: 1050, views: 2750 }
 ];
 
-const BATCH_SIZE = 6;
+const BATCH_SIZE = 8;
 
 const UsersSection: React.FC = () => {
   const [visibleCount, setVisibleCount] = useState<number>(BATCH_SIZE);
@@ -75,7 +75,7 @@ const UsersSection: React.FC = () => {
           Discover innovative startups and invest in the future
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           {visibleUsers.map((user, index) => (
             <UserCard key={index} {...user} />
           ))}

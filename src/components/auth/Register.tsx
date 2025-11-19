@@ -34,7 +34,7 @@ export default function Register() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const userTypes = ['Inventor', 'Conceptor', 'Investor'];
+    const userTypes = ['Inventor', 'StartUp', 'Investor'];
 
     const steps: { id: Step; title: string; description: string }[] = [
         { id: 'usertype', title: 'User Role', description: 'Select your role' },

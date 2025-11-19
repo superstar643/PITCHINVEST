@@ -21,7 +21,9 @@ const investorData = [
       startup: 'BrainTech Solutions',
       percentage: '25%',
       amount: '500,000¥',
-      portfolioImage: 'https://via.placeholder.com/280/128?text=BrainTech',
+      coverImage: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424377234_349ea0c2.webp',
+      portfolioImage1: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424867973_3355cabf.webp',
+      portfolioImage2: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424884496_255165e9.webp',
       commission: '0%',
       approval: '94.5%',
       likes: 890,
@@ -70,7 +72,9 @@ const investorData = [
       startup: 'AI Solutions Ltd',
       percentage: '30%',
       amount: '750,000$',
-      portfolioImage: 'https://via.placeholder.com/280/128?text=AI+Solutions',
+      coverImage: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424377234_349ea0c2.webp',
+      portfolioImage1: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424867973_3355cabf.webp',
+      portfolioImage2: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424884496_255165e9.webp',
       commission: '0%',
       approval: '89.1%',
       likes: 720,
@@ -118,7 +122,9 @@ const investorData = [
       startup: 'Green Energy Tech',
       percentage: '20%',
       amount: '600,000€',
-      portfolioImage: 'https://via.placeholder.com/280/128?text=Green+Energy',
+      coverImage: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424377234_349ea0c2.webp',
+      portfolioImage1: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424867973_3355cabf.webp',
+      portfolioImage2: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424884496_255165e9.webp',
       commission: '0%',
       approval: '91.2%',
       likes: 610,
@@ -166,7 +172,9 @@ const investorData = [
       startup: 'Quantum Computing Co',
       percentage: '35%',
       amount: '1,200,000$',
-      portfolioImage: 'https://via.placeholder.com/280/128?text=Quantum',
+      coverImage: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424377234_349ea0c2.webp',
+      portfolioImage1: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424867973_3355cabf.webp',
+      portfolioImage2: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424884496_255165e9.webp',
       commission: '0%',
       approval: '87.0%',
       likes: 1040,
@@ -214,7 +222,9 @@ const investorData = [
       startup: 'FinTech Solutions',
       percentage: '28%',
       amount: '400,000₹',
-      portfolioImage: 'https://via.placeholder.com/280/128?text=FinTech',
+      coverImage: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424377234_349ea0c2.webp',
+      portfolioImage1: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424867973_3355cabf.webp',
+      portfolioImage2: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424884496_255165e9.webp',
       commission: '0%',
       approval: '92.3%',
       likes: 540,
@@ -259,13 +269,6 @@ export default function CarouselSection() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % carouselImages.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
-
   // Trigger animation when index changes
   useEffect(() => {
     setIsAnimating(true);
@@ -294,93 +297,84 @@ export default function CarouselSection() {
 
   return (
     <section className="py-10 md:py-20 bg-gradient-to-b from-slate-50 to-white">
-      <div className="mx-auto px-4 md:px-8 lg:px-32 w-full">
+      <div className="mx-auto px-4 md:px-8 2xl:px-32 lg:px-12 w-full">
         {/* Desktop: horizontal layout (left card, carousel, right card) */}
         {/* Mobile: vertical layout (carousel on top, cards below) */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 md:gap-8">
           {/* Left Card - visible on desktop, moves below on mobile */}
           <div className="order-2 lg:order-1 w-full md:w-80 z-20">
             <Card className={`w-full bg-white rounded-md shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden ${isAnimating ? 'carousel-animate-right' : ''}`}>
-            {/* Header with background and top-right badge */}
-            <div className="relative h-20" style={{ backgroundImage: `url(${investorData[currentIndex].left.portfolioImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-              {/* small circular badge (top-right) */}
-              <div className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow" style={{ border: '4px solid rgba(255,255,255,0.9)' }}>
-                <div className="w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-full bg-sky-400" />
+              {/* Header with background and top-right badge */}
+              <div className="relative h-20 mb-[2px]" style={{ backgroundImage: `url(${investorData[currentIndex].left.coverImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                {/* small circular badge (top-right) */}
+                <div className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow" style={{ border: '4px solid rgba(255,255,255,0.9)' }}>
+                  <div className="w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-sky-400" />
+                  </div>
+                </div>
+
+                {/* overlapping avatar (left) */}
+                <div className="absolute -bottom-10 left-4">
+                  <img src={investorData[currentIndex].left.avatar} alt={investorData[currentIndex].left.name} className="w-24 h-24 rounded-full border-4 border-white object-cover shadow-md" />
                 </div>
               </div>
 
-              {/* overlapping avatar (left) */}
-              <div className="absolute -bottom-10 left-4">
-                <img src={investorData[currentIndex].left.avatar} alt={investorData[currentIndex].left.name} className="w-24 h-24 rounded-full border-4 border-white object-cover shadow-md" />
-              </div>
-            </div>
+              <div className="pt-12 px-5 pb-5 bg-white">
+                {/* Company / top-right label */}
+                <div className="text-right text-sm font-semibold text-slate-800 mb-2">{investorData[currentIndex].left.company}</div>
 
-            <div className="pt-12 px-5 pb-5 bg-white">
-              {/* Company / top-right label */}
-              <div className="text-right text-sm font-semibold text-slate-800 mb-2">{investorData[currentIndex].left.company}</div>
+                {/* Info list */}
+                <div className="text-sm mb-3 space-y-1">
+                  <div><span className="font-semibold">Nome:</span> <span className="text-slate-700">{investorData[currentIndex].left.name}</span></div>
+                  <div><span className="font-semibold">Startup:</span> <span className="text-slate-700">{investorData[currentIndex].left.startup}</span></div>
+                  {/* split location into city and country if possible */}
+                  {(() => {
+                    const loc = investorData[currentIndex].left.location || '';
+                    const parts = loc.split(',').map(p => p.trim());
+                    const city = parts[0] || '';
+                    const country = parts[1] || parts[0] || '';
+                    return (
+                      <>
+                        <div><span className="font-semibold">Cidade:</span> <span className="text-slate-700">{city}</span></div>
+                        <div className="flex items-center gap-2"><span className="font-semibold">País:</span> <span className="text-slate-700">{country}</span> <span className="text-xs text-gray-400">{country ? country.slice(0, 2).toUpperCase() : ''}</span></div>
+                      </>
+                    );
+                  })()}
+                </div>
 
-              {/* Info list */}
-              <div className="text-sm mb-3 space-y-1">
-                <div><span className="font-semibold">Nome:</span> <span className="text-slate-700">{investorData[currentIndex].left.name}</span></div>
-                <div><span className="font-semibold">Startup:</span> <span className="text-slate-700">{investorData[currentIndex].left.startup}</span></div>
-                {/* split location into city and country if possible */}
-                {(() => {
-                  const loc = investorData[currentIndex].left.location || '';
-                  const parts = loc.split(',').map(p => p.trim());
-                  const city = parts[0] || '';
-                  const country = parts[1] || parts[0] || '';
-                  return (
-                    <>
-                      <div><span className="font-semibold">Cidade:</span> <span className="text-slate-700">{city}</span></div>
-                      <div className="flex items-center gap-2"><span className="font-semibold">País:</span> <span className="text-slate-700">{country}</span> <span className="text-xs text-gray-400">{country ? country.slice(0, 2).toUpperCase() : ''}</span></div>
-                    </>
-                  );
-                })()}
-              </div>
+                {/* Buttons */}
+                <div className="flex gap-3 mb-4">
+                  <button className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-white font-semibold py-2 rounded-md">Message</button>
+                  <button className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-md">Invest</button>
+                </div>
 
-              {/* Buttons */}
-              <div className="flex gap-3 mb-4">
-                <button className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-white font-semibold py-2 rounded-md">Message</button>
-                <button className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-md">Invest</button>
-              </div>
+                {/* Percentage and commission */}
+                <div className="text-center mb-3">
+                  <div className="text-xl md:text-2xl font-extrabold text-slate-900">{investorData[currentIndex].left.percentage} por {investorData[currentIndex].left.amount}</div>
+                  <div className="text-sm text-green-600 font-semibold">{investorData[currentIndex].left.commission ?? '0%'} Comissão</div>
+                </div>
 
-              {/* Percentage and commission */}
-              <div className="text-center mb-3">
-                <div className="text-2xl md:text-3xl font-extrabold text-slate-900">{investorData[currentIndex].left.percentage} por {investorData[currentIndex].left.amount}</div>
-                <div className="text-sm text-green-600 font-semibold">{investorData[currentIndex].left.commission ?? '0%'} Comissão</div>
-              </div>
-
-              {/* Two product images */}
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <img src={investorData[currentIndex].left.portfolioImage} alt="Product 1" className="w-full h-20 object-cover rounded-lg shadow-sm bg-gray-100" />
-                <img src={investorData[currentIndex].left.portfolioImage} alt="Product 2" className="w-full h-20 object-cover rounded-lg shadow-sm bg-gray-100" />
-              </div>
-
-              {/* Product description buttons (4) */}
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <button className="border border-gray-200 py-2 rounded text-xs">PITCH</button>
-                <button className="border border-gray-200 py-2 rounded text-xs">TECHNICAL SHEET</button>
-                <button className="border border-gray-200 py-2 rounded text-xs">TECHNICAL SHEET</button>
-                <button className="border border-gray-200 py-2 rounded text-xs">FACT SHEET</button>
-              </div>
-
-              {/* Public approval box */}
-              <div className="bg-gray-50 rounded-lg p-3">
-                <div className="text-center text-xs text-gray-500 mb-2">PUBLIC APPROVAL</div>
-                <div className="text-center text-2xl font-extrabold text-green-600 mb-2">{investorData[currentIndex].left.approval ?? '—'}</div>
-                <div className="flex items-center justify-center gap-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <ThumbsUp size={16} />
-                    <span>{investorData[currentIndex].left.likes ?? '—'}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Eye size={16} />
-                    <span>{investorData[currentIndex].left.views ?? '—'}</span>
+                {/* Two product images */}
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <img src={investorData[currentIndex].left.portfolioImage1} alt="Product 1" className="w-full h-20 object-cover rounded-lg shadow-sm bg-gray-100" />
+                  <img src={investorData[currentIndex].left.portfolioImage2} alt="Product 2" className="w-full h-20 object-cover rounded-lg shadow-sm bg-gray-100" />
+                </div>
+                {/* Public approval box */}
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-center text-xs text-gray-500 mb-2">PUBLIC APPROVAL</div>
+                  <div className="text-center text-xl font-extrabold text-green-600 mb-2">{investorData[currentIndex].left.approval ?? '—'}</div>
+                  <div className="flex items-center justify-center gap-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <ThumbsUp size={16} />
+                      <span>{investorData[currentIndex].left.likes ?? '—'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Eye size={16} />
+                      <span>{investorData[currentIndex].left.views ?? '—'}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
             </Card>
           </div>
 
@@ -409,7 +403,7 @@ export default function CarouselSection() {
                 src={carouselImages[visible.prev]}
                 alt="Previous"
                 onClick={() => setCurrentIndex(visible.prev)}
-                className="hidden lg:block absolute w-[550px] h-[350px] object-cover rounded-lg opacity-80 transition-all duration-700 cursor-pointer hover:opacity-100 border-8 p-2 bg-white border-[#0a3d5c]"
+                className="hidden lg:block absolute 2xl:w-[550px] 2xl:h-[300px] lg:h-[300px] w-[550px] h-[350px] object-cover rounded-lg opacity-80 transition-all duration-700 cursor-pointer hover:opacity-100 border-8 p-2 bg-white border-[#0a3d5c]"
                 style={{ transform: 'translateX(-240px) rotateY(25deg) scale(0.8) translateY(0)', zIndex: 1 }}
               />
 
@@ -417,7 +411,7 @@ export default function CarouselSection() {
               <img
                 src={carouselImages[visible.current]}
                 alt="Current"
-                className={`relative w-full md:w-[600px] lg:w-[700px] h-[250px] md:h-[350px] lg:h-[400px] object-cover rounded-2xl transition-all duration-700 shadow-[0_20px_60px_rgba(0,0,0,0.4)] ${isAnimating ? 'carousel-scale-animate' : ''} border-8 p-2 bg-white border-[#0a3d5c]`}
+                className={`relative w-full md:w-[400px] lg:w-[500px] 2xl:w-[700px] h-[250px] md:h-[250px] lg:h-[300px] 2xl:h-[400px] object-cover rounded-2xl transition-all duration-700 shadow-[0_20px_60px_rgba(0,0,0,0.4)] ${isAnimating ? 'carousel-scale-animate' : ''} border-8 p-2 bg-white border-[#0a3d5c]`}
                 style={{ zIndex: 10, transform: 'translateY(0)' }}
               />
 
@@ -426,7 +420,7 @@ export default function CarouselSection() {
                 src={carouselImages[visible.next]}
                 alt="Next"
                 onClick={() => setCurrentIndex(visible.next)}
-                className="hidden lg:block absolute w-[550px] h-[350px] object-cover rounded-lg opacity-80 transition-all duration-700 cursor-pointer hover:opacity-100 border-8 p-2 bg-white border-[#0a3d5c]"
+                className="hidden lg:block absolute 2xl:w-[550px] 2xl:h-[300px] lg:h-[300px] w-[550px] h-[350px] object-cover rounded-lg opacity-80 transition-all duration-700 cursor-pointer hover:opacity-100 border-8 p-2 bg-white border-[#0a3d5c]"
                 style={{ transform: 'translateX(240px) rotateY(-25deg) scale(0.8) translateY(0)', zIndex: 1 }}
               />
               {/* Next Next Image - Very Small - Clickable */}
@@ -505,41 +499,41 @@ export default function CarouselSection() {
           {/* Right Card - Investor Profile */}
           <div className="order-3 w-full md:w-80">
             <Card className={`w-full bg-white shadow-xl hover:shadow-2xl transition-all rounded-2xl overflow-hidden ${isAnimating ? 'carousel-animate-left' : ''}`}>
-            {/* Red header area */}
-            <div className="h-32 bg-gradient-to-r from-red-600 to-red-500 relative flex items-center justify-center">
-              <div className="text-white font-bold text-lg tracking-wide">{investorData[currentIndex].right.company}</div>
-            </div>
-
-            {/* Avatar overlapping */}
-            <div className="relative pb-6 px-6 bg-white">
-              <div className="absolute -top-12 left-16 -translate-x-1/2">
-                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-yellow-300 shadow-md bg-white">
-                  <img src={investorData[currentIndex].right.avatar} alt={investorData[currentIndex].right.name} className="w-full h-full object-cover" />
-                </div>
+              {/* Red header area */}
+              <div className="h-32 bg-gradient-to-r from-red-600 to-red-500 relative flex items-center justify-center">
+                <div className="text-white font-bold text-lg tracking-wide">{investorData[currentIndex].right.company}</div>
               </div>
 
-              <div className="pt-16 text-center">
-                <h3 className="text-2xl font-semibold text-gray-900 mb-1">{investorData[currentIndex].right.name}</h3>
-                <div className="text-sm text-gray-500 mb-4">{investorData[currentIndex].right.location}</div>
-
-                <div className="flex justify-center mb-6">
-                  <button className="bg-yellow-400 hover:bg-yellow-500 text-white font-semibold px-6 py-2 rounded-full shadow-sm transition-all">Message</button>
+              {/* Avatar overlapping */}
+              <div className="relative pb-6 px-6 bg-white">
+                <div className="absolute -top-12 left-16 -translate-x-1/2">
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-yellow-300 shadow-md bg-white">
+                    <img src={investorData[currentIndex].right.avatar} alt={investorData[currentIndex].right.name} className="w-full h-full object-cover" />
+                  </div>
                 </div>
 
-                <div className="text-sm font-semibold text-gray-700 mb-3 uppercase">Portfolio Companies</div>
-                <div className="grid grid-cols-3 gap-3">
-                  {investorData[currentIndex].right.portfolio.map((item, idx) => (
-                    <div key={idx} className="flex flex-col items-center">
-                      <div className="w-16 h-16 bg-white rounded-lg shadow-md flex items-center justify-center overflow-hidden border border-gray-200">
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                <div className="pt-16 text-center">
+                  <h3 className="text-2xl font-semibold text-gray-900 mb-1">{investorData[currentIndex].right.name}</h3>
+                  <div className="text-sm text-gray-500 mb-4">{investorData[currentIndex].right.location}</div>
+
+                  <div className="flex justify-center mb-6">
+                    <button className="bg-yellow-400 hover:bg-yellow-500 text-white font-semibold px-6 py-2 rounded-full shadow-sm transition-all">Message</button>
+                  </div>
+
+                  <div className="text-sm font-semibold text-gray-700 mb-4 uppercase">Portfolio Companies</div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {investorData[currentIndex].right.portfolio.map((item, idx) => (
+                      <div key={idx} className="flex flex-col items-center">
+                        <div className="w-20 h-20 bg-white rounded-lg shadow-md flex items-center justify-center overflow-hidden border border-gray-200">
+                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="text-xs text-gray-600 mt-1 text-center leading-tight">{item.name}</div>
                       </div>
-                      <div className="text-xs text-gray-600 mt-1 text-center leading-tight">{item.name}</div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          </Card>
+            </Card>
           </div>
         </div>
       </div>
