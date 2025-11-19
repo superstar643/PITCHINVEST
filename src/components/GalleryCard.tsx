@@ -48,8 +48,8 @@ export const GalleryCard: React.FC<GalleryCardProps> = ({
 
   const handleClick = () => {
     if (availableStatus) {
-      if (onClick) onClick();
-      else navigate(`/gallery/${id}`);
+      onClick();
+      navigate(`/gallery/${id}`);
     } else {
       // still navigate to detail to show full info even if unavailable
       setIsClicked(true);
