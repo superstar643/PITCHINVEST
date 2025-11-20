@@ -129,7 +129,7 @@ const Auction: React.FC = () => {
                         {/* Leading bid box - use main color */}
                         <div className="mt-6 w-full flex flex-col items-center">
                             <div className="w-full flex justify-center">
-                                <div className="rounded-xl px-5 py-3 shadow-lg flex items-center gap-4 w-full max-w-lg" style={{ background: '#D4AF37', color: 'white' }}>
+                                <div className="rounded-xl px-5 py-3 shadow-lg flex items-center gap-4 w-full max-w-lg text-white border-4 border-[#D4AF37] bg-black/60">
                                     <img src={isUser ? (userItem as any).avatar : (galleryItem as any).author?.avatarUrl} alt={isUser ? (userItem as any).name : (galleryItem as any).author?.name} className="w-16 h-16 rounded-full object-cover border" />
                                     <div>
                                         <div className="text-xs uppercase">Leading Bid</div>
