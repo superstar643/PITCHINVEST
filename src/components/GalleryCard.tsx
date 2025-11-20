@@ -47,16 +47,8 @@ export const GalleryCard: React.FC<GalleryCardProps> = ({
   const navigate = useNavigate();
 
   const handleClick = () => {
-    if (availableStatus) {
-      onClick();
-      navigate(`/gallery/${id}`);
-    } else {
-      // still navigate to detail to show full info even if unavailable
-      setIsClicked(true);
-    }
-    setTimeout(() => {
-      setIsClicked(false);
-    }, 1500);
+    onClick && onClick();
+    navigate(`/gallery/${id}`);
   };
 
   return (
@@ -89,15 +81,6 @@ export const GalleryCard: React.FC<GalleryCardProps> = ({
                 {b}
               </span>
             ))}
-          </div>
-        )}
-
-        {/* Click unavailable overlay */}
-        {isClicked && (
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm z-30">
-            <div className="px-6 py-8 mt-[30%] text-center bg-[rgba(0,0,0,0.5)] w-full" style={{ clipPath: "polygon(0% 50%, 100% 0%, 100% 50%, 0% 100%)" }}>
-              <p className="text-lg font-bold tracking-widest text-white rotate-[350deg]">UNAVAILABLE</p>
-            </div>
           </div>
         )}
       </div>

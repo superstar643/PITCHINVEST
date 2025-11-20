@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { ChevronLeft, ChevronRight, ThumbsUp, Eye } from 'lucide-react';
+import UserCard from '@/components/landing/UserCard';
+import users from '@/lib/usersData';
 
 const carouselImages = [
   'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424373352_9e70bd44.webp',
@@ -13,22 +15,7 @@ const carouselImages = [
 const investorData = [
   {
     // Left Card
-    left: {
-      avatar: 'assets/1.avif',
-      company: 'NeuroLink Dynamics',
-      name: 'Prof. Hiroshi Tanaka',
-      location: 'Tokyo, Japan',
-      startup: 'BrainTech Solutions',
-      percentage: '25%',
-      amount: '500,000¥',
-      coverImage: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424377234_349ea0c2.webp',
-      portfolioImage1: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424867973_3355cabf.webp',
-      portfolioImage2: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424884496_255165e9.webp',
-      commission: '0%',
-      approval: '94.5%',
-      likes: 890,
-      views: 2200
-    },
+    left: users[0],
     // Right Card
     right: {
       avatar: 'assets/2.avif',
@@ -64,22 +51,7 @@ const investorData = [
     }
   },
   {
-    left: {
-      avatar: 'assets/3.avif',
-      company: 'TechVenture Inc',
-      name: 'Dr. Sarah Chen',
-      location: 'Singapore',
-      startup: 'AI Solutions Ltd',
-      percentage: '30%',
-      amount: '750,000$',
-      coverImage: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424377234_349ea0c2.webp',
-      portfolioImage1: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424867973_3355cabf.webp',
-      portfolioImage2: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424884496_255165e9.webp',
-      commission: '0%',
-      approval: '89.1%',
-      likes: 720,
-      views: 1800
-    },
+    left: users[1],
     right: {
       avatar: 'assets/4.avif',
       company: 'ASIA VENTURES',
@@ -114,22 +86,7 @@ const investorData = [
     }
   },
   {
-    left: {
-      avatar: 'assets/5.avif',
-      company: 'European Fund',
-      name: 'Prof. Klaus Mueller',
-      location: 'Berlin, Germany',
-      startup: 'Green Energy Tech',
-      percentage: '20%',
-      amount: '600,000€',
-      coverImage: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424377234_349ea0c2.webp',
-      portfolioImage1: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424867973_3355cabf.webp',
-      portfolioImage2: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424884496_255165e9.webp',
-      commission: '0%',
-      approval: '91.2%',
-      likes: 610,
-      views: 1420
-    },
+    left: users[2],
     right: {
       avatar: 'assets/6.avif',
       company: 'EU CAPITAL',
@@ -164,22 +121,7 @@ const investorData = [
     }
   },
   {
-    left: {
-      avatar: 'assets/1.avif',
-      company: 'American Growth',
-      name: 'David Johnson',
-      location: 'San Francisco, USA',
-      startup: 'Quantum Computing Co',
-      percentage: '35%',
-      amount: '1,200,000$',
-      coverImage: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424377234_349ea0c2.webp',
-      portfolioImage1: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424867973_3355cabf.webp',
-      portfolioImage2: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424884496_255165e9.webp',
-      commission: '0%',
-      approval: '87.0%',
-      likes: 1040,
-      views: 3050
-    },
+    left: users[3],
     right: {
       avatar: 'assets/2.avif',
       company: 'SILICON VALLEY FUND',
@@ -214,22 +156,7 @@ const investorData = [
     }
   },
   {
-    left: {
-      avatar: 'assets/3.avif',
-      company: 'Global Innovation',
-      name: 'Dr. Ravi Patel',
-      location: 'Mumbai, India',
-      startup: 'FinTech Solutions',
-      percentage: '28%',
-      amount: '400,000₹',
-      coverImage: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424377234_349ea0c2.webp',
-      portfolioImage1: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424867973_3355cabf.webp',
-      portfolioImage2: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424884496_255165e9.webp',
-      commission: '0%',
-      approval: '92.3%',
-      likes: 540,
-      views: 1210
-    },
+    left: users[4],
     right: {
       avatar: 'assets/4.avif',
       company: 'ASIA TECH VENTURES',
@@ -303,79 +230,7 @@ export default function CarouselSection() {
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 md:gap-8">
           {/* Left Card - visible on desktop, moves below on mobile */}
           <div className="order-2 lg:order-1 w-full md:w-80 z-20">
-            <Card className={`w-full bg-white rounded-md shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden ${isAnimating ? 'carousel-animate-right' : ''}`}>
-              {/* Header with background and top-right badge */}
-              <div className="relative h-20 mb-[2px]" style={{ backgroundImage: `url(${investorData[currentIndex].left.coverImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-                {/* small circular badge (top-right) */}
-                <div className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow" style={{ border: '4px solid rgba(255,255,255,0.9)' }}>
-                  <div className="w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center">
-                    <div className="w-2 h-2 rounded-full bg-sky-400" />
-                  </div>
-                </div>
-
-                {/* overlapping avatar (left) */}
-                <div className="absolute -bottom-10 left-4">
-                  <img src={investorData[currentIndex].left.avatar} alt={investorData[currentIndex].left.name} className="w-24 h-24 rounded-full border-4 border-white object-cover shadow-md" />
-                </div>
-              </div>
-
-              <div className="pt-12 px-5 pb-5 bg-white">
-                {/* Company / top-right label */}
-                <div className="text-right text-sm font-semibold text-slate-800 mb-2">{investorData[currentIndex].left.company}</div>
-
-                {/* Info list */}
-                <div className="text-sm mb-3 space-y-1">
-                  <div><span className="font-semibold">Nome:</span> <span className="text-slate-700">{investorData[currentIndex].left.name}</span></div>
-                  <div><span className="font-semibold">Startup:</span> <span className="text-slate-700">{investorData[currentIndex].left.startup}</span></div>
-                  {/* split location into city and country if possible */}
-                  {(() => {
-                    const loc = investorData[currentIndex].left.location || '';
-                    const parts = loc.split(',').map(p => p.trim());
-                    const city = parts[0] || '';
-                    const country = parts[1] || parts[0] || '';
-                    return (
-                      <>
-                        <div><span className="font-semibold">Cidade:</span> <span className="text-slate-700">{city}</span></div>
-                        <div className="flex items-center gap-2"><span className="font-semibold">País:</span> <span className="text-slate-700">{country}</span> <span className="text-xs text-gray-400">{country ? country.slice(0, 2).toUpperCase() : ''}</span></div>
-                      </>
-                    );
-                  })()}
-                </div>
-
-                {/* Buttons */}
-                <div className="flex gap-3 mb-4">
-                  <button className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-white font-semibold py-2 rounded-md">Message</button>
-                  <button className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-md">Invest</button>
-                </div>
-
-                {/* Percentage and commission */}
-                <div className="text-center mb-3">
-                  <div className="text-xl md:text-2xl font-extrabold text-slate-900">{investorData[currentIndex].left.percentage} por {investorData[currentIndex].left.amount}</div>
-                  <div className="text-sm text-green-600 font-semibold">{investorData[currentIndex].left.commission ?? '0%'} Comissão</div>
-                </div>
-
-                {/* Two product images */}
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <img src={investorData[currentIndex].left.portfolioImage1} alt="Product 1" className="w-full h-20 object-cover rounded-lg shadow-sm bg-gray-100" />
-                  <img src={investorData[currentIndex].left.portfolioImage2} alt="Product 2" className="w-full h-20 object-cover rounded-lg shadow-sm bg-gray-100" />
-                </div>
-                {/* Public approval box */}
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="text-center text-xs text-gray-500 mb-2">PUBLIC APPROVAL</div>
-                  <div className="text-center text-xl font-extrabold text-green-600 mb-2">{investorData[currentIndex].left.approval ?? '—'}</div>
-                  <div className="flex items-center justify-center gap-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <ThumbsUp size={16} />
-                      <span>{investorData[currentIndex].left.likes ?? '—'}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Eye size={16} />
-                      <span>{investorData[currentIndex].left.views ?? '—'}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
+            <UserCard key={investorData[currentIndex].left.id} id={investorData[currentIndex].left.id} {...investorData[currentIndex].left} />
           </div>
 
           {/* Center Carousel - order-1 on mobile (top), order-2 on desktop (middle) */}
@@ -512,19 +367,19 @@ export default function CarouselSection() {
                   </div>
                 </div>
 
-                <div className="pt-16 text-center">
-                  <h3 className="text-2xl font-semibold text-gray-900 mb-1">{investorData[currentIndex].right.name}</h3>
+                <div className="pt-12 text-center">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-1">{investorData[currentIndex].right.name}</h3>
                   <div className="text-sm text-gray-500 mb-4">{investorData[currentIndex].right.location}</div>
 
-                  <div className="flex justify-center mb-6">
-                    <button className="bg-yellow-400 hover:bg-yellow-500 text-white font-semibold px-6 py-2 rounded-full shadow-sm transition-all">Message</button>
+                  <div className="flex justify-center mb-3">
+                    <button className=" border-[#0a3d5c] border-4 bg-white hover:bg-[#0a3d5c] hover:text-white active:bg-[#093550] text-[#0a3d5c] font-semibold px-6 py-2 rounded-full shadow-sm transition-all">Message</button>
                   </div>
 
                   <div className="text-sm font-semibold text-gray-700 mb-4 uppercase">Portfolio Companies</div>
                   <div className="grid grid-cols-3 gap-3">
                     {investorData[currentIndex].right.portfolio.map((item, idx) => (
                       <div key={idx} className="flex flex-col items-center">
-                        <div className="w-20 h-20 bg-white rounded-lg shadow-md flex items-center justify-center overflow-hidden border border-gray-200">
+                        <div className="w-16 h-16 bg-white rounded-lg shadow-md flex items-center justify-center overflow-hidden border border-gray-200">
                           <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                         </div>
                         <div className="text-xs text-gray-600 mt-1 text-center leading-tight">{item.name}</div>

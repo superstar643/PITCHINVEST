@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import UserCard from './UserCard';
+import users from '@/lib/usersData';
 
-const users = [
+const localUsers = [
   { name: 'Miguel Silva', startup: 'Nentra Tech', city: 'Lisboa', country: 'Portugal', countryFlag: '🇵🇹', avatar: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763421916644_96144368.webp', companyLogo: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424834991_a690aee4.webp', companyName: 'Navis Aerium', headerBg: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424851075_d773cb46.webp', investmentPercent: 15, investmentAmount: '1.800000€', commission: 0, productImage1: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424867973_3355cabf.webp', productImage2: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424884496_255165e9.webp', approvalRate: 94.50, likes: 890, views: 2200 },
   { name: 'Sofia Martinez', startup: 'TechFlow', city: 'Madrid', country: 'Spain', countryFlag: '🇪🇸', avatar: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763421918534_e38edc79.webp', companyLogo: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424836961_f41e9579.webp', companyName: 'InnovateTech', headerBg: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424853561_8cb6dd1c.webp', investmentPercent: 12, investmentAmount: '2.500000€', commission: 0, productImage1: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424869863_f4ef3afe.webp', productImage2: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424886421_a31c3493.webp', approvalRate: 92.30, likes: 1250, views: 3100 },
   { name: 'Lucas Dubois', startup: 'SmartLogix', city: 'Paris', country: 'France', countryFlag: '🇫🇷', avatar: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763421920458_0136a615.webp', companyLogo: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424838824_d09fac3c.webp', companyName: 'LogiCore', headerBg: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424855396_4b707321.webp', investmentPercent: 18, investmentAmount: '1.200000€', commission: 0, productImage1: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424871833_3ba81df8.webp', productImage2: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424888344_ca9df494.webp', approvalRate: 89.75, likes: 670, views: 1890 },
@@ -76,8 +77,8 @@ const UsersSection: React.FC = () => {
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-          {visibleUsers.map((user, index) => (
-            <UserCard key={index} {...user} />
+          {visibleUsers.map((user) => (
+            <UserCard key={user.id} id={user.id} {...user} />
           ))}
         </div>
 

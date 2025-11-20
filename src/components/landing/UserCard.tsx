@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ThumbsUp, Eye } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface UserCardProps {
+  id?: number | string;
   name: string;
   startup: string;
   city: string;
@@ -19,28 +21,54 @@ interface UserCardProps {
   approvalRate: number;
   likes: number;
   views: number;
+  availableStatus: boolean;
 }
 
-const UserCard: React.FC<UserCardProps> = ({ 
-  name, startup, city, country, countryFlag, avatar, companyLogo, 
-  companyName, headerBg, investmentPercent, investmentAmount, 
-  commission, productImage1, productImage2, approvalRate, likes, views 
+const UserCard: React.FC<UserCardProps> = ({
+  id, name, startup, city, country, countryFlag, avatar, companyLogo,
+  companyName, headerBg, investmentPercent, investmentAmount,
+  commission, productImage1, productImage2, approvalRate, likes, views, availableStatus
 }) => {
+  const [messageClick, setMessageClick] = useState(false);
+  const navigate = useNavigate();
+  const onMessageClickHandle = () => {
+    if (availableStatus) {
+      // user is available -> go to messages (use id if present)
+      if (typeof id !== 'undefined') {
+        navigate(`/messages/${id}`);
+      } else {
+        navigate('/messages');
+      }
+      return;
+    }
+
+    // show unavailable overlay briefly
+    setMessageClick(true);
+    setTimeout(() => {
+      setMessageClick(false);
+    }, 1500);
+  }
+
   return (
-    <div className="bg-white rounded-md shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
+    <div
+      className="relative bg-white rounded-md shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
+      onClick={() => {
+        if (typeof id !== 'undefined') navigate(`/user/${id}`);
+      }}
+    >
       {/* Header with background */}
-      <div className="relative h-16" style={{backgroundImage: `url(${headerBg})`, backgroundSize: 'cover', backgroundPosition: 'center'}}>
-        <div className="absolute -bottom-7 left-3">
-          <img src={avatar} alt={name} className="w-14 h-14 rounded-full border-2 border-white object-cover" />
+      <div className="relative h-32" style={{ backgroundImage: `url(${headerBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+        <div className="absolute -bottom-12 left-3">
+          <img src={avatar} alt={name} className="w-24 h-24 rounded-full border-4 border-[#0a3d5c] object-cover" />
         </div>
         <div className="absolute top-2 right-2 flex flex-col items-center bg-white rounded-full p-1">
           <img src={companyLogo} alt={companyName} className="w-8 h-8 rounded-full" />
         </div>
       </div>
-      
+
       <div className="pt-8 px-3 pb-3">
         <div className="text-right text-xs font-semibold text-gray-700 mb-2">{companyName}</div>
-        
+
         <div className="space-y-1 text-xs mb-2">
           <div><span className="font-semibold">Nome:</span> {name}</div>
           <div><span className="font-semibold">Startup:</span> {startup}</div>
@@ -51,11 +79,17 @@ const UserCard: React.FC<UserCardProps> = ({
         </div>
 
         <div className="flex gap-2 mb-2">
-          <button className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-1.5 px-3 rounded-md transition text-sm">
+          <button
+            className="flex-1 bg-[#0a3d5c] hover:bg-[#0C3C5AFF] text-white font-semibold py-1.5 px-3 transition text-sm rounded-full"
+            onClick={(e) => { e.stopPropagation(); onMessageClickHandle(); }}
+          >
             Message
           </button>
-          <button className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-1.5 px-3 rounded-md transition text-sm">
-            Invest
+          <button
+            className="flex-1 border-2 border-green-600 text-green-600 bg-white hover:bg-green-600  hover:text-white active:bg-green-700 active:border-green-700 rounded-full font-semibold py-1.5 px-3 transition text-sm"
+            onClick={(e) => { e.stopPropagation(); if ((typeof (id) !== 'undefined')) { navigate(`/auction/${id}`); } }}
+          >
+            Auction
           </button>
         </div>
 
@@ -67,16 +101,6 @@ const UserCard: React.FC<UserCardProps> = ({
         <div className="grid grid-cols-2 gap-2 mb-2">
           <img src={productImage1} alt="Product 1" className="w-full h-16 object-cover rounded-lg" />
           <img src={productImage2} alt="Product 2" className="w-full h-16 object-cover rounded-lg" />
-        </div>
-
-        <div className="text-center text-xs mb-1 font-semibold text-gray-600">Product description:</div>
-        <div className="grid grid-cols-2 gap-2 mb-2">
-          <button className="border border-gray-300 text-gray-600 py-1 px-2 rounded text-xs hover:bg-gray-50">PITCH</button>
-          <button className="border border-gray-300 text-gray-600 py-1 px-2 rounded text-xs hover:bg-gray-50">TECHNICAL SHEET</button>
-        </div>
-        <div className="grid grid-cols-2 gap-2 mb-2">
-          <button className="border border-gray-300 text-gray-600 py-1 px-2 rounded text-xs hover:bg-gray-50">TECHNICAL SHEET</button>
-          <button className="border border-gray-300 text-gray-600 py-1 px-2 rounded text-xs hover:bg-gray-50">FACT SHEET</button>
         </div>
 
         <div className="bg-gray-50 rounded-lg p-2 text-center">
@@ -94,6 +118,15 @@ const UserCard: React.FC<UserCardProps> = ({
           </div>
         </div>
       </div>
+      {
+        messageClick && (
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm z-30">
+            <div className="px-6 py-8 mt-[30%] text-center bg-[rgba(0,0,0,0.5)] w-full" style={{ clipPath: "polygon(0% 50%, 100% 0%, 100% 50%, 0% 100%)" }}>
+              <p className="text-lg font-bold tracking-widest text-white rotate-[350deg]">UNAVAILABLE</p>
+            </div>
+          </div>
+        )
+      }
     </div>
   );
 };

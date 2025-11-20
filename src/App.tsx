@@ -12,6 +12,9 @@ import Register from "./components/auth/Register";
 import Gallery from "./pages/Gallery";
 import GalleryDetail from "./pages/GalleryDetail";
 import Auction from "./pages/Auction";
+import Message from "./pages/Message";
+import UserDetail from "./pages/UserDetail";
+import AppLayout from "./components/AppLayout";
 
 const queryClient = new QueryClient();
 
@@ -23,13 +26,18 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} /> 
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/gallery" element={<Gallery />} />
-            <Route path="/gallery/:id" element={<GalleryDetail />} />
-              <Route path="/auction/:id" element={<Auction />} />
-            <Route path="*" element={<NotFound />} />
+
+            {/* Routes wrapped with AppLayout to include Header/Footer */}
+            <Route path="/" element={<AppLayout><Index /></AppLayout>} />
+            <Route path="/gallery" element={<AppLayout><Gallery /></AppLayout>} />
+            <Route path="/gallery/:id" element={<AppLayout><GalleryDetail /></AppLayout>} />
+            <Route path="/user/:id" element={<AppLayout><UserDetail /></AppLayout>} />
+            <Route path="/auction/:id" element={<AppLayout><Auction /></AppLayout>} />
+            <Route path="/messages" element={<AppLayout><Message /></AppLayout>} />
+            <Route path="/messages/:id" element={<AppLayout><Message /></AppLayout>} />
+            <Route path="*" element={<AppLayout><NotFound /></AppLayout>} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>

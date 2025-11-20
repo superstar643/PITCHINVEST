@@ -15,14 +15,12 @@ const GalleryDetail: React.FC = () => {
 
     if (!item) {
         return (
-            <AppLayout>
-                <div className="min-h-screen flex items-center justify-center">Item not found</div>
-            </AppLayout>
+            <div className="min-h-screen flex items-center justify-center">Item not found</div>
         );
     }
 
     return (
-        <AppLayout>
+        <>
             <div className="bg-white pt-24 px-6 flex flex-col gap-6 mb-12 pb-12">
                 <div className="mt-6 border-b border-[#0a3d5c] px-4 py-2 w-full">
                     <Link to="/gallery" className="text-sm flex gap-2" style={{ color }}> <MoveLeft size={16} /> Back to gallery</Link>
@@ -230,7 +228,7 @@ const GalleryDetail: React.FC = () => {
                     ))}
                 </div>
             </div>
-        </AppLayout>
+        </>
     );
 };
 
