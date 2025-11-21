@@ -14,6 +14,8 @@ import GalleryDetail from "./pages/GalleryDetail";
 import Auction from "./pages/Auction";
 import Message from "./pages/Message";
 import UserDetail from "./pages/UserDetail";
+import Investors from "./pages/Investors";
+import InvestorDetail from "./pages/InvestorDetail";
 import AppLayout from "./components/AppLayout";
 
 const queryClient = new QueryClient();
@@ -33,7 +35,9 @@ const App = () => (
             <Route path="/" element={<AppLayout><Index /></AppLayout>} />
             <Route path="/gallery" element={<AppLayout><Gallery /></AppLayout>} />
             <Route path="/gallery/:id" element={<AppLayout><GalleryDetail /></AppLayout>} />
+            <Route path="/investors" element={<AppLayout><Investors /></AppLayout>} />
             <Route path="/user/:id" element={<AppLayout><UserDetail /></AppLayout>} />
+            <Route path="/investor/:id" element={<AppLayout><InvestorDetail /></AppLayout>} />
             <Route path="/auction/:id" element={<AppLayout><Auction /></AppLayout>} />
             <Route path="/messages" element={<AppLayout><Message /></AppLayout>} />
             <Route path="/messages/:id" element={<AppLayout><Message /></AppLayout>} />

@@ -23,6 +23,14 @@ const Header: React.FC = () => {
                 Gallery
               </Button>
             </Link>
+            <Link to="/investors">
+              <Button 
+                variant="ghost"
+                className="text-[#0a3d5c] hover:bg-[#0a3d5c]/10 font-medium"
+              >
+                Investors
+              </Button>
+            </Link>
             <Link to="/login">
               <Button 
                 variant="ghost" 
