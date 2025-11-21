@@ -25,7 +25,7 @@ const investers = [
       minInvestment: "€500,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424855396_4b707321.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512827095_567e2ddf.webp",
@@ -77,7 +77,7 @@ const investers = [
       minInvestment: "€250,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424851075_d773cb46.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512825227_39d14657.webp",
@@ -126,7 +126,7 @@ const investers = [
       minInvestment: "€1,000,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424855396_4b707321.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512826183_75e98cd9.webp",
@@ -180,7 +180,7 @@ const investers = [
       minInvestment: "€2,000,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424857363_3c179bbf.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512824243_be4f91e1.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512825227_39d14657.webp",
@@ -230,7 +230,7 @@ const investers = [
       minInvestment: "€750,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424853561_8cb6dd1c.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512824243_be4f91e1.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512825227_39d14657.webp",
@@ -278,7 +278,7 @@ const investers = [
       minInvestment: "€500,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424859320_078c1e15.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512827095_567e2ddf.webp",
@@ -330,7 +330,7 @@ const investers = [
       minInvestment: "€250,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424857363_3c179bbf.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512825227_39d14657.webp",
@@ -379,7 +379,7 @@ const investers = [
       minInvestment: "€1,000,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424851075_d773cb46.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512826183_75e98cd9.webp",
@@ -433,7 +433,7 @@ const investers = [
       minInvestment: "€2,000,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424863210_1b577238.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512824243_be4f91e1.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512825227_39d14657.webp",
@@ -483,7 +483,7 @@ const investers = [
       minInvestment: "€750,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424857363_3c179bbf.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512824243_be4f91e1.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512825227_39d14657.webp",
@@ -531,7 +531,7 @@ const investers = [
       minInvestment: "€500,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424867071_eca40ee1.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512827095_567e2ddf.webp",
@@ -583,7 +583,7 @@ const investers = [
       minInvestment: "€250,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424851075_d773cb46.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512825227_39d14657.webp",
@@ -632,7 +632,7 @@ const investers = [
       minInvestment: "€1,000,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424857363_3c179bbf.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512826183_75e98cd9.webp",
@@ -686,7 +686,7 @@ const investers = [
       minInvestment: "€2,000,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424855396_4b707321.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512824243_be4f91e1.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512825227_39d14657.webp",
@@ -736,7 +736,7 @@ const investers = [
       minInvestment: "€750,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424857363_3c179bbf.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512824243_be4f91e1.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512825227_39d14657.webp",
@@ -784,7 +784,7 @@ const investers = [
       minInvestment: "€500,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424859320_078c1e15.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512827095_567e2ddf.webp",
@@ -836,7 +836,7 @@ const investers = [
       minInvestment: "€250,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424861208_54cd7382.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512825227_39d14657.webp",
@@ -885,7 +885,7 @@ const investers = [
       minInvestment: "€1,000,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424859320_078c1e15.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512826183_75e98cd9.webp",
@@ -939,7 +939,7 @@ const investers = [
       minInvestment: "€2,000,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424859320_078c1e15.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512824243_be4f91e1.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512825227_39d14657.webp",
@@ -989,7 +989,7 @@ const investers = [
       minInvestment: "€750,000",
     },
     coverImage:
-      "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512841276_2336a6c0.webp",
+      "https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424859320_078c1e15.webp",
     images: [
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512824243_be4f91e1.webp",
       "https://d64gsuwffb70l.cloudfront.net/691d11a8c51ca5f9cbb75a94_1763512825227_39d14657.webp",
