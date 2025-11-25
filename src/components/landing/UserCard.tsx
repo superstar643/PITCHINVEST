@@ -78,9 +78,9 @@ const UserCard: React.FC<UserCardProps> = ({
           </div>
         </div>
 
-        <div className="flex gap-2 mb-2">
+        <div className="flex gap-1 mb-2">
           <button
-            className="flex-1 bg-[#0a3d5c] hover:bg-[#0C3C5AFF] text-white font-semibold py-0.5 px-3 transition text-xs rounded-full hover:bg-white hover:text-[#0a3d5c] border-2 border-[#0a3d5c]"
+            className="flex-1 bg-[#0a3d5c] hover:bg-[#0C3C5AFF] text-white font-semibold py-0.5 transition text-xs rounded-full hover:bg-white hover:text-[#0a3d5c] border-2 border-[#0a3d5c]"
             onClick={(e) => { e.stopPropagation(); onMessageClickHandle(); }}
           >
             Message
@@ -89,7 +89,7 @@ const UserCard: React.FC<UserCardProps> = ({
             className="flex-1 border-2 border-green-600 text-green-600 bg-white hover:bg-green-600  hover:text-white active:bg-green-700 active:border-green-700 rounded-full font-semibold py-0.5 transition text-xs"
             onClick={(e) => { e.stopPropagation(); if ((typeof (id) !== 'undefined')) { navigate(`/auction/${id}`); } }}
           >
-            Auction
+            Vente aux enchères
           </button>
         </div>
 
