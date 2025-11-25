@@ -86,7 +86,7 @@ const UserCard: React.FC<UserCardProps> = ({
             Message
           </button>
           <button
-            className="flex-1 border-2 border-green-600 text-green-600 bg-white hover:bg-green-600  hover:text-white active:bg-green-700 active:border-green-700 rounded-full font-semibold py-0.5 px-3 transition text-xs"
+            className="flex-1 border-2 border-green-600 text-green-600 bg-white hover:bg-green-600  hover:text-white active:bg-green-700 active:border-green-700 rounded-full font-semibold py-0.5 px-1 transition text-xs"
             onClick={(e) => { e.stopPropagation(); if ((typeof (id) !== 'undefined')) { navigate(`/auction/${id}`); } }}
           >
             Auction
