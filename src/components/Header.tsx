@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from './ui/button';
 import { Link } from 'react-router-dom';
+import LanguageSelector from './LanguageSelector';
 
 const Header: React.FC = () => {
   return (
@@ -31,6 +32,7 @@ const Header: React.FC = () => {
                 Investors
               </Button>
             </Link>
+            <LanguageSelector />
             <Link to="/login">
               <Button 
                 variant="ghost" 

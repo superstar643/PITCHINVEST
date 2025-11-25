@@ -76,7 +76,7 @@ const UsersSection: React.FC = () => {
           Discover innovative startups and invest in the future
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10">
           {visibleUsers.map((user) => (
             <UserCard key={user.id} id={user.id} {...user} />
           ))}

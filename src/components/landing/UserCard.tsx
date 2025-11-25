@@ -59,7 +59,7 @@ const UserCard: React.FC<UserCardProps> = ({
       {/* Header with background */}
       <div className="relative h-32" style={{ backgroundImage: `url(${headerBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <div className="absolute -bottom-12 left-3">
-          <img src={avatar} alt={name} className="w-24 h-24 rounded-full border-4 border-[#0a3d5c] object-cover" />
+          <img src={avatar} alt={name} className="w-28 h-28 shadow-lg rounded-full border-4 border-[#0a3d5c] object-cover" />
         </div>
         <div className="absolute top-2 right-2 flex flex-col items-center bg-white rounded-full p-1">
           <img src={companyLogo} alt={companyName} className="w-8 h-8 rounded-full" />
@@ -80,13 +80,13 @@ const UserCard: React.FC<UserCardProps> = ({
 
         <div className="flex gap-2 mb-2">
           <button
-            className="flex-1 bg-[#0a3d5c] hover:bg-[#0C3C5AFF] text-white font-semibold py-1.5 px-3 transition text-sm rounded-full"
+            className="flex-1 bg-[#0a3d5c] hover:bg-[#0C3C5AFF] text-white font-semibold py-0.5 px-3 transition text-xs rounded-full hover:bg-white hover:text-[#0a3d5c] border-2 border-[#0a3d5c]"
             onClick={(e) => { e.stopPropagation(); onMessageClickHandle(); }}
           >
             Message
           </button>
           <button
-            className="flex-1 border-2 border-green-600 text-green-600 bg-white hover:bg-green-600  hover:text-white active:bg-green-700 active:border-green-700 rounded-full font-semibold py-1.5 px-3 transition text-sm"
+            className="flex-1 border-2 border-green-600 text-green-600 bg-white hover:bg-green-600  hover:text-white active:bg-green-700 active:border-green-700 rounded-full font-semibold py-0.5 px-3 transition text-xs"
             onClick={(e) => { e.stopPropagation(); if ((typeof (id) !== 'undefined')) { navigate(`/auction/${id}`); } }}
           >
             Auction
@@ -94,16 +94,17 @@ const UserCard: React.FC<UserCardProps> = ({
         </div>
 
         <div className="text-center mb-2">
-          <div className="text-xl font-bold">{investmentPercent}% por {investmentAmount}</div>
-          <div className="text-green-600 font-bold text-sm">{commission}% Comissão</div>
+          <div className="text-lg font-bold">{investmentPercent}% por {investmentAmount}</div>
+          <div className="text-green-600 font-bold text-xs">{commission}% Comissão</div>
         </div>
 
         <div className="grid grid-cols-2 gap-2 mb-2">
-          <img src={productImage1} alt="Product 1" className="w-full h-16 object-cover rounded-lg" />
-          <img src={productImage2} alt="Product 2" className="w-full h-16 object-cover rounded-lg" />
+          <img src={productImage1} alt="Product 1" className="w-full h-24 object-cover rounded-lg" />
+          <img src={productImage2} alt="Product 2" className="w-full h-24 object-cover rounded-lg" />
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-2 text-center">
+        <div className="bg-gray-50 rounded-lg py-2 text-center">
+          <div className="text-sm font-bold">Office Computer for utility purposes</div>
           <div className="text-xs text-gray-600 mb-1">PUBLIC APPROVAL</div>
           <div className="text-xl font-bold text-green-600 mb-1">{approvalRate}%</div>
           <div className="flex justify-center gap-2 text-xs text-gray-600">

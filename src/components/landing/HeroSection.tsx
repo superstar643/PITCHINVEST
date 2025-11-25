@@ -8,7 +8,7 @@ const HeroSection: React.FC = () => {
         <img
           src="assets/hero-back.png"
           alt="Pitch Invest World Map"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-fill"
         />
         <div className='flex flex-col absolute w-full h-full'>
           {/* Logo Section */}
@@ -36,15 +36,6 @@ const HeroSection: React.FC = () => {
 
       {/* Bottom Features Section - responsive padding and layout */}
       <div className="bg-gray-50 py-6 md:py-10 lg:py-12 relative overflow-hidden">
-        {/* Background image on the right side */}
-        <div className="absolute right-0 top-0 bottom-0 w-0 md:w-1/3 lg:w-1/6 pointer-events-none">
-          <img 
-            src="assets/hero-hometown.png" 
-            alt="Background decoration" 
-            className="w-full h-full object-fill"
-          />
-        </div>
-
         <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-3">
             {/* Investment Platforms */}
