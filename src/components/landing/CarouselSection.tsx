@@ -355,7 +355,7 @@ export default function CarouselSection() {
           <div className="order-3 w-full md:w-80">
             <Card className={`w-full bg-white shadow-xl hover:shadow-2xl transition-all rounded-2xl overflow-hidden ${isAnimating ? 'carousel-animate-left' : ''}`}>
               {/* Red header area */}
-              <div className="h-32 relative flex items-center justify-center" style={{
+              <div className="h-28 relative flex items-center justify-center" style={{
                 backgroundImage: "url(https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424857363_3c179bbf.webp)",
                 backgroundSize: "cover",
                 backgroundPosition: "center center"

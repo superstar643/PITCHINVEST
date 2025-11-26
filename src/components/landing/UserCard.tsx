@@ -57,7 +57,7 @@ const UserCard: React.FC<UserCardProps> = ({
       }}
     >
       {/* Header with background */}
-      <div className="relative h-32" style={{ backgroundImage: `url(${headerBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      <div className="relative h-28" style={{ backgroundImage: `url(${headerBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <div className="absolute -bottom-12 left-3">
           <img src={avatar} alt={name} className="w-28 h-28 shadow-lg rounded-full border-4 border-[#0a3d5c] object-cover" />
         </div>
@@ -99,8 +99,8 @@ const UserCard: React.FC<UserCardProps> = ({
         </div>
 
         <div className="grid grid-cols-2 gap-2 mb-2">
-          <img src={productImage1} alt="Product 1" className="w-full h-24 object-cover rounded-lg" />
-          <img src={productImage2} alt="Product 2" className="w-full h-24 object-cover rounded-lg" />
+          <img src={productImage1} alt="Product 1" className="w-full h-20 object-cover rounded-lg" />
+          <img src={productImage2} alt="Product 2" className="w-full h-20 object-cover rounded-lg" />
         </div>
 
         <div className="bg-gray-50 rounded-lg py-2 text-center">
