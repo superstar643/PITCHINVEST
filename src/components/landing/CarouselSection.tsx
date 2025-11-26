@@ -251,7 +251,7 @@ export default function CarouselSection() {
                 alt="Previous Previous"
                 onClick={() => setCurrentIndex(visible.prevprev)}
                 className="hidden lg:block absolute w-[400px] h-[340px] object-cover rounded-lg opacity-60 transition-all duration-700 cursor-pointer hover:opacity-75 border-8 p-2 bg-white border-[#0a3d5c]"
-                style={{ transform: 'translateX(-540px) rotateY(25deg) scale(0.6) translateY(0)', zIndex: 0 }}
+                style={{ transform: 'translateX(-450px)  rotateY(25deg) scale(0.6) translateY(0)', zIndex: 0 }}
               />
               {/* Previous Image - Clickable */}
               <img
@@ -284,7 +284,7 @@ export default function CarouselSection() {
                 alt="Next Next"
                 onClick={() => setCurrentIndex(visible.nextnext)}
                 className="hidden lg:block absolute w-[400px] h-[340px] object-cover rounded-lg opacity-60 transition-all duration-700 cursor-pointer hover:opacity-75 border-8 p-2 bg-white border-[#0a3d5c]"
-                style={{ transform: 'translateX(540px) rotateY(-25deg) scale(0.6) translateY(0)', zIndex: 0 }}
+                style={{ transform: 'translateX(450px) rotateY(-25deg) scale(0.6) translateY(0)', zIndex: 0 }}
               />
             </div>
 

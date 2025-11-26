@@ -35,8 +35,8 @@ const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="bg-white border-t border-gray-200 py-12">
-      <div className="container mx-auto px-4">
+    <footer className="bg-white border-t border-gray-200 py-12 px-30 w-full">
+      <div className="mx-30">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 mb-8">
           <div>
             <h3 className="text-amber-600 font-semibold mb-4 text-sm uppercase tracking-wider">Platform</h3>

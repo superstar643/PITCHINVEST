@@ -48,9 +48,9 @@ const InvestorCard: React.FC<InvestorCardProps> = ({ id, name, startup, avatar, 
       {/* partners logos */}
       <div className="mt-4 p-3 border-t">
         <div className="grid grid-cols-4 gap-3 items-center">
-          {partners && partners.length > 0 ? partners.map((p, i) => (
+          {partners && partners.length > 0 ? ["","","","","","","","","","","",""].map((p, i) => (
             <div key={i} className="h-20 flex items-center justify-center bg-white shadow-lg rounded-lg">
-              {p ? <img src={p} alt={`partner-${i}`} className="max-h-8 max-w-full object-contain" /> : <div className="text-xs text-gray-300">—</div>}
+              {partners[i] ? <img src={partners[i]} alt={`partner-${i}`} className="max-h-8 max-w-full object-contain" /> : <div className="text-xs text-gray-300">—</div>}
             </div>
           )) : (
             <div className="text-xs text-gray-400 col-span-3">No partner logos</div>

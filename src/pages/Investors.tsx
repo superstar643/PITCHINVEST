@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import investers from '@/lib/investersData';
 import InvestorCard from '@/components/landing/InvestorCard';
 
-const INITIAL_COUNT = 8;
-const INCREMENT = 8;
+const INITIAL_COUNT = 6;
+const INCREMENT = 6;
 
 const Investors: React.FC = () => {
   const [visibleCount, setVisibleCount] = useState<number>(INITIAL_COUNT);
@@ -35,10 +35,10 @@ const Investors: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white pt-24 flex justify-center pb-12">
-      <div className="w-full max-w-8xl px-40">
+      <div className="w-full max-w-8xl 2xl:px-40 lg:px-28">
         <h1 className="text-4xl font-bold text-[#0a3d5c] mb-6 text-center">Investors</h1>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
           {visibleList.map((u: any) => (
             <InvestorCard
               key={u.id}

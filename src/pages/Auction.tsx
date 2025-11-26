@@ -232,7 +232,7 @@ const Auction: React.FC = () => {
             {/* subtle overlay to ensure foreground legibility */}
             <div className="absolute inset-0 bg-transparent pointer-events-none" />
 
-            <div className="relative z-10 max-w-8xl mx-auto h-full">
+            <div className="relative z-10 2xl:mt-0 lg:-mt-40 max-w-8xl mx-auto h-full 2xl:scale-100 lg:scale-75">
                 <div className="flex flex-col gap-6 w-full justify-center items-center">
                     <div className='relative flex flex-col gap-6'>
                         <div className='bg-[#e1ddd2] shadow-2xl border-4 px-10 py-4 rounded-lg border-[#877c63] sw-100 min-h-50 text-[#877c63] text-2xl font-extrabold'>
