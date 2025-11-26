@@ -35,7 +35,7 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
             const ctx = canvas.getContext("2d");
 
             const W = 800;       // width of warped area
-            const H = 500;       // height of warped area
+            const H = 600;       // height of warped area
             const X = 0;       // x offset inside canvas
             const Y = 0;        // y offset inside canvas
 
@@ -108,7 +108,7 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
                             alt={`slide-${index}`}
                             className="w-full  object-contain bg-gray-100"
                         /> */}
-                        <canvas id="screen" className='flex-1' width="800" height="500"></canvas>
+                        <canvas id="screen" className='flex-1' width="800" height="600"></canvas>
 
                         {/* Navigation Arrows - Positioned on sides of image */}
                         {slides.length > 1 && (
@@ -134,14 +134,14 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
                         margin: "auto",
                         position: "relative",
                         borderRadius: "50%",
-                        top: -120
+                        top: -150
                     }}>
                         {slides.length > 1 && (
                             slides.map((s, i) => (
-                                <div className='w-14 h-14' style={{
+                                <div className='w-20 h-20' style={{
                                     font: "26px Monaco, MonoSpace",
                                     position: "absolute",
-                                    left: -36 + i * 56,
+                                    left: -50 + i * 90,
                                     top: 0,
                                     transformOrigin: "center 240px",
                                     // transform: `rotate(${-0 + 35 * ( i - slides.length / 2 )}deg)`
@@ -149,7 +149,7 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
                                     <button
                                         key={i}
                                         onClick={() => setIndex(i)}
-                                        className={`w-14 h-14 rounded-lg overflow-hidden border shadow-lg transition-all ${i === index ? 'border-yellow-400 ring-2 ring-yellow-400 scale-105' : 'border-gray-400'
+                                        className={`w-20 h-20 rounded-lg overflow-hidden border shadow-lg transition-all ${i === index ? 'border-yellow-400 ring-2 ring-yellow-400 scale-105' : 'border-gray-400'
                                             }`}
                                     >
                                         <img src={s} alt={`thumb-${i}`} className="w-full h-full object-cover" />
@@ -160,32 +160,21 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
                     </div>
                 </div>
             </div>
-
-            {/* Caption Text */}
-            <div className="text-center max-w-xl px-4">
-                <p className="text-lg font-semibold text-yellow-600 dark:text-yellow-400 mb-2">
-                    {itemName}
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                    {itemDescription}
-                </p>
-            </div>
-
-            {/* Advertisement Banner */}
-            <div className="max-w-2xl mt-6">
-                <div className="bg-gradient-to-r from-teal-900 via-teal-800 to-teal-900 rounded-lg border-2 border-teal-700 shadow-xl overflow-hidden relative">
-                    <div className="relative z-10 flex items-center">
-                        <div className="flex-1">
-                            <img src='/assets/ad.png' />
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div >
     );
 }
 
 const color = '#0a3d5c';
+const flags = [
+    '/assets/flags/BR.png',
+    '/assets/flags/CN.png',
+    '/assets/flags/DE.png',
+    '/assets/flags/FR.png',
+    '/assets/flags/ES.png',
+    '/assets/flags/JP.png',
+    '/assets/flags/RU.png',
+    '/assets/flags/US.png'
+];
 
 const Auction: React.FC = () => {
     const { id } = useParams();
@@ -243,83 +232,133 @@ const Auction: React.FC = () => {
             {/* subtle overlay to ensure foreground legibility */}
             <div className="absolute inset-0 bg-transparent pointer-events-none" />
 
-            <div className="relative z-10 max-w-7xl mx-auto h-full">
-                <div className="flex flex-col md:flex-row gap-6 w-full justify-center items-center">
-                    {/* Left bidders */}
-                    <div className="w-full md:min-w-1/5 flex flex-col gap-16" style={{
-                        perspective: "1000px"
-                    }}>
-                        <div className="bg-gray-800/75 text-white rounded-xl p-4 shadow-lg border border-white/10" style={{ transform: "rotateY(20deg)" }}>
-                            <div className="text-sm font-semibold mb-3">Current Bidders</div>
-                            <div className="space-y-3">
-                                {leftBidders.map((b, i) => (
-                                    <div key={i} className={`flex items-center justify-between bg-white/5 p-3 rounded-md ${i === 0 ? 'ring-2 ring-yellow-400' : ''}`}>
-                                        <div className="flex items-start gap-3">
-                                            <img src={b.avatar} alt={b.name} className="w-10 h-10 rounded-full object-cover border" />
-                                            <div className='flex flex-col items-start'>
-                                                <div className="text-sm">
-                                                    <div className="font-medium">{b.name}</div>
-                                                </div>
-                                                <div className="font-semibold">{b.amount}</div>
-                                            </div>
-                                        </div>
+            <div className="relative z-10 max-w-8xl mx-auto h-full">
+                <div className="flex flex-col gap-6 w-full justify-center items-center">
+                    <div className='relative flex flex-col gap-6'>
+                        <div className='bg-[#e1ddd2] shadow-2xl border-4 px-10 py-4 rounded-lg border-[#877c63] sw-100 min-h-50 text-[#877c63] text-2xl font-extrabold'>
+                            <p>INVESTING IN THE FUTURE:</p>
+                            <p>THE INNOVATION AUCTION</p>
+                        </div>
+                        <div className="w-full flex justify-center flex-col items-center mb-4">
+                            <div className={`flex relative h-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50`}>
+                                <div className="relative flex-shrink-0 shadow-lg rounded-full w-20 h-20 p-2" style={{ backgroundImage: "url('/assets/auction/background.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                                    <img src={userItem.avatar} alt={userItem.name} className="w-18 h-18 rounded-full object-cover" />
+                                </div>
+                                <div className='flex flex-col justify-center flex-1'>
+                                    <div className="text-lg font-bold text-white">{userItem.name}</div>
+                                    <div className='text-sm font-medium text-yellow-300/70 mt-1'>Warsaw</div>
+                                    <div className='text-md font-medium text-gray-300 flex gap-2'>Portugal
+                                        <img src={flags[0]} alt='Flag' className='w-6 h-4 rounded mt-1 object-cover shadow-md' />
                                     </div>
-                                ))}
+                                </div>
+                                <div className="text-right flex flex-col items-end h-full mt-4">
+                                    <div className="text-2xl font-bold text-[#d5b775]">$317,548</div>
+                                </div>
+                                <img src='/assets/auction/percent.png' width={30} height={30} className="absolute top-2 right-2" />
                             </div>
                         </div>
-                        {/* Countdown below leading bid box */}
-                        <div className="mt-4 rounded-md px-4 py-2 bg-gray-800/75 text-white flex flex-col items-start gap-4">
-                            <div className="text-xs uppercase">Time Remaining</div>
-                            <div className="font-semibold text-lg">{formatCountdown(secondsLeft)}</div>
-                        </div>
-                        {/* <button onClick={() => navigate('/')} className="px-4 py-2 rounded-full bg-white/10 text-white border text-sm md:text-base">Go To Back</button> */}
                     </div>
-
-                    {/* Center image - moved lower and smaller */}
-                    <div className="w-full md:min-w-3/5 flex flex-col items-center justify-between gap-8 md:gap-24 pt-8 md:pt-16">
-                        {/* Leading bid box - use main color */}
-                        <div className="mt-6 w-full flex flex-col items-center">
-                            <div className="w-full flex justify-center">
-                                <div className="rounded-xl px-5 py-3 shadow-lg flex items-center gap-4 w-full max-w-lg text-white border-4 border-[#D4AF37] bg-black/60">
-                                    <img src={isUser ? (userItem as any).avatar : (galleryItem as any).author?.avatarUrl} alt={isUser ? (userItem as any).name : (galleryItem as any).author?.name} className="w-16 h-16 rounded-full object-cover border" />
-                                    <div>
-                                        <div className="text-xs uppercase">Leading Bid</div>
-                                        <div className="font-semibold text-base">{isUser ? (userItem as any).name : (galleryItem as any).author?.name}</div>
-                                    </div>
-                                    <div className="ml-auto text-xl font-bold">$317,548</div>
+                    <div className='flex relative -top-20'>
+                        {/* Left bidders */}
+                        <div className="w-full md:min-w-[400px] flex flex-col relative -top-5 gap-16" style={{
+                            perspective: "1000px"
+                        }}>
+                            <div className="bg-gray-800/75 text-white rounded-xl p-4 shadow-lg border border-white/10" style={{ transform: "rotateY(20deg)" }}>
+                                <div className="text-sm font-semibold mb-3">Current Bidders</div>
+                                <div className="space-y-3">
+                                    {leftBidders.map((b, i) => (
+                                        <div key={i} className={`flex relative h-full items-center gap-4 bg-gray-800/40 p-2 rounded-2xl border transition-all ${i === 0 ? 'ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50' : ''}`}>
+                                            <div className="relative flex-shrink-0 shadow-lg rounded-full w-24 h-24 p-2" style={{ backgroundImage: "url('/assets/auction/background.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                                                <img src={b.avatar} alt={b.name} className="w-18 h-18 rounded-full object-cover" />
+                                            </div>
+                                            <div className='flex flex-col justify-center flex-1'>
+                                                <div className="text-lg font-bold text-white">{b.name}</div>
+                                                <div className='text-sm font-medium text-yellow-300/70 mt-1'>Warsaw</div>
+                                                <div className='text-md font-medium text-gray-300 flex gap-2'>Portugal
+                                                    <img src={flags[i]} alt='Flag' className='w-6 h-4 rounded mt-1 object-cover shadow-md' />
+                                                </div>
+                                            </div>
+                                            <div className="text-right flex flex-col items-end h-full mt-4">
+                                                <div className="text-2xl font-bold text-[#d5b775]">{b.amount}</div>
+                                            </div>
+                                            <img src='/assets/auction/percent.png' width={30} height={30} className="absolute top-2 right-2" />
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-
-                            {/* Slideshow: use gallery images or user's product images */}
-                            <div className="w-full flex justify-center">
-                                <Slideshow galleryItem={galleryItem} userItem={userItem} isUser={isUser} />
+                            {/* Countdown below leading bid box */}
+                            <div className="mt-2 rounded-full justify-center px-4 py-2 text-white items-center flex gap-2" style={{ background: color }}>
+                                <div className="text-lg uppercase">Time Remaining: </div>
+                                <div className="font-semibold text-md">{formatCountdown(secondsLeft)}</div>
                             </div>
+                            {/* <button onClick={() => navigate('/')} className="px-4 py-2 rounded-full bg-white/10 text-white border text-sm md:text-base">Go To Back</button> */}
+                        </div>
+
+                        {/* Center image - moved lower and smaller */}
+                        <div className="w-full md:min-w-2/5 flex flex-col items-center justify-between gap-8 md:gap-24">
+                            {/* Leading bid box - use main color */}
+                            <div className="mt-6 w-full flex flex-col items-center">
+
+                                {/* Slideshow: use gallery images or user's product images */}
+                                <div className="w-full flex justify-center">
+                                    <Slideshow galleryItem={galleryItem} userItem={userItem} isUser={isUser} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Right bidders */}
+                        <div className="w-full md:min-w-[400px] flex flex-col relative -top-5 gap-16" style={{
+                            perspective: "1000px"
+                        }}>
+                            <div className="bg-gray-800/75 text-white rounded-xl p-4 shadow-lg border border-white/10" style={{ transform: "rotateY(-20deg)" }}>
+                                <div className="text-sm font-semibold mb-3">Competing Bids</div>
+                                <div className="space-y-3">
+                                    {rightBidders.map((b, i) => (
+                                        <div key={i} className={`flex relative h-full items-center gap-4 bg-gray-800/40 p-2 rounded-2xl border transition-all`}>
+                                            <div className="text-right flex flex-col items-end h-full mt-4">
+                                                <div className="text-2xl font-bold text-[#d5b775]">{b.amount}</div>
+                                            </div>
+                                            <div className='flex flex-col items-end justify-center flex-1'>
+                                                <div className="text-lg font-bold text-white">{b.name}</div>
+                                                <div className='text-sm font-medium text-yellow-300/70 mt-1'>Warsaw</div>
+                                                <div className='text-md font-medium text-gray-300 flex gap-2'>
+                                                    <img src={flags[i]} alt='Flag' className='w-6 h-4 rounded mt-1 object-cover shadow-md' />
+                                                    Portugal
+                                                </div>
+                                            </div>
+                                            <div className="relative flex-shrink-0 shadow-lg rounded-full w-24 h-24 p-2" style={{ backgroundImage: "url('/assets/auction/background.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                                                <img src={b.avatar} alt={b.name} className="w-18 h-18 rounded-full object-cover" />
+                                            </div>
+                                            <img src='/assets/auction/percent.png' width={30} height={30} className="absolute top-2 left-2" />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <button onClick={() => navigate('/')} className="px-4 py-2 md:px-6 md:py-3 rounded-full text-white font-semibold" style={{ background: color }}>Place Bid</button>
                         </div>
                     </div>
 
-                    {/* Right bidders */}
-                    <div className="w-full md:min-w-1/5 flex flex-col gap-16" style={{
-                        perspective: "1000px"
-                    }}>
-                        <div className="bg-gray-800/75 text-white rounded-xl p-4 shadow-lg border border-white/10" style={{ transform: "rotateY(-20deg)" }}>
-                            <div className="text-sm font-semibold mb-3">Competing Bids</div>
-                            <div className="space-y-3">
-                                {rightBidders.map((b, i) => (
-                                    <div key={i} className="flex items-center justify-between bg-white/5 p-3 rounded-md">
-                                        <div className="flex items-start gap-3">
-                                            <img src={b.avatar} alt={b.name} className="w-10 h-10 rounded-full object-cover border" />
-                                            <div className='flex flex-col items-start'>
-                                                <div className="text-sm">
-                                                    <div className="font-medium">{b.name}</div>
-                                                </div>
-                                                <div className="font-semibold">{b.amount}</div>
-                                            </div>
-                                        </div>
+                    <div className="relative -top-[280px]">
+                        {/* Caption Text */}
+                        <div className="text-center max-w-xl px-4">
+                            <p className="text-2xl font-semibold text-yellow-600 dark:text-yellow-400">
+                                Neutron25, anti-stress, anti-anxiety,
+                            </p>
+                            <p className="text-2xl font-semibold text-yellow-600 dark:text-yellow-400">
+                                Anti panic attacks
+                            </p>
+                        </div>
+
+                        {/* Advertisement Banner */}
+                        <div className="max-w-2xl mt-2">
+                            <div className="bg-gradient-to-r from-teal-900 via-teal-800 to-teal-900 rounded-lg border-2 border-teal-700 shadow-xl overflow-hidden relative">
+                                <div className="relative z-10 flex items-center">
+                                    <div className="flex-1">
+                                        <img src='/assets/ad.png' />
                                     </div>
-                                ))}
+                                </div>
                             </div>
                         </div>
-                        <button onClick={() => navigate('/')} className="px-4 py-2 md:px-6 md:py-3 rounded-full text-white font-semibold" style={{ background: color }}>Place Bid</button>
                     </div>
                 </div>
             </div>

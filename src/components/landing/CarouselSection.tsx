@@ -355,43 +355,56 @@ export default function CarouselSection() {
           <div className="order-3 w-full md:w-80">
             <Card className={`w-full bg-white shadow-xl hover:shadow-2xl transition-all rounded-2xl overflow-hidden ${isAnimating ? 'carousel-animate-left' : ''}`}>
               {/* Red header area */}
-              <div className="h-32 bg-gradient-to-r from-red-600 to-red-500 relative flex items-center justify-center">
-                <div className="text-white font-bold text-lg tracking-wide">{investorData[currentIndex].right.company}</div>
+              <div className="h-32 relative flex items-center justify-center" style={{
+                backgroundImage: "url(https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424857363_3c179bbf.webp)",
+                backgroundSize: "cover",
+                backgroundPosition: "center center"
+              }}>
+                <div className="text-white font-bold text-2xl tracking-wide bg-[#00000080] w-full h-full text-center py-10">{investorData[currentIndex].right.company}</div>
               </div>
 
               {/* Avatar overlapping */}
-              <div className="relative pb-6 px-6 bg-white">
+              <div className="relative pb-4 px-6 bg-white">
                 <div className="absolute -top-12 left-16 -translate-x-1/2">
-                  <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-yellow-300 shadow-md bg-white">
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-[#0a3d5c] shadow-md bg-white">
                     <img src={investorData[currentIndex].right.avatar} alt={investorData[currentIndex].right.name} className="w-full h-full object-cover" />
                   </div>
                 </div>
 
                 <div className="pt-12 text-center">
                   <h3 className="text-xl font-semibold text-gray-900 mb-1">{investorData[currentIndex].right.name}</h3>
-                  <div className="text-sm text-gray-500 mb-4">{investorData[currentIndex].right.location}</div>
-
-                  <div className="flex justify-center mb-3">
-                    <button className=" border-[#0a3d5c] border-4 bg-white hover:bg-[#0a3d5c] hover:text-white active:bg-[#093550] text-[#0a3d5c] font-semibold px-6 py-2 rounded-full shadow-sm transition-all">Message</button>
+                  <div className='flex w-full justify-center'>
+                    <div className="text-sm text-gray-500 mb-2">{investorData[currentIndex].right.location}</div>
+                    <img src='/assets/flags/JP.png' className='w-8 h-6' />
                   </div>
 
-                  <div className="text-sm font-semibold text-gray-700 mb-4 uppercase">Portfolio Companies</div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="flex justify-center mb-2 gap-4">
+                    <button className="flex-1 text-xs border-[#0a3d5c] border-2 bg-white hover:bg-[#0a3d5c] hover:text-white active:bg-[#093550] text-[#0a3d5c] font-semibold py-1 rounded-full shadow-sm transition-all">Message</button>
+                    <button className="flex-1 text-xs border-[#0a3d5c] border-2 bg-white hover:bg-[#0a3d5c] hover:text-white active:bg-[#093550] text-[#0a3d5c] font-semibold py-1 rounded-full shadow-sm transition-all">View Profile</button>
+                  </div>
+
+                  <div className="text-sm font-semibold text-gray-700 mb-2 uppercase">Portfolio Companies</div>
+                  <div className="grid grid-cols-3 gap-2">
                     {investorData[currentIndex].right.portfolio.map((item, idx) => (
                       <div key={idx} className="flex flex-col items-center">
                         <div className="w-16 h-16 bg-white rounded-lg shadow-md flex items-center justify-center overflow-hidden border border-gray-200">
                           <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                         </div>
-                        <div className="text-xs text-gray-600 mt-1 text-center leading-tight">{item.name}</div>
                       </div>
                     ))}
+                  </div>
+                  <div className='text-lg font-bold mt-4'>
+                    Company Description
+                  </div>
+                  <div className='text-sm'>
+                    Neuno Capital focuses on the overdose, overdose management, and elicentics of eanations, based on bromide and neurotechnology.
                   </div>
                 </div>
               </div>
             </Card>
           </div>
         </div>
-      </div>
-    </section>
+      </div >
+    </section >
   );
 }

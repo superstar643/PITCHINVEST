@@ -51,7 +51,7 @@ const UserCard: React.FC<UserCardProps> = ({
 
   return (
     <div
-      className="relative bg-white rounded-md shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
+      className="relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
       onClick={() => {
         if (typeof id !== 'undefined') navigate(`/user/${id}`);
       }}

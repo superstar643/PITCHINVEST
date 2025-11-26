@@ -23,7 +23,7 @@ const localUsers = [
   { name: 'Carlos Mendes', startup: 'MobiTech', city: 'Porto', country: 'Portugal', countryFlag: '🇵🇹', avatar: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763421931899_22632b5a.webp', companyLogo: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424850082_fdc48b16.webp', companyName: 'MobiCore', headerBg: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424867071_eca40ee1.webp', investmentPercent: 11, investmentAmount: '2.100000€', commission: 0, productImage1: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424883513_fefbe4f1.webp', productImage2: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424900031_fe90d384.webp', approvalRate: 90.60, likes: 1050, views: 2750 }
 ];
 
-const BATCH_SIZE = 8;
+const BATCH_SIZE = 4;
 
 const UsersSection: React.FC = () => {
   const [visibleCount, setVisibleCount] = useState<number>(BATCH_SIZE);

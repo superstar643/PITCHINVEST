@@ -35,7 +35,7 @@ const Investors: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white pt-24 flex justify-center pb-12">
-      <div className="w-full max-w-7xl px-4">
+      <div className="w-full max-w-8xl px-40">
         <h1 className="text-4xl font-bold text-[#0a3d5c] mb-6 text-center">Investors</h1>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
