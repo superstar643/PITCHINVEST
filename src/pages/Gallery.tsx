@@ -1,5 +1,4 @@
 import React from 'react';
-import AppLayout from '@/components/AppLayout';
 import { GalleryCard } from '@/components/GalleryCard';
 import galleryItems from '@/lib/galleryData';
 

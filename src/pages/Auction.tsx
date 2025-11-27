@@ -102,7 +102,9 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
                 {/* Main image container with side borders */}
                 <div className="relative bg-gradient-to-b rounded-3xl flex flex-col items-center">
                     {/* Image */}
-                    <div className="relative rounded-2xl overflow-hidden z-1">
+                    <div className="relative rounded-2xl overflow-visible z-1" style={{
+                        filter: "drop-shadow(0 40px 40px rgba(0, 0, 0, 0.6)) drop-shadow(0 10px 20px rgba(0, 0, 0, 0.4))"
+                    }}>
                         {/* <img
                             src={slides[index]}
                             alt={`slide-${index}`}
@@ -238,12 +240,12 @@ const Auction: React.FC = () => {
             <div className="relative z-10 2xl:mt-0 lg:-mt-40 max-w-8xl mx-auto h-full 2xl:scale-100 lg:scale-75">
                 <div className="flex flex-col gap-6 w-full justify-center items-center">
                     <div className='relative flex flex-col gap-3'>
-                        <div className='bg-[#e1ddd2] shadow-2xl border-4 px-12 py-2 rounded-lg border-[#877c63] sw-100 min-h-50 text-[#877c63] text-2xl font-extrabold'>
+                        <div className='bg-[#e1ddd2] border-4 px-12 py-2 rounded-lg border-[#877c63] sw-100 min-h-50 text-[#877c63] text-2xl font-extrabold'>
                             <p>INVESTING IN THE FUTURE:</p>
                             <p>THE INNOVATION AUCTION</p>
                         </div>
                         <div className="w-full flex justify-center flex-col items-center mb-2">
-                            <div className={`flex relative h-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50`}>
+                            <div className={`flex relative h-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50`} style={{boxShadow: "0px 20px 30px 10px #00000050"}}>
                                 <div className="relative flex-shrink-0 shadow-lg rounded-full w-20 h-20 p-2" style={{ backgroundImage: "url('/assets/auction/background.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
                                     <img src={userItem.avatar} alt={userItem.name} className="w-18 h-18 rounded-full object-cover" />
                                 </div>
