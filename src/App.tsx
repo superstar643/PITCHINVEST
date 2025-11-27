@@ -32,7 +32,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
 
             {/* Routes wrapped with AppLayout to include Header/Footer */}
-            <Route path="/" element={<AppLayout><Index /></AppLayout>} />
+            <Route path="/" element={<Index />} />
             <Route path="/gallery" element={<AppLayout><Gallery /></AppLayout>} />
             <Route path="/gallery/:id" element={<AppLayout><GalleryDetail /></AppLayout>} />
             <Route path="/investors" element={<AppLayout><Investors /></AppLayout>} />

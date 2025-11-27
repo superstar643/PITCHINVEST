@@ -12,9 +12,7 @@ const InvestorDetail: React.FC = () => {
 
   if (!user) {
     return (
-      <AppLayout>
-        <div className="min-h-screen flex items-center justify-center">Investor not found</div>
-      </AppLayout>
+      <div className="min-h-screen flex items-center justify-center">Investor not found</div>
     );
   }
 

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import AppLayout from '@/components/AppLayout';
 import galleryItems from '@/lib/galleryData';
 import { GalleryCard } from '@/components/GalleryCard';
 import { MoveLeft, ChevronLeft, ChevronRight } from 'lucide-react';

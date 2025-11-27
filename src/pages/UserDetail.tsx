@@ -1,6 +1,5 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import AppLayout from '@/components/AppLayout';
 import users from '@/lib/usersData';
 import { ThumbsUp, Eye, MoveLeft, Share2 } from 'lucide-react';
 
