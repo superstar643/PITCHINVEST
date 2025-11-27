@@ -35,7 +35,7 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
             const ctx = canvas.getContext("2d");
 
             const W = 800;       // width of warped area
-            const H = 600;       // height of warped area
+            const H = 550;       // height of warped area
             const X = 0;       // x offset inside canvas
             const Y = 0;        // y offset inside canvas
 
@@ -45,7 +45,7 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
             // White background
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const steps = 1200;               // number of vertical slices
+            const steps = 1600;               // number of vertical slices
             const sliceW = img.width / steps;
 
             for (let i = 0; i < steps; i++) {
@@ -108,8 +108,11 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
                             alt={`slide-${index}`}
                             className="w-full  object-contain bg-gray-100"
                         /> */}
-                        <canvas id="screen" className='flex-1' width="800" height="600"></canvas>
-
+                        <canvas
+                            id="screen"
+                            width="800"
+                            height="550"
+                        ></canvas>
                         {/* Navigation Arrows - Positioned on sides of image */}
                         {slides.length > 1 && (
                             <>
@@ -226,7 +229,7 @@ const Auction: React.FC = () => {
     ];
 
     return (
-        <div className="relative min-h-screen pt-20 md:pt-28 pb-16">
+        <div className="relative min-h-screen pt-20 pb-16">
             {/* Use an img tag instead of CSS background-image so it works on mobile */}
             <img src="/assets/auction-back.png" alt="Auction background" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
             {/* subtle overlay to ensure foreground legibility */}
@@ -234,12 +237,12 @@ const Auction: React.FC = () => {
 
             <div className="relative z-10 2xl:mt-0 lg:-mt-40 max-w-8xl mx-auto h-full 2xl:scale-100 lg:scale-75">
                 <div className="flex flex-col gap-6 w-full justify-center items-center">
-                    <div className='relative flex flex-col gap-6'>
-                        <div className='bg-[#e1ddd2] shadow-2xl border-4 px-10 py-4 rounded-lg border-[#877c63] sw-100 min-h-50 text-[#877c63] text-2xl font-extrabold'>
+                    <div className='relative flex flex-col gap-3'>
+                        <div className='bg-[#e1ddd2] shadow-2xl border-4 px-12 py-2 rounded-lg border-[#877c63] sw-100 min-h-50 text-[#877c63] text-2xl font-extrabold'>
                             <p>INVESTING IN THE FUTURE:</p>
                             <p>THE INNOVATION AUCTION</p>
                         </div>
-                        <div className="w-full flex justify-center flex-col items-center mb-4">
+                        <div className="w-full flex justify-center flex-col items-center mb-2">
                             <div className={`flex relative h-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50`}>
                                 <div className="relative flex-shrink-0 shadow-lg rounded-full w-20 h-20 p-2" style={{ backgroundImage: "url('/assets/auction/background.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
                                     <img src={userItem.avatar} alt={userItem.name} className="w-18 h-18 rounded-full object-cover" />
@@ -260,15 +263,15 @@ const Auction: React.FC = () => {
                     </div>
                     <div className='flex relative -top-20'>
                         {/* Left bidders */}
-                        <div className="w-full md:min-w-[400px] flex flex-col relative -top-5 gap-16" style={{
+                        <div className="w-full md:min-w-[380px] flex flex-col relative gap-12" style={{
                             perspective: "1000px"
                         }}>
-                            <div className="bg-gray-800/75 text-white rounded-xl p-4 shadow-lg border border-white/10" style={{ transform: "rotateY(20deg)" }}>
+                            <div className="bg-gray-800/75 text-white rounded-xl p-4 shadow-lg border border-white/10" style={{ transform: "rotateY(20deg)", boxShadow: "-45px 45px 15px 0px #00000050" }}>
                                 <div className="text-sm font-semibold mb-3">Current Bidders</div>
                                 <div className="space-y-3">
                                     {leftBidders.map((b, i) => (
-                                        <div key={i} className={`flex relative h-full items-center gap-4 bg-gray-800/40 p-2 rounded-2xl border transition-all ${i === 0 ? 'ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50' : ''}`}>
-                                            <div className="relative flex-shrink-0 shadow-lg rounded-full w-24 h-24 p-2" style={{ backgroundImage: "url('/assets/auction/background.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                                        <div key={i} className={`flex relative h-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all ${i === 0 ? 'ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50' : ''}`}>
+                                            <div className="relative flex-shrink-0 shadow-lg rounded-full w-20 h-20 p-2" style={{ backgroundImage: "url('/assets/auction/background.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
                                                 <img src={b.avatar} alt={b.name} className="w-18 h-18 rounded-full object-cover" />
                                             </div>
                                             <div className='flex flex-col justify-center flex-1'>
@@ -279,7 +282,7 @@ const Auction: React.FC = () => {
                                                 </div>
                                             </div>
                                             <div className="text-right flex flex-col items-end h-full mt-4">
-                                                <div className="text-2xl font-bold text-[#d5b775]">{b.amount}</div>
+                                                <div className="text-2xl font-bold text-[#d5b775]">$317,548</div>
                                             </div>
                                             <img src='/assets/auction/percent.png' width={30} height={30} className="absolute top-2 right-2" />
                                         </div>
@@ -307,26 +310,26 @@ const Auction: React.FC = () => {
                         </div>
 
                         {/* Right bidders */}
-                        <div className="w-full md:min-w-[400px] flex flex-col relative -top-5 gap-16" style={{
+                        <div className="w-full md:min-w-[380px] flex flex-col relative gap-12" style={{
                             perspective: "1000px"
                         }}>
-                            <div className="bg-gray-800/75 text-white rounded-xl p-4 shadow-lg border border-white/10" style={{ transform: "rotateY(-20deg)" }}>
+                            <div className="bg-gray-800/75 text-white rounded-xl p-4 shadow-lg border border-white/10 drop-shadow-2xl" style={{ transform: "rotateY(-20deg)", boxShadow: "45px 45px 15px 0px #00000050" }}>
                                 <div className="text-sm font-semibold mb-3">Competing Bids</div>
                                 <div className="space-y-3">
                                     {rightBidders.map((b, i) => (
-                                        <div key={i} className={`flex relative h-full items-center gap-4 bg-gray-800/40 p-2 rounded-2xl border transition-all`}>
+                                        <div key={i} className={`flex relative h-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all ${i === 0 ? 'ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50' : ''}`}>
                                             <div className="text-right flex flex-col items-end h-full mt-4">
-                                                <div className="text-2xl font-bold text-[#d5b775]">{b.amount}</div>
+                                                <div className="text-2xl font-bold text-[#d5b775]">$317,548</div>
                                             </div>
-                                            <div className='flex flex-col items-end justify-center flex-1'>
+                                            <div className='flex flex-col justify-center items-end flex-1'>
                                                 <div className="text-lg font-bold text-white">{b.name}</div>
                                                 <div className='text-sm font-medium text-yellow-300/70 mt-1'>Warsaw</div>
                                                 <div className='text-md font-medium text-gray-300 flex gap-2'>
-                                                    <img src={flags[i]} alt='Flag' className='w-6 h-4 rounded mt-1 object-cover shadow-md' />
+                                                    <img src={flags[flags.length - i - 1]} alt='Flag' className='w-6 h-4 rounded mt-1 object-cover shadow-md' />
                                                     Portugal
                                                 </div>
                                             </div>
-                                            <div className="relative flex-shrink-0 shadow-lg rounded-full w-24 h-24 p-2" style={{ backgroundImage: "url('/assets/auction/background.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                                            <div className="relative flex-shrink-0 shadow-lg rounded-full w-20 h-20 p-2" style={{ backgroundImage: "url('/assets/auction/background.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
                                                 <img src={b.avatar} alt={b.name} className="w-18 h-18 rounded-full object-cover" />
                                             </div>
                                             <img src='/assets/auction/percent.png' width={30} height={30} className="absolute top-2 left-2" />
@@ -338,19 +341,19 @@ const Auction: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="relative -top-[280px]">
+                    <div className="relative -top-[270px]">
                         {/* Caption Text */}
                         <div className="text-center max-w-xl px-4">
-                            <p className="text-2xl font-semibold text-yellow-600 dark:text-yellow-400">
+                            <p className="text-xl font-semibold text-yellow-600 dark:text-yellow-400">
                                 Neutron25, anti-stress, anti-anxiety,
                             </p>
-                            <p className="text-2xl font-semibold text-yellow-600 dark:text-yellow-400">
+                            <p className="text-xl font-semibold text-yellow-600 dark:text-yellow-400">
                                 Anti panic attacks
                             </p>
                         </div>
 
                         {/* Advertisement Banner */}
-                        <div className="max-w-2xl mt-2">
+                        <div className="max-w-2xl mt-1">
                             <div className="bg-gradient-to-r from-teal-900 via-teal-800 to-teal-900 rounded-lg border-2 border-teal-700 shadow-xl overflow-hidden relative">
                                 <div className="relative z-10 flex items-center">
                                     <div className="flex-1">

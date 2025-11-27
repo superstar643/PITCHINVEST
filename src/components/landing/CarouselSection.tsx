@@ -365,19 +365,20 @@ export default function CarouselSection() {
 
               {/* Avatar overlapping */}
               <div className="relative pb-4 px-6 bg-white">
-                <div className="absolute -top-12 left-16 -translate-x-1/2">
-                  <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-[#0a3d5c] shadow-md bg-white">
+                <div className="absolute -top-12 left-4 flex h-32">
+                  <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-[#0a3d5c] shadow-md bg-white">
                     <img src={investorData[currentIndex].right.avatar} alt={investorData[currentIndex].right.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className='flex flex-col justify-end h-32'>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-1">{investorData[currentIndex].right.name}</h3>
+                    <div className='flex w-full justify-center'>
+                      <div className="text-sm text-gray-500 mb-2">{investorData[currentIndex].right.location}</div>
+                      <img src='/assets/flags/JP.png' className='w-8 h-6' />
+                    </div>
                   </div>
                 </div>
 
-                <div className="pt-12 text-center">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-1">{investorData[currentIndex].right.name}</h3>
-                  <div className='flex w-full justify-center'>
-                    <div className="text-sm text-gray-500 mb-2">{investorData[currentIndex].right.location}</div>
-                    <img src='/assets/flags/JP.png' className='w-8 h-6' />
-                  </div>
-
+                <div className="pt-24 text-center">
                   <div className="flex justify-center mb-2 gap-4">
                     <button className="flex-1 text-xs border-[#0a3d5c] border-2 bg-white hover:bg-[#0a3d5c] hover:text-white active:bg-[#093550] text-[#0a3d5c] font-semibold py-1 rounded-full shadow-sm transition-all">Message</button>
                     <button className="flex-1 text-xs border-[#0a3d5c] border-2 bg-white hover:bg-[#0a3d5c] hover:text-white active:bg-[#093550] text-[#0a3d5c] font-semibold py-1 rounded-full shadow-sm transition-all">View Profile</button>
