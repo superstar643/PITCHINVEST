@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import galleryItems from '@/lib/galleryData';
 import users from '@/lib/usersData';
-import CircularTextBadge from '@/components/auction/CircularTextBadge';
+import { Share2 } from "lucide-react";
 
 function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userItem: any; isUser: boolean }) {
     const [index, setIndex] = useState(0);
@@ -11,9 +11,13 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
     const [startAngle, setStartAngle] = useState(0);
     const [text, setText] = useState("Established 2012");
 
-    const slides = userItem
-        ? [userItem.productImage1, userItem.productImage2].filter(Boolean)
-        : (galleryItem ? (galleryItem.images ?? [galleryItem.imageUrl]) : []);
+
+    const slides = ['https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424875670_34d29b62.webp',
+        'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424892143_226da278.webp',
+        'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424877564_1c4de7e1.webp',
+        'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424894040_22858759.webp',
+        'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424879610_fe654cb4.webp',
+        'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424895967_0c1546e3.webp']
 
     if (!slides || slides.length === 0) {
         return null;
@@ -35,7 +39,7 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
             const ctx = canvas.getContext("2d");
 
             const W = 800;       // width of warped area
-            const H = 550;       // height of warped area
+            const H = 500;       // height of warped area
             const X = 0;       // x offset inside canvas
             const Y = 0;        // y offset inside canvas
 
@@ -113,7 +117,7 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
                         <canvas
                             id="screen"
                             width="800"
-                            height="550"
+                            height="500"
                         ></canvas>
                         {/* Navigation Arrows - Positioned on sides of image */}
                         {slides.length > 1 && (
@@ -146,9 +150,10 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
                                 <div className='w-20 h-20' style={{
                                     font: "26px Monaco, MonoSpace",
                                     position: "absolute",
-                                    left: -50 + i * 90,
-                                    top: 0,
+                                    left: -35 * slides.length + i * 80,
+                                    top: + Math.abs(1 + i - (slides.length + 1) / 2) * 8,
                                     transformOrigin: "center 240px",
+                                    transform: `rotate(${(1 + i - (slides.length + 1) / 2) * 3}deg)`
                                     // transform: `rotate(${-0 + 35 * ( i - slides.length / 2 )}deg)`
                                 }}>
                                     <button
@@ -239,13 +244,12 @@ const Auction: React.FC = () => {
 
             <div className="relative z-10 2xl:mt-0 lg:-mt-40 max-w-8xl mx-auto h-full 2xl:scale-100 lg:scale-75">
                 <div className="flex flex-col gap-6 w-full justify-center items-center">
-                    <div className='relative flex flex-col gap-3'>
-                        <div className='bg-[#e1ddd2] border-4 px-12 py-2 rounded-lg border-[#877c63] sw-100 min-h-50 text-[#877c63] text-2xl font-extrabold'>
-                            <p>INVESTING IN THE FUTURE:</p>
-                            <p>THE INNOVATION AUCTION</p>
+                    <div className='relative flex items-start justify-center gap-3 w-full pt-12'>
+                        <div className='absolute right-60 bg-[#ffffffe0] border-[#877c63] border rounded-3xl w-40 h-16 items-center justify-center flex gap-4 text-lg'>
+                            <Share2 size={20} />Share
                         </div>
                         <div className="w-full flex justify-center flex-col items-center mb-2">
-                            <div className={`flex relative h-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50`} style={{boxShadow: "0px 20px 30px 10px #00000050"}}>
+                            <div className={`flex relative h-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50`} style={{ boxShadow: "0px 20px 30px 10px #00000050" }}>
                                 <div className="relative flex-shrink-0 shadow-lg rounded-full w-20 h-20 p-2" style={{ backgroundImage: "url('/assets/auction/background.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
                                     <img src={userItem.avatar} alt={userItem.name} className="w-18 h-18 rounded-full object-cover" />
                                 </div>
@@ -263,9 +267,9 @@ const Auction: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                    <div className='flex relative -top-20'>
+                    <div className='flex relative'>
                         {/* Left bidders */}
-                        <div className="w-full md:min-w-[380px] flex flex-col relative gap-12" style={{
+                        <div className="w-full md:min-w-[380px] flex flex-col relative gap-8 -top-8" style={{
                             perspective: "1000px"
                         }}>
                             <div className="bg-gray-800/75 text-white rounded-xl p-4 shadow-lg border border-white/10" style={{ transform: "rotateY(20deg)", boxShadow: "-45px 45px 15px 0px #00000050" }}>
@@ -312,7 +316,7 @@ const Auction: React.FC = () => {
                         </div>
 
                         {/* Right bidders */}
-                        <div className="w-full md:min-w-[380px] flex flex-col relative gap-12" style={{
+                        <div className="w-full md:min-w-[380px] flex flex-col relative gap-8 -top-8" style={{
                             perspective: "1000px"
                         }}>
                             <div className="bg-gray-800/75 text-white rounded-xl p-4 shadow-lg border border-white/10 drop-shadow-2xl" style={{ transform: "rotateY(-20deg)", boxShadow: "45px 45px 15px 0px #00000050" }}>
@@ -343,7 +347,7 @@ const Auction: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="relative -top-[270px]">
+                    <div className="relative -top-[220px]">
                         {/* Caption Text */}
                         <div className="text-center max-w-xl px-4">
                             <p className="text-xl font-semibold text-yellow-600 dark:text-yellow-400">
