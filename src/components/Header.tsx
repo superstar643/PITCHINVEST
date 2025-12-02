@@ -32,6 +32,14 @@ const Header: React.FC = () => {
                 Investors
               </Button>
             </Link>
+            <Link to="/blog">
+              <Button 
+                variant="ghost"
+                className="text-[#0a3d5c] hover:bg-[#0a3d5c]/10 font-medium"
+              >
+                Blog
+              </Button>
+            </Link>
             <LanguageSelector />
             <Link to="/login">
               <Button 
