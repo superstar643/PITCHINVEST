@@ -73,7 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <Link to="/login" onClick={onClose}>
                 <Button 
                   variant="ghost"
-                  className="w-full justify-start text-gray-700 hover:text-[#0a3d5c] font-medium text-base py-6"
+                  className="w-full justify-center text-gray-700 hover:text-[#0a3d5c] font-medium text-base py-6"
                 >
                   Login
                 </Button>
