@@ -20,7 +20,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     <div className="min-h-screen flex flex-col custom-scrollbar">
       <Header />
       <main className="flex-1">
-        {children ? children : <><HeroSection /><CarouselSection /><StatisticsSection /><JourneySection /><ArticlesSection /><FeaturedInnovationsSection /><SuccessStoriesSection /><UsersSection /></>}
+        {children ? children : <><HeroSection /><CarouselSection /><UsersSection /></>}
       </main>
       <Footer />
     </div>
