@@ -210,3 +210,27 @@
   background-color: #083146; /* slightly darker */
 }
 
+.rect {
+  position: relative;
+  height: 100px;
+  width: 800px;
+  overflow:hidden;
+  border-left: 5px solid black;
+  border-right: 5px solid black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
+}
+.rect::after {
+  content: '';
+  border-radius: 50%;
+  background:transparent;
+  border: 5px solid black;
+  display: block;
+  width: 800px;
+  height: 100px;
+  position: absolute;
+  left: -5px;
+  bottom:-50px;
+}

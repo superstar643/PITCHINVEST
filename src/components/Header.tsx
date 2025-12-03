@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Search, Menu } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import LanguageSelector from './LanguageSelector';
 import Sidebar from './Sidebar';
 
@@ -33,6 +34,23 @@ const Header: React.FC = () => {
               </Button>
               
               <LanguageSelector />
+              
+              <Link to="/login">
+                <Button 
+                  variant="ghost"
+                  className="text-gray-700 hover:text-[#0a3d5c] font-medium"
+                >
+                  Login
+                </Button>
+              </Link>
+              
+              <Link to="/register">
+                <Button 
+                  className="bg-[#0a3d5c] hover:bg-[#0a3d5c]/90 text-white font-medium px-6"
+                >
+                  Sign Up
+                </Button>
+              </Link>
               
               <Button 
                 variant="ghost"

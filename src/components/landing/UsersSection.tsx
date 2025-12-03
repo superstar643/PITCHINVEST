@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import UserCard from './UserCard';
 import users from '@/lib/usersData';
+import FilterBar from '@/components/FilterBar';
 
 const localUsers = [
   { name: 'Miguel Silva', startup: 'Nentra Tech', city: 'Lisboa', country: 'Portugal', countryFlag: '🇵🇹', avatar: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763421916644_96144368.webp', companyLogo: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424834991_a690aee4.webp', companyName: 'Navis Aerium', headerBg: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424851075_d773cb46.webp', investmentPercent: 15, investmentAmount: '1.800000€', commission: 0, productImage1: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424867973_3355cabf.webp', productImage2: 'https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424884496_255165e9.webp', approvalRate: 94.50, likes: 890, views: 2200 },
@@ -28,12 +29,40 @@ const BATCH_SIZE = 4;
 const UsersSection: React.FC = () => {
   const [visibleCount, setVisibleCount] = useState<number>(BATCH_SIZE);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [searchValue, setSearchValue] = useState('');
+  const [countryValue, setCountryValue] = useState('all');
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  // Reset visible count if users list changes (defensive)
+  // Extract unique countries from users
+  const countries = useMemo(() => {
+    const countrySet = new Set<string>();
+    users.forEach(user => {
+      if (user.country) countrySet.add(user.country);
+    });
+    return Array.from(countrySet).sort();
+  }, []);
+
+  // Filter users based on search and country
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      // Search filter
+      const matchesSearch = searchValue === '' || 
+        user.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+        user.startup?.toLowerCase().includes(searchValue.toLowerCase()) ||
+        user.companyName?.toLowerCase().includes(searchValue.toLowerCase()) ||
+        user.city?.toLowerCase().includes(searchValue.toLowerCase());
+
+      // Country filter
+      const matchesCountry = countryValue === 'all' || user.country === countryValue;
+
+      return matchesSearch && matchesCountry;
+    });
+  }, [searchValue, countryValue]);
+
+  // Reset visible count if filters change
   useEffect(() => {
     setVisibleCount(BATCH_SIZE);
-  }, []);
+  }, [searchValue, countryValue]);
 
   useEffect(() => {
     if (!sentinelRef.current) return;
@@ -46,7 +75,7 @@ const UsersSection: React.FC = () => {
             setIsLoading(true);
             // small timeout to allow for visual loading indicator (optional)
             setTimeout(() => {
-              setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, users.length));
+              setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, filteredUsers.length));
               setIsLoading(false);
             }, 300);
           }
@@ -62,9 +91,14 @@ const UsersSection: React.FC = () => {
     observer.observe(sentinelRef.current);
 
     return () => observer.disconnect();
-  }, []);
+  }, [filteredUsers.length]);
 
-  const visibleUsers = users.slice(0, visibleCount);
+  const visibleUsers = filteredUsers.slice(0, visibleCount);
+
+  const handleReset = () => {
+    setSearchValue('');
+    setCountryValue('all');
+  };
 
   return (
     <section id="users-section" className="py-20 bg-gradient-to-b from-gray-50 to-white">
@@ -72,15 +106,30 @@ const UsersSection: React.FC = () => {
         <h2 className="text-5xl font-bold text-center text-gray-900 mb-4">
           Investment Opportunities
         </h2>
-        <p className="text-xl text-center text-gray-600 mb-16 max-w-2xl mx-auto">
+        <p className="text-xl text-center text-gray-600 mb-8 max-w-2xl mx-auto">
           Discover innovative startups and invest in the future
         </p>
+
+        <FilterBar
+          searchValue={searchValue}
+          onSearchChange={setSearchValue}
+          countryValue={countryValue}
+          onCountryChange={setCountryValue}
+          onReset={handleReset}
+          countries={countries}
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10">
           {visibleUsers.map((user) => (
             <UserCard key={user.id} id={user.id} {...user} />
           ))}
         </div>
+
+        {visibleUsers.length === 0 && (
+          <div className="text-center py-12 text-gray-500">
+            No results found. Try adjusting your filters.
+          </div>
+        )}
 
         {/* Sentinel / loader area */}
         <div ref={sentinelRef} className="mt-8 flex justify-center items-center">
@@ -92,16 +141,16 @@ const UsersSection: React.FC = () => {
               </svg>
               <span className="text-sm text-gray-600">Loading more...</span>
             </div>
-          ) : visibleCount < users.length ? (
+          ) : visibleCount < filteredUsers.length ? (
             <button
               className="text-sm text-gray-500 hover:text-gray-700"
-              onClick={() => setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, users.length))}
+              onClick={() => setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, filteredUsers.length))}
             >
               Load more
             </button>
-          ) : (
+          ) : filteredUsers.length > 0 ? (
             <div className="text-sm text-gray-400">No more users</div>
-          )}
+          ) : null}
         </div>
       </div>
     </section>

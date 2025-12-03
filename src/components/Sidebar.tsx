@@ -67,24 +67,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   Blog
                 </Button>
               </Link>
-              
-              <div className="my-4 border-t" />
-              
-              <Link to="/login" onClick={onClose}>
-                <Button 
-                  variant="ghost"
-                  className="w-full justify-center text-gray-700 hover:text-[#0a3d5c] font-medium text-base py-6"
-                >
-                  Login
-                </Button>
-              </Link>
-              <Link to="/register" onClick={onClose}>
-                <Button 
-                  className="w-full bg-[#0a3d5c] hover:bg-[#0a3d5c]/90 text-white font-medium py-6"
-                >
-                  Sign Up
-                </Button>
-              </Link>
             </nav>
           </div>
 

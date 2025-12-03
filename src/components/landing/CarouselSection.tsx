@@ -297,6 +297,14 @@ export default function CarouselSection() {
               <ChevronRight size={24} />
             </button>
 
+            {/* Green Action Button - Below Image */}
+            <div className="flex justify-center mt-3">
+              <button className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-8 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2">
+                <ThumbsUp size={20} />
+                Live Auction
+              </button>
+            </div>
+
             {/* Navigation Dots + Progress Line */}
             <div className="mt-6">
               {/* Dots */}

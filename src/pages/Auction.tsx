@@ -143,7 +143,7 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
                         margin: "auto",
                         position: "relative",
                         borderRadius: "50%",
-                        top: -150
+                        top: -30
                     }}>
                         {slides.length > 1 && (
                             slides.map((s, i) => (
@@ -244,7 +244,7 @@ const Auction: React.FC = () => {
 
             <div className="relative z-10 2xl:mt-0 lg:-mt-40 max-w-8xl mx-auto h-full 2xl:scale-100 lg:scale-75">
                 <div className="flex flex-col gap-6 w-full justify-center items-center">
-                    <div className='relative flex items-start justify-center gap-3 w-full pt-12'>
+                    <div className='relative flex items-start justify-center gap-3 w-full pt-8'>
                         <div className='absolute right-60 bg-[#ffffffe0] border-[#877c63] border rounded-3xl w-40 h-16 items-center justify-center flex gap-4 text-lg'>
                             <Share2 size={20} />Share
                         </div>
@@ -347,7 +347,7 @@ const Auction: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="relative -top-[220px]">
+                    <div className="relative -top-[100px]">
                         {/* Caption Text */}
                         <div className="text-center max-w-xl px-4">
                             <p className="text-xl font-semibold text-yellow-600 dark:text-yellow-400">
