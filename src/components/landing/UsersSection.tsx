@@ -142,7 +142,7 @@ const UsersSection: React.FC = () => {
               className={`px-6 py-2.5 rounded-full border-2 font-semibold text-sm transition-all duration-200 ${
                 currentPage === 1
                   ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-                  : 'border-[#d5b775] text-[#d5b775] hover:bg-[#d5b775]/10'
+                  : 'border-[#0a3d5c] text-[#0a3d5c] hover:bg-[#0a3d5c]/10'
               }`}
             >
               PREVIOUS
@@ -157,10 +157,10 @@ const UsersSection: React.FC = () => {
                   disabled={page === '...'}
                   className={`w-10 h-10 rounded-full font-semibold text-sm transition-all duration-200 ${
                     page === currentPage
-                      ? 'bg-[#d5b775] text-white shadow-md'
+                      ? 'bg-[#0a3d5c] text-white shadow-md'
                       : page === '...'
                       ? 'text-gray-400 cursor-default'
-                      : 'bg-gray-100 text-gray-600 hover:bg-[#d5b775]/20 hover:text-[#d5b775]'
+                      : 'bg-gray-100 text-gray-600 hover:bg-[#0a3d5c]/20 hover:text-[#0a3d5c]'
                   }`}
                 >
                   {page}
@@ -172,10 +172,10 @@ const UsersSection: React.FC = () => {
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className={`px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-200 ${
+              className={`px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-200 border-2 ${
                 currentPage === totalPages
                   ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-[#d5b775] text-white hover:bg-[#c5a665] shadow-md'
+                  : 'bg-[#0a3d5c] text-white hover:bg-white hover:text-[#0a3d5c] hover:border-[#0a3d5c] shadow-md'
               }`}
             >
               NEXT

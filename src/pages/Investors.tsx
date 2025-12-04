@@ -120,7 +120,7 @@ const Investors: React.FC = () => {
         <div className="max-w-4xl mx-auto text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
             <span className="text-[#0a3d5c]">Connect with </span>
-            <span className="text-[#d5b775]">Visionary Investors</span>
+            <span className="text-[#0a3d5c]">Visionary Investors</span>
           </h2>
           <p className="text-gray-600 text-lg md:text-xl leading-relaxed max-w-2xl mx-auto">
             Discover verified investors across industries, countries, and investment ranges. Build partnerships that bring groundbreaking innovations to life.
@@ -133,7 +133,7 @@ const Investors: React.FC = () => {
               key={index}
               className="bg-white rounded-2xl py-6 px-4 shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1"
             >
-              <div className="text-2xl md:text-3xl font-bold text-[#d5b775] mb-1">
+              <div className="text-2xl md:text-3xl font-bold text-[#0a3d5c] mb-1">
                 {stat.value}
               </div>
               <div className="text-xs md:text-sm font-semibold text-gray-500 tracking-wider">
@@ -190,7 +190,7 @@ const Investors: React.FC = () => {
               className={`px-6 py-2.5 rounded-full border-2 font-semibold text-sm transition-all duration-200 ${
                 currentPage === 1
                   ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-                  : 'border-[#d5b775] text-[#d5b775] hover:bg-[#d5b775]/10'
+                  : 'border-[#0a3d5c] text-[#0a3d5c] hover:bg-[#0a3d5c]/10'
               }`}
             >
               PREVIOUS
@@ -205,10 +205,10 @@ const Investors: React.FC = () => {
                   disabled={page === '...'}
                   className={`w-10 h-10 rounded-full font-semibold text-sm transition-all duration-200 ${
                     page === currentPage
-                      ? 'bg-[#d5b775] text-white shadow-md'
+                      ? 'bg-[#0a3d5c] text-white shadow-md'
                       : page === '...'
                       ? 'text-gray-400 cursor-default'
-                      : 'bg-gray-100 text-gray-600 hover:bg-[#d5b775]/20 hover:text-[#d5b775]'
+                      : 'bg-gray-100 text-gray-600 hover:bg-[#0a3d5c]/20 hover:text-[#0a3d5c]'
                   }`}
                 >
                   {page}
@@ -223,7 +223,7 @@ const Investors: React.FC = () => {
               className={`px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-200 ${
                 currentPage === totalPages
                   ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-[#d5b775] text-white hover:bg-[#c5a665] shadow-md'
+                  : 'bg-[#0a3d5c] text-white hover:bg-[#c5a665] shadow-md'
               }`}
             >
               NEXT

@@ -75,6 +75,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   Contact
                 </Button>
               </Link>
+              <Link to="/about" onClick={onClose}>
+                <Button 
+                  variant="ghost"
+                  className="w-full justify-start text-[#0a3d5c] hover:bg-[#0a3d5c]/10 font-medium text-base py-6"
+                >
+                  About Us
+                </Button>
+              </Link>
             </nav>
           </div>
 

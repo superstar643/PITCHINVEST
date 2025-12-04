@@ -18,6 +18,7 @@ import Investors from "./pages/Investors";
 import InvestorDetail from "./pages/InvestorDetail";
 import Blog from "./pages/Blog";
 import Contact from "./pages/Contact";
+import About from "./pages/About";
 import AppLayout from "./components/AppLayout";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/investors" element={<AppLayout><Investors /></AppLayout>} />
             <Route path="/blog" element={<AppLayout><Blog /></AppLayout>} />
             <Route path="/contact" element={<AppLayout><Contact /></AppLayout>} />
+            <Route path="/about" element={<AppLayout><About /></AppLayout>} />
             <Route path="/user/:id" element={<AppLayout><UserDetail /></AppLayout>} />
             <Route path="/investor/:id" element={<AppLayout><InvestorDetail /></AppLayout>} />
             <Route path="/auction/:id" element={<AppLayout><Auction /></AppLayout>} />
