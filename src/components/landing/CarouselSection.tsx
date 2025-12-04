@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight, ThumbsUp, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import UserCard from '@/components/landing/UserCard';
 import users from '@/lib/usersData';
 
@@ -297,16 +298,8 @@ export default function CarouselSection() {
               <ChevronRight size={24} />
             </button>
 
-            {/* Green Action Button - Below Image */}
-            <div className="flex justify-center mt-3">
-              <button className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-8 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2">
-                <ThumbsUp size={20} />
-                Live Auction
-              </button>
-            </div>
-
             {/* Navigation Dots + Progress Line */}
-            <div className="mt-6">
+            <div className="mt-2">
               {/* Dots */}
               <div className="flex justify-center gap-2 mb-4">
                 {carouselImages.map((_, index) => (
@@ -356,6 +349,20 @@ export default function CarouselSection() {
                 <div className="w-full h-2 rounded-full bg-transparent shadow-[0_18px_40px_rgba(0,0,0,0.18)]" />
               </div>
 
+            </div>
+
+            {/* Navigation Buttons - Below Image */}
+            <div className="flex justify-center gap-4">
+              <Link to="/gallery">
+                <button className="px-8 py-2.5 rounded-full border-2 bg-[#0a3d5c] text-white  font-semibold hover:bg-white hover:text-[#0a3d5c] hover:border-[#0a3d5c] transition-all duration-200 shadow-sm hover:shadow-md">
+                  Innovation
+                </button>
+              </Link>
+              <Link to="/investors">
+                <button className="px-8 py-2.5 rounded-full border-2 border-[#0a3d5c] text-[#0a3d5c] font-semibold hover:bg-[#0a3d5c] hover:text-white transition-all duration-200 shadow-sm hover:shadow-md">
+                  Investor
+                </button>
+              </Link>
             </div>
           </div>
 
