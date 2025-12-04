@@ -33,10 +33,7 @@ const Investors: React.FC = () => {
       // Search filter
       const matchesSearch = searchValue === '' || 
         investor.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-        investor.companyName?.toLowerCase().includes(searchValue.toLowerCase()) ||
-        investor.startup?.toLowerCase().includes(searchValue.toLowerCase()) ||
-        investor.city?.toLowerCase().includes(searchValue.toLowerCase());
-
+        investor.city.toLowerCase().includes(searchValue.toLowerCase());
       // Country filter
       const matchesCountry = countryValue === 'all' || investor.country === countryValue;
 

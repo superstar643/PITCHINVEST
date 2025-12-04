@@ -224,8 +224,8 @@ export default function CarouselSection() {
   const progress = carouselImages.length > 1 ? (currentIndex / (carouselImages.length - 1)) * 100 : 100;
 
   return (
-    <section className="py-10 md:py-20 bg-gradient-to-b from-slate-50 to-white">
-      <div className="mx-auto px-4 md:px-8 2xl:px-32 lg:px-12 w-full">
+    <section className="py-10 md:py-20 bg-gradient-to-b from-slate-50 to-white min-h-screen">
+      <div className="mt-20 mx-auto px-4 md:px-8 2xl:px-32 lg:px-12 w-full">
         {/* Desktop: horizontal layout (left card, carousel, right card) */}
         {/* Mobile: vertical layout (carousel on top, cards below) */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 md:gap-8">

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import galleryItems from '@/lib/galleryData';
 import users from '@/lib/usersData';
-import { Share2 } from "lucide-react";
+import { Share2, ThumbsUp } from "lucide-react";
 
 function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userItem: any; isUser: boolean }) {
     const [index, setIndex] = useState(0);
@@ -138,35 +138,67 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
                                 </button>
                             </>
                         )}
+                        <div className='absolute right-5 top-10 items-center justify-center flex gap-2'>
+                            <button className='flex items-center gap-2 px-4 py-2 rounded-full bg-[#ffffffe0] border-[#877c63] border hover:bg-gray-100 transition-all text-gray-700 font-medium'>
+                                <Share2 size={12} />
+                                Share
+                            </button>
+                            <button className='flex items-center justify-center w-8 h-8 rounded-full bg-[#d5b775] hover:bg-[#c5a665] transition-all shadow-md'>
+                                <ThumbsUp size={12} className="text-white" fill="white" />
+                            </button>
+                        </div>
+
+                        <div className="w-12" style={{
+                            position: "absolute",
+                            top: "50%",
+                            left: 40,
+                            transform: "translateY(-50%)",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 8,
+                            zIndex: 20,
+                        }}>
+                            {slides.length > 1 && (
+                                slides.map((s, i) => (
+                                    <div className='w-12 h-12' style={{
+                                        font: "26px Monaco, MonoSpace",
+                                        // transform: `rotate(${-0 + 35 * ( i - slides.length / 2 )}deg)`
+                                    }}>
+                                        <button
+                                            key={i}
+                                            onClick={() => setIndex(i)}
+                                            className={`w-12 h-12 rounded-lg overflow-hidden border shadow-lg transition-all ${i === index ? 'border-yellow-400 ring-2 ring-yellow-400 scale-105' : 'border-gray-400'
+                                                }`}
+                                        >
+                                            <img src={s} alt={`thumb-${i}`} className="w-full h-full object-cover" />
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
                     </div>
-                    <div className="w-14" style={{
-                        margin: "auto",
-                        position: "relative",
-                        borderRadius: "50%",
-                        top: -30
-                    }}>
-                        {slides.length > 1 && (
-                            slides.map((s, i) => (
-                                <div className='w-20 h-20' style={{
-                                    font: "26px Monaco, MonoSpace",
-                                    position: "absolute",
-                                    left: -35 * slides.length + i * 80,
-                                    top: + Math.abs(1 + i - (slides.length + 1) / 2) * 8,
-                                    transformOrigin: "center 240px",
-                                    transform: `rotate(${(1 + i - (slides.length + 1) / 2) * 3}deg)`
-                                    // transform: `rotate(${-0 + 35 * ( i - slides.length / 2 )}deg)`
-                                }}>
-                                    <button
-                                        key={i}
-                                        onClick={() => setIndex(i)}
-                                        className={`w-20 h-20 rounded-lg overflow-hidden border shadow-lg transition-all ${i === index ? 'border-yellow-400 ring-2 ring-yellow-400 scale-105' : 'border-gray-400'
-                                            }`}
-                                    >
-                                        <img src={s} alt={`thumb-${i}`} className="w-full h-full object-cover" />
-                                    </button>
+
+                    <div className="relative">
+                        {/* Caption Text */}
+                        <div className="text-center max-w-xl px-4">
+                            <p className="text-xl font-semibold text-yellow-600 dark:text-yellow-400">
+                                Neutron25, anti-stress, anti-anxiety,
+                            </p>
+                            <p className="text-xl font-semibold text-yellow-600 dark:text-yellow-400">
+                                Anti panic attacks
+                            </p>
+                        </div>
+
+                        {/* Advertisement Banner */}
+                        <div className="max-w-2xl mt-1">
+                            <div className="bg-gradient-to-r from-teal-900 via-teal-800 to-teal-900 rounded-lg border-2 border-teal-700 shadow-xl overflow-hidden relative">
+                                <div className="relative z-10 flex items-center">
+                                    <div className="flex-1">
+                                        <img src='/assets/ad.png' />
+                                    </div>
                                 </div>
-                            ))
-                        )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -245,9 +277,6 @@ const Auction: React.FC = () => {
             <div className="relative z-10 2xl:mt-0 lg:-mt-40 max-w-8xl mx-auto h-full 2xl:scale-100 lg:scale-75">
                 <div className="flex flex-col gap-6 w-full justify-center items-center">
                     <div className='relative flex items-start justify-center gap-3 w-full pt-8'>
-                        <div className='absolute right-60 bg-[#ffffffe0] border-[#877c63] border rounded-3xl w-40 h-16 items-center justify-center flex gap-4 text-lg'>
-                            <Share2 size={20} />Share
-                        </div>
                         <div className="w-full flex justify-center flex-col items-center mb-2">
                             <div className={`flex relative h-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50`} style={{ boxShadow: "0px 20px 30px 10px #00000050" }}>
                                 <div className="relative flex-shrink-0 shadow-lg rounded-full w-20 h-20 p-2" style={{ backgroundImage: "url('/assets/auction/background.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
@@ -344,29 +373,6 @@ const Auction: React.FC = () => {
                                 </div>
                             </div>
                             <button onClick={() => navigate('/')} className="px-4 py-2 md:px-6 md:py-3 rounded-full text-white font-semibold" style={{ background: color }}>Place Bid</button>
-                        </div>
-                    </div>
-
-                    <div className="relative -top-[100px]">
-                        {/* Caption Text */}
-                        <div className="text-center max-w-xl px-4">
-                            <p className="text-xl font-semibold text-yellow-600 dark:text-yellow-400">
-                                Neutron25, anti-stress, anti-anxiety,
-                            </p>
-                            <p className="text-xl font-semibold text-yellow-600 dark:text-yellow-400">
-                                Anti panic attacks
-                            </p>
-                        </div>
-
-                        {/* Advertisement Banner */}
-                        <div className="max-w-2xl mt-1">
-                            <div className="bg-gradient-to-r from-teal-900 via-teal-800 to-teal-900 rounded-lg border-2 border-teal-700 shadow-xl overflow-hidden relative">
-                                <div className="relative z-10 flex items-center">
-                                    <div className="flex-1">
-                                        <img src='/assets/ad.png' />
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
