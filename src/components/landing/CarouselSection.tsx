@@ -352,7 +352,7 @@ export default function CarouselSection() {
                 alt="Previous Previous"
                 onClick={() => setCurrentIndex(visible.prevprev)}
                 className="hidden lg:block absolute w-[400px] h-[500px] object-cover rounded-lg opacity-60 transition-all duration-700 cursor-pointer hover:opacity-75 border-8 p-2 bg-white border-[#0a3d5c]"
-                style={{ transform: 'translateX(-450px)  rotateY(25deg) scale(0.6) translateY(0)', zIndex: 0 }}
+                style={{ transform: 'translateX(-800px)  rotateY(45deg) scale(0.6) translateY(0)', zIndex: 0 }}
               />
               {/* Previous Image - Clickable */}
               <img
@@ -360,7 +360,7 @@ export default function CarouselSection() {
                 alt="Previous"
                 onClick={() => setCurrentIndex(visible.prev)}
                 className="hidden lg:block absolute 2xl:w-[550px] 2xl:h-[450px] lg:h-[300px] w-[550px] h-[350px] object-cover rounded-lg opacity-80 transition-all duration-700 cursor-pointer hover:opacity-100 border-8 p-2 bg-white border-[#0a3d5c]"
-                style={{ transform: 'translateX(-235px) rotateY(25deg) scale(0.8) translateY(0)', zIndex: 1 }}
+                style={{ transform: 'translateX(-500px) rotateY(25deg) scale(0.8) translateY(0)', zIndex: 1 }}
               />
 
               {/* Current Image - Large with Shadow */}
@@ -377,7 +377,7 @@ export default function CarouselSection() {
                 alt="Next"
                 onClick={() => setCurrentIndex(visible.next)}
                 className="hidden lg:block absolute 2xl:w-[550px] 2xl:h-[450px] lg:h-[300px] w-[550px] h-[350px] object-cover rounded-lg opacity-80 transition-all duration-700 cursor-pointer hover:opacity-100 border-8 p-2 bg-white border-[#0a3d5c]"
-                style={{ transform: 'translateX(235px) rotateY(-25deg) scale(0.8) translateY(0)', zIndex: 1 }}
+                style={{ transform: 'translateX(500px) rotateY(-25deg) scale(0.8) translateY(0)', zIndex: 1 }}
               />
               {/* Next Next Image - Very Small - Clickable */}
               <img
@@ -385,7 +385,7 @@ export default function CarouselSection() {
                 alt="Next Next"
                 onClick={() => setCurrentIndex(visible.nextnext)}
                 className="hidden lg:block absolute w-[400px] h-[500px] object-cover rounded-lg opacity-60 transition-all duration-700 cursor-pointer hover:opacity-75 border-8 p-2 bg-white border-[#0a3d5c]"
-                style={{ transform: 'translateX(450px) rotateY(-25deg) scale(0.6) translateY(0)', zIndex: 0 }}
+                style={{ transform: 'translateX(800px) rotateY(-45deg) scale(0.6) translateY(0)', zIndex: 0 }}
               />
             </div>
 
