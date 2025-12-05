@@ -109,7 +109,7 @@ const UserCard: React.FC<UserCardProps> = ({
           <div className="text-xl font-bold text-green-600 mb-1">{approvalRate}%</div>
           <div className="flex justify-center gap-2 text-xs text-gray-600">
             <button aria-label="Like" className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs text-gray-700">
-              <ThumbsUp size={12} />
+              <ThumbsUp size={12} className="text-yellow-500" fill="#eab308" />
               <span>{likes}</span>
             </button>
             <button aria-label="Views" className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs text-gray-700">
