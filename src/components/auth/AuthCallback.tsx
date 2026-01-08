@@ -61,49 +61,45 @@ export default function AuthCallback() {
         // With PKCE flow and detectSessionInUrl: true, Supabase automatically handles the code exchange
         // Just call getSession() - it will detect the code in URL and exchange it automatically
         setMessage('Completing authentication...');
-        const { data, error: sessionError } = await supabase.auth.getSession();
         
-        if (sessionError) {
-          // If getSession fails, try waiting a bit for Supabase to process
-          await new Promise(resolve => setTimeout(resolve, 500));
-          const { data: retryData, error: retryError } = await supabase.auth.getSession();
-          if (retryError) throw retryError;
-          if (!retryData.session) {
-            throw new Error('No session found. Please try signing in again.');
+        // Try to get session with retries (LinkedIn OAuth might need more time)
+        let session = null;
+        let user = null;
+        let retries = 3;
+        
+        while (retries > 0 && !session) {
+          const { data, error: sessionError } = await supabase.auth.getSession();
+          
+          if (sessionError && retries > 1) {
+            // Wait longer for LinkedIn OAuth sessions
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            retries--;
+            continue;
           }
           
-          const user = retryData.session.user;
-          if (!user || !user.email) {
-            throw new Error('Failed to retrieve user information.');
+          if (sessionError) throw sessionError;
+          if (data.session) {
+            session = data.session;
+            user = data.session.user;
+            break;
           }
-
-          setMessage('Checking registration status...');
           
-          const registrationStatus = await checkRegistrationStatus(user.id);
-
-          if (registrationStatus.isIncomplete) {
-            setMessage('Redirecting to complete registration...');
-            setTimeout(() => {
-              window.location.replace('/register?oauth=true');
-            }, 500);
-            return;
+          // If no session, wait and retry
+          if (retries > 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            retries--;
           } else {
-            setMessage('Sign in successful! Redirecting...');
-            setTimeout(() => {
-              window.location.replace('/');
-            }, 500);
-            return;
+            throw new Error('No session found. Please try signing in again.');
           }
         }
 
-        if (!data.session) {
+        if (!session || !user) {
           setMessage('No session found. Please try signing in again.');
           setError('Authentication failed. Please try again.');
           return;
         }
 
-        const user = data.session.user;
-        if (!user || !user.email) {
+        if (!user.email) {
           setMessage('User information not found.');
           setError('Failed to retrieve user information.');
           return;
@@ -116,6 +112,7 @@ export default function AuthCallback() {
 
         if (registrationStatus.isIncomplete) {
           setMessage('Redirecting to complete registration...');
+          // Ensure oauth=true parameter is set for both Google and LinkedIn
           setTimeout(() => {
             window.location.replace('/register?oauth=true');
           }, 500);

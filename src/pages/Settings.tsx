@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { fetchUserProfile, type ProfileData } from '@/lib/profile';
@@ -301,10 +301,16 @@ const Settings: React.FC = () => {
     }
   }, [user, toast]);
 
+  // Use ref to track if profile data has been loaded (refs don't trigger re-renders)
+  const profileDataLoadedRef = useRef(false);
+
   useEffect(() => {
     // In preview mode, skip auth and load static data
     if (USE_STATIC_PREVIEW) {
-      loadProfileData();
+      if (!profileDataLoadedRef.current) {
+        loadProfileData();
+        profileDataLoadedRef.current = true;
+      }
       return;
     }
 
@@ -319,7 +325,12 @@ const Settings: React.FC = () => {
       return;
     }
 
-    loadProfileData();
+    // Only load profile data once when user is available and data hasn't been loaded yet
+    // This prevents form data from being reset when component re-renders (e.g., on window focus)
+    if (!profileDataLoadedRef.current) {
+      loadProfileData();
+      profileDataLoadedRef.current = true;
+    }
   }, [user, authLoading, navigate, loadProfileData]);
 
   // Check if user is OAuth-only (no password)
@@ -725,9 +736,7 @@ const Settings: React.FC = () => {
         formData.licenseFee || 
         formData.licensingRoyaltiesPercentage || 
         formData.franchiseeInvestment || 
-        formData.monthlyRoyalties || 
-        formData.patentUpfrontFee || 
-        formData.patentRoyalties;
+        formData.monthlyRoyalties;
 
       if (hasProposalData) {
         const { error: proposalsError } = await supabase
@@ -740,8 +749,6 @@ const Settings: React.FC = () => {
             licensing_royalties_percentage: formData.licensingRoyaltiesPercentage || null,
             franchisee_investment: formData.franchiseeInvestment || null,
             monthly_royalties: formData.monthlyRoyalties || null,
-            patent_upfront_fee: formData.patentUpfrontFee || null,
-            patent_royalties: formData.patentRoyalties || null,
           }, {
             onConflict: 'user_id'
           });
@@ -782,8 +789,10 @@ const Settings: React.FC = () => {
         setFormData(prev => ({ ...prev, coverImageUrl }));
       }
 
-      // Reload profile data
+      // Reload profile data after successful save
+      profileDataLoadedRef.current = false; // Reset flag before reloading
       await loadProfileData();
+      profileDataLoadedRef.current = true; // Mark as loaded after successful reload
     } catch (error) {
       console.error('Error saving profile:', error);
       toast({
@@ -1197,6 +1206,19 @@ const Settings: React.FC = () => {
                           className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
                       />
                       </div>
+                      {/* Total Sale of Project - Only for Company user type */}
+                      {userType === 'Company' && (
+                        <div className="space-y-2">
+                          <Label htmlFor="totalSaleOfProject" className="text-sm font-semibold text-gray-700">Total Sale of Project</Label>
+                          <Input
+                            id="totalSaleOfProject"
+                            value={formData.totalSaleOfProject}
+                            onChange={(e) => handleInputChange('totalSaleOfProject', e.target.value)}
+                            placeholder="Enter total sale amount"
+                            className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                          />
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
@@ -1328,91 +1350,75 @@ const Settings: React.FC = () => {
                   </>
                 )}
 
-                {/* Commercial Proposals */}
-                <Separator className="my-6" />
-                <h3 className="font-semibold text-lg text-[#0a3d5c] mb-4">Commercial Proposals</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="equityCapitalPercentage" className="text-sm font-semibold text-gray-700">Equity</Label>
-                    <Input
-                      id="equityCapitalPercentage"
-                      value={formData.equityCapitalPercentage}
-                      onChange={(e) => handleInputChange('equityCapitalPercentage', e.target.value)}
-                      placeholder="Enter percentage"
-                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="equityTotalValue" className="text-sm font-semibold text-gray-700">Investment Amount</Label>
-                    <Input
-                      id="equityTotalValue"
-                      value={formData.equityTotalValue}
-                      onChange={(e) => handleInputChange('equityTotalValue', e.target.value)}
-                      placeholder="Enter investment amount"
-                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="licenseFee" className="text-sm font-semibold text-gray-700">Initial Licensing Fee</Label>
-                    <Input
-                      id="licenseFee"
-                      value={formData.licenseFee}
-                      onChange={(e) => handleInputChange('licenseFee', e.target.value)}
-                      placeholder="Enter initial licensing fee"
-                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="licensingRoyaltiesPercentage" className="text-sm font-semibold text-gray-700">Royalties (%)</Label>
-                    <Input
-                      id="licensingRoyaltiesPercentage"
-                      value={formData.licensingRoyaltiesPercentage}
-                      onChange={(e) => handleInputChange('licensingRoyaltiesPercentage', e.target.value)}
-                      placeholder="Enter royalties percentage"
-                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="franchiseeInvestment" className="text-sm font-semibold text-gray-700">Franchise Fee</Label>
-                    <Input
-                      id="franchiseeInvestment"
-                      value={formData.franchiseeInvestment}
-                      onChange={(e) => handleInputChange('franchiseeInvestment', e.target.value)}
-                      placeholder="Enter franchise fee"
-                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="monthlyRoyalties" className="text-sm font-semibold text-gray-700">Royalties (%)</Label>
-                    <Input
-                      id="monthlyRoyalties"
-                      value={formData.monthlyRoyalties}
-                      onChange={(e) => handleInputChange('monthlyRoyalties', e.target.value)}
-                      placeholder="Enter royalties percentage"
-                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="patentUpfrontFee" className="text-sm font-semibold text-gray-700">Patent Upfront Fee</Label>
-                    <Input
-                      id="patentUpfrontFee"
-                      value={formData.patentUpfrontFee}
-                      onChange={(e) => handleInputChange('patentUpfrontFee', e.target.value)}
-                      placeholder="Enter upfront fee"
-                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="patentRoyalties" className="text-sm font-semibold text-gray-700">Patent Royalties</Label>
-                    <Input
-                      id="patentRoyalties"
-                      value={formData.patentRoyalties}
-                      onChange={(e) => handleInputChange('patentRoyalties', e.target.value)}
-                      placeholder="Enter patent royalties"
-                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                    />
-                  </div>
-                </div>
+                {/* Commercial Proposals - Hidden for Inventor user type */}
+                {userType !== 'Inventor' && (
+                  <>
+                    <Separator className="my-6" />
+                    <h3 className="font-semibold text-lg text-[#0a3d5c] mb-4">Commercial Proposals</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="equityCapitalPercentage" className="text-sm font-semibold text-gray-700">Equity</Label>
+                        <Input
+                          id="equityCapitalPercentage"
+                          value={formData.equityCapitalPercentage}
+                          onChange={(e) => handleInputChange('equityCapitalPercentage', e.target.value)}
+                          placeholder="Enter percentage"
+                          className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="equityTotalValue" className="text-sm font-semibold text-gray-700">Investment Amount</Label>
+                        <Input
+                          id="equityTotalValue"
+                          value={formData.equityTotalValue}
+                          onChange={(e) => handleInputChange('equityTotalValue', e.target.value)}
+                          placeholder="Enter investment amount"
+                          className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="licenseFee" className="text-sm font-semibold text-gray-700">Initial Licensing Fee</Label>
+                        <Input
+                          id="licenseFee"
+                          value={formData.licenseFee}
+                          onChange={(e) => handleInputChange('licenseFee', e.target.value)}
+                          placeholder="Enter initial licensing fee"
+                          className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="licensingRoyaltiesPercentage" className="text-sm font-semibold text-gray-700">Royalties (%)</Label>
+                        <Input
+                          id="licensingRoyaltiesPercentage"
+                          value={formData.licensingRoyaltiesPercentage}
+                          onChange={(e) => handleInputChange('licensingRoyaltiesPercentage', e.target.value)}
+                          placeholder="Enter royalties percentage"
+                          className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="franchiseeInvestment" className="text-sm font-semibold text-gray-700">Franchise Fee</Label>
+                        <Input
+                          id="franchiseeInvestment"
+                          value={formData.franchiseeInvestment}
+                          onChange={(e) => handleInputChange('franchiseeInvestment', e.target.value)}
+                          placeholder="Enter franchise fee"
+                          className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="monthlyRoyalties" className="text-sm font-semibold text-gray-700">Royalties (%)</Label>
+                        <Input
+                          id="monthlyRoyalties"
+                          value={formData.monthlyRoyalties}
+                          onChange={(e) => handleInputChange('monthlyRoyalties', e.target.value)}
+                          placeholder="Enter royalties percentage"
+                          className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div className="flex justify-end gap-4 pt-4">
                   <Button

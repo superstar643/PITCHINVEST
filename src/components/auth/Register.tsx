@@ -34,7 +34,7 @@ const countries = getSortedCountries();
 export default function Register() {
     const OTP_TTL_SECONDS = 180;
     const [searchParams] = useSearchParams();
-    const isOAuthUser = searchParams.get('oauth') === 'true';
+    const [isOAuthUser, setIsOAuthUser] = useState(searchParams.get('oauth') === 'true');
     const { toast } = useToast();
     const [currentStep, setCurrentStep] = useState<Step>('usertype');
     const [phoneCountryCode, setPhoneCountryCode] = useState('+1'); // Default to US for personal telephone
@@ -113,6 +113,33 @@ export default function Register() {
         { label: 'Creating your account', status: 'pending' },
     ]);
 
+    // Check if user is OAuth user (from URL param or provider metadata)
+    useEffect(() => {
+        // First check URL parameter
+        if (searchParams.get('oauth') === 'true') {
+            setIsOAuthUser(true);
+            return;
+        }
+        
+        // Fallback: Check if user has OAuth provider in metadata
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            const user = session?.user;
+            if (!user) return;
+            
+            // Check if user signed in via OAuth (Google, LinkedIn, etc.)
+            const provider = user.app_metadata?.provider;
+            const isOAuthProvider = provider && (provider === 'google' || provider === 'linkedin' || provider === 'linkedin_oidc');
+            
+            if (isOAuthProvider) {
+                setIsOAuthUser(true);
+                // Update URL to include oauth=true for consistency
+                const newUrl = new URL(window.location.href);
+                newUrl.searchParams.set('oauth', 'true');
+                window.history.replaceState({}, '', newUrl.toString());
+            }
+        });
+    }, [searchParams]);
+
     // Prefill OAuth user info and keep session handy
     useEffect(() => {
         if (!isOAuthUser) return;
@@ -120,16 +147,36 @@ export default function Register() {
             const user = session?.user;
             if (!user) return;
 
-            const fullName =
+            // LinkedIn might use different metadata field names
+            let fullName = 
                 user.user_metadata?.full_name ||
                 user.user_metadata?.name ||
-                (user.user_metadata?.given_name && user.user_metadata?.family_name
-                    ? `${user.user_metadata.given_name} ${user.user_metadata.family_name}`
-                    : null) ||
-                user.email?.split('@')[0] ||
-                'User';
+                null;
+            
+            // If not found, try to construct from first_name + last_name
+            if (!fullName) {
+                const firstName = user.user_metadata?.first_name || user.user_metadata?.given_name;
+                const lastName = user.user_metadata?.last_name || user.user_metadata?.family_name;
+                if (firstName && lastName) {
+                    fullName = `${firstName} ${lastName}`;
+                } else if (firstName) {
+                    fullName = firstName;
+                } else if (lastName) {
+                    fullName = lastName;
+                }
+            }
+            
+            // Fallback to email username or 'User'
+            if (!fullName) {
+                fullName = user.email?.split('@')[0] || 'User';
+            }
 
-            const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
+            // LinkedIn uses 'picture' while Google uses 'avatar_url' or 'picture'
+            const avatarUrl = 
+                user.user_metadata?.avatar_url || 
+                user.user_metadata?.picture || 
+                user.user_metadata?.profile_image_url ||
+                null;
 
             setOauthUserData({
                 name: fullName || undefined,
@@ -159,41 +206,8 @@ export default function Register() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showOtpModal]);
 
-    // Auto-detect location when entering personal info step
-    useEffect(() => {
-        if (currentStep === 'personal' && !formData.country && !geolocationLoading) {
-            setGeolocationLoading(true);
-            getCachedGeolocation()
-                .then((geoData) => {
-                    if (geoData && geoData.countryCode) {
-                        const detectedCountry = getCountryByCode(geoData.countryCode);
-                        if (detectedCountry) {
-                            // Auto-select detected country
-                            setFormData((prev) => ({
-                                ...prev,
-                                country: detectedCountry.name,
-                                city: geoData.city || prev.city,
-                            }));
-                            // Store the detected country code for proper flag display (important for +1 US/Canada)
-                            setDetectedCountryCode(detectedCountry.code);
-                            // Auto-select phone country code
-                            setPhoneCountryCode(detectedCountry.phoneCode);
-                            // Also update company phone if empty
-                            if (!formData.companyTelephone) {
-                                setCompanyPhoneCountryCode(detectedCountry.phoneCode);
-                            }
-                            console.log('Auto-detected location:', detectedCountry.name, geoData.city, 'Code:', detectedCountry.code);
-                        }
-                    }
-                })
-                .catch((error) => {
-                    console.warn('Geolocation detection failed:', error);
-                })
-                .finally(() => {
-                    setGeolocationLoading(false);
-                });
-        }
-    }, [currentStep, formData.country, geolocationLoading, formData.companyTelephone]);
+    // Auto-detect location for company telephone when entering company step (StartUp/Company)
+    // Note: Personal Info step no longer requires country/city, so geolocation is only for company phone
 
     // Auto-detect location for company telephone when entering company step (StartUp/Company)
     useEffect(() => {
@@ -424,45 +438,17 @@ export default function Register() {
                 return true;
 
             case 'personal':
-            if (isOAuthUser) return true;
-                // Cover Image and Photo are now optional
-                // Only validate personal contact data
-                
+                // OAuth users skip personal step
+                if (isOAuthUser) {
+                    return true;
+                }
+                // For Investor: Personal Info step is skipped (Full Name is in step 2)
+                if (formData.userType === 'Investor') {
+                    return true;
+                }
+                // For Inventor/StartUp/Company: Only Full Name is required
                 if (!formData.fullName.trim()) {
                     setError('Please enter your full name');
-                    return false;
-                }
-                if (!formData.personalEmail) {
-                    setError('Please enter your email');
-                    return false;
-                }
-                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.personalEmail)) {
-                    setError('Please enter a valid email');
-                    return false;
-                }
-                // Password validation (optional - if provided, must be valid)
-                if (formData.password && formData.password.length > 0) {
-                    if (formData.password.length < 6) {
-                        setError('Password must be at least 6 characters long');
-                        return false;
-                    }
-                }
-                if (!formData.telephone.trim()) {
-                    setError('Please enter your telephone');
-                    return false;
-                }
-                const phoneError = validatePhoneNumber(formData.telephone, phoneCountryCode);
-                if (phoneError) {
-                    setTelephoneError(phoneError);
-                    setError(phoneError);
-                    return false;
-                }
-                if (!formData.country.trim()) {
-                    setError('Please select your country');
-                    return false;
-                }
-                if (!formData.city.trim()) {
-                    setError('Please enter your city');
                     return false;
                 }
                 return true;
@@ -618,20 +604,62 @@ export default function Register() {
             const finalFullName = formData.fullName || oauthUserData?.name || '';
             const finalEmail = formData.personalEmail || oauthUserData?.email || '';
             
-            const { error: userError } = await supabase.from('users').upsert({
-                id: userId,
+            // Validate required fields before inserting
+            if (!finalFullName || !finalFullName.trim()) {
+                throw new Error('Full name is required. Please fill in your full name.');
+            }
+            if (!finalEmail || !finalEmail.trim()) {
+                throw new Error('Email is required. Please fill in your email address.');
+            }
+            if (!formData.userType) {
+                throw new Error('User type is required. Please select your role.');
+            }
+
+            console.log('Creating/updating user record:', {
+                userId,
                 user_type: formData.userType,
                 full_name: finalFullName,
                 personal_email: finalEmail,
-                    telephone: formData.telephone || null, // OAuth users skip personal step, so these will be null
-                    country: formData.country || null,
-                    city: formData.city || null,
+                isOAuth: !!oauthUserData,
+            });
+
+            const userData = {
+                id: userId,
+                user_type: formData.userType,
+                full_name: finalFullName.trim(),
+                personal_email: finalEmail.trim(),
+                telephone: formData.telephone?.trim() || null, // OAuth users skip personal step, so these will be null
+                country: formData.country?.trim() || null,
+                city: formData.city?.trim() || null,
                 cover_image_url: fileUrls.coverImage || null,
                 photo_url: fileUrls.photo || oauthUserData?.photo || null,
-            }, {
-                onConflict: 'id' // Update if user already exists
-            });
-            if (userError) throw new Error(`Failed to create user record: ${userError.message}`);
+            };
+
+            const { data: userRecord, error: userError } = await supabase
+                .from('users')
+                .upsert(userData, {
+                    onConflict: 'id' // Update if user already exists
+                })
+                .select()
+                .single();
+
+            if (userError) {
+                console.error('❌ Failed to create/update user record:', {
+                    error: userError,
+                    message: userError.message,
+                    details: userError.details,
+                    hint: userError.hint,
+                    code: userError.code,
+                    userData: userData,
+                });
+                throw new Error(`Failed to create user record: ${userError.message}. ${userError.hint || ''}`);
+            }
+
+            if (userRecord) {
+                console.log('✅ User record created/updated successfully:', userRecord.id);
+            } else {
+                console.warn('⚠️ User upsert completed but no record returned');
+            }
 
             // STEP 4: Insert into profiles table (role-specific fields)
             const profileData: Record<string, unknown> = {
@@ -702,6 +730,124 @@ export default function Register() {
                 onConflict: 'user_id' // Update if pitch materials already exist
             });
             if (pitchError) throw new Error(`Failed to create pitch materials: ${pitchError.message}`);
+
+            // STEP 7: Create project entry (for Inventor, StartUp, Company only - not Investor)
+            if (formData.userType !== 'Investor' && formData.projectName && formData.projectName.trim()) {
+                // Check if a project already exists for this user (to avoid duplicates on retry)
+                const { data: existingProject, error: checkError } = await supabase
+                    .from('projects')
+                    .select('id')
+                    .eq('user_id', userId)
+                    .eq('title', formData.projectName.trim())
+                    .maybeSingle();
+
+                if (checkError) {
+                    console.error('Error checking for existing project:', checkError);
+                }
+
+                // Only create if project doesn't exist
+                if (!existingProject) {
+                    // Build location string from country and city
+                    // For OAuth users, these might be null, which is fine
+                    const locationParts: string[] = [];
+                    if (formData.city && formData.city.trim()) locationParts.push(formData.city.trim());
+                    if (formData.country && formData.country.trim()) locationParts.push(formData.country.trim());
+                    const location = locationParts.length > 0 ? locationParts.join(', ') : null;
+
+                    // Parse investment percentage from string (e.g., "20%" -> 20.00)
+                    let investmentPercent: number | null = null;
+                    if (formData.capitalPercentage && formData.capitalPercentage.trim()) {
+                        const percentMatch = formData.capitalPercentage.toString().match(/(\d+(?:\.\d+)?)/);
+                        if (percentMatch) {
+                            investmentPercent = parseFloat(percentMatch[1]);
+                        }
+                    }
+
+                    // Build image URLs array from photos
+                    const imageUrls: string[] = [];
+                    if (fileUrls.coverImage) imageUrls.push(fileUrls.coverImage);
+                    if (fileUrls.photos && fileUrls.photos.length > 0) {
+                        imageUrls.push(...fileUrls.photos);
+                    }
+
+                    // Build video URLs array
+                    const videoUrls: string[] = [];
+                    if (fileUrls.pitchVideo) {
+                        videoUrls.push(fileUrls.pitchVideo);
+                    }
+                    if (fileUrls.pitchVideos && fileUrls.pitchVideos.length > 0) {
+                        videoUrls.push(...fileUrls.pitchVideos);
+                    }
+
+                    const projectData: Record<string, unknown> = {
+                        user_id: userId,
+                        title: formData.projectName.trim(),
+                        subtitle: (formData.companyName || formData.inventorName || '').trim() || null,
+                        description: (formData.description || '').trim() || null,
+                        category: (formData.projectCategory || '').trim() || null,
+                        status: 'pending', // New projects start as 'pending' for admin approval
+                        available_status: true,
+                        available_label: 'Available',
+                        location: location,
+                        investment_percent: investmentPercent,
+                        investment_amount: (formData.capitalTotalValue || '').trim() || null,
+                        commission: 0, // Default commission
+                        cover_image_url: fileUrls.coverImage || null,
+                        image_urls: imageUrls.length > 0 ? imageUrls : [],
+                        video_url: fileUrls.pitchVideo || null,
+                        video_urls: videoUrls.length > 0 ? videoUrls : [],
+                        badges: [], // Empty initially, can be set by admin later
+                        views: 0,
+                        likes: 0,
+                        approval_rate: null, // Will be calculated later
+                        featured: false,
+                        verified: false,
+                    };
+
+                    console.log('Creating project with data:', {
+                        user_id: userId,
+                        title: projectData.title,
+                        subtitle: projectData.subtitle,
+                        category: projectData.category,
+                        user_type: formData.userType,
+                    });
+
+                    const { data: createdProject, error: projectError } = await supabase
+                        .from('projects')
+                        .insert(projectData)
+                        .select()
+                        .single();
+
+                    if (projectError) {
+                        // Log detailed error for debugging
+                        console.error('❌ Failed to create project:', {
+                            error: projectError,
+                            message: projectError.message,
+                            details: projectError.details,
+                            hint: projectError.hint,
+                            projectData: projectData,
+                        });
+                        
+                        // Show error toast to user
+                        toast({
+                            title: 'Project creation failed',
+                            description: `Your account was created, but the project could not be created: ${projectError.message}. Please contact support or try updating your profile.`,
+                            variant: 'destructive',
+                        });
+                    } else if (createdProject) {
+                        console.log('✅ Project created successfully:', createdProject.id);
+                    }
+                } else {
+                    console.log('Project already exists for this user and title, skipping creation.');
+                }
+            } else {
+                // Log why project wasn't created
+                if (formData.userType === 'Investor') {
+                    console.log('Skipping project creation: User is Investor');
+                } else if (!formData.projectName || !formData.projectName.trim()) {
+                    console.warn('⚠️ Skipping project creation: projectName is missing or empty');
+                }
+            }
 
             // Mark all steps as completed
             setRegistrationSteps((prev) => prev.map(step => ({ ...step, status: 'completed' })));
@@ -819,12 +965,24 @@ export default function Register() {
         setError('');
 
         try {
+            console.log('🔵 Starting OAuth registration...', {
+                userType: formData.userType,
+                projectName: formData.projectName,
+                hasOAuthData: !!oauthUserData,
+            });
+
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-            if (sessionError || !session?.user) {
+            if (sessionError) {
+                console.error('❌ Session error:', sessionError);
+                throw new Error(`Session error: ${sessionError.message}`);
+            }
+            if (!session?.user) {
                 throw new Error('No active session. Please sign in again.');
             }
 
             const userId = session.user.id;
+            console.log('✅ Session found, userId:', userId);
+
             const fallbackName =
                 formData.fullName ||
                 oauthUserData?.name ||
@@ -838,7 +996,7 @@ export default function Register() {
             ]);
 
             // Update auth metadata
-            await supabase.auth.updateUser({
+            const { error: updateError } = await supabase.auth.updateUser({
                 data: {
                     full_name: fallbackName,
                     name: fallbackName,
@@ -847,13 +1005,19 @@ export default function Register() {
                 },
             });
 
+            if (updateError) {
+                console.warn('⚠️ Auth metadata update error (non-critical):', updateError);
+            }
+
             setRegistrationSteps([
                 { label: 'Uploading files', status: 'completed' },
                 { label: 'Saving your profile', status: 'loading' },
             ]);
 
+            console.log('📝 Calling handleRegistrationData for userId:', userId);
             // Proceed with uploads and DB inserts
             await handleRegistrationData(userId);
+            console.log('✅ handleRegistrationData completed successfully');
 
             setRegistrationSteps([
                 { label: 'Uploading files', status: 'completed' },
@@ -870,7 +1034,16 @@ export default function Register() {
             }, 1000);
         } catch (e) {
             const msg = e instanceof Error ? e.message : 'Registration failed. Please try again.';
-            console.error('❌ OAuth Registration error:', e);
+            console.error('❌ OAuth Registration error:', {
+                error: e,
+                message: msg,
+                stack: e instanceof Error ? e.stack : undefined,
+                formData: {
+                    userType: formData.userType,
+                    projectName: formData.projectName,
+                    fullName: formData.fullName,
+                },
+            });
             setError(msg);
             toast({
                 title: 'Registration error',
@@ -1994,395 +2167,40 @@ export default function Register() {
                     {/* Step 3: Personal Info */}
                     {currentStep === 'personal' && (
                         <div className="space-y-4 overflow-y-auto px-2">
-                            {/* Cover Image Upload */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Cover Image
-                                </label>
-                                <div className="relative">
-                                    <label
-                                        onDragOver={(e) => {
-                                            e.preventDefault();
-                                            e.currentTarget.classList.add('bg-blue-50', 'border-blue-400');
-                                            e.currentTarget.style.borderColor = '#0a3d5c';
-                                            e.currentTarget.style.backgroundColor = '#f0f8ff';
-                                        }}
-                                        onDragLeave={(e) => {
-                                            e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400');
-                                            e.currentTarget.style.borderColor = '';
-                                            e.currentTarget.style.backgroundColor = '';
-                                        }}
-                                        onDrop={(e) => {
-                                            e.preventDefault();
-                                            e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400');
-                                            e.currentTarget.style.borderColor = '';
-                                            e.currentTarget.style.backgroundColor = '';
-                                            if (e.dataTransfer.files?.[0]) {
-                                                const file = e.dataTransfer.files[0];
-                                                const reader = new FileReader();
-                                                reader.onload = (event) => {
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        coverImage: file.name,
-                                                        coverImagePreview: event.target?.result as string,
-                                                    }));
-                                                    setFileObjects((prev) => ({ ...prev, coverImage: file }));
-                                                    setError('');
-                                                };
-                                                reader.readAsDataURL(file);
-                                            }
-                                        }}
-                                        className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:bg-gray-50 transition"
-                                    >
-                                        {formData.coverImagePreview ? (
-                                            <div className="w-full relative">
-                                                <img src={formData.coverImagePreview} alt="Cover preview" className="w-full h-40 object-cover rounded-lg mb-2" />
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        setFormData((prev) => ({
-                                                            ...prev,
-                                                            coverImage: '',
-                                                            coverImagePreview: '',
-                                                        }));
-                                                        setFileObjects((prev) => {
-                                                            const { coverImage, ...rest } = prev;
-                                                            return rest;
-                                                        });
-                                                        // Reset the file input
-                                                        const fileInput = document.getElementById('coverImage') as HTMLInputElement;
-                                                        if (fileInput) {
-                                                            fileInput.value = '';
-                                                        }
-                                                    }}
-                                                    className="absolute top-1 right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all z-10"
-                                                    title="Delete cover image"
-                                                >
-                                                    <X size={14} />
-                                                </button>
-                                                <p className="text-sm text-green-600 text-center">✓ {formData.coverImage}</p>
-                                            </div>
-                                        ) : (
-                                            <div className="text-center pointer-events-none">
-                                                <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                </svg>
-                                                <p className="text-sm text-gray-600">Drag and drop cover image here or click</p>
-                                            </div>
-                                        )}
-                                        <input
-                                            id="coverImage"
-                                            name="coverImage"
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) => {
-                                                if (e.target.files?.[0]) {
-                                                    const file = e.target.files[0];
-                                                    const reader = new FileReader();
-                                                    reader.onload = (event) => {
-                                                        setFormData((prev) => ({
-                                                            ...prev,
-                                                            coverImage: file.name,
-                                                            coverImagePreview: event.target?.result as string,
-                                                        }));
-                                                        setFileObjects((prev) => ({ ...prev, coverImage: file }));
-                                                        setError('');
-                                                    };
-                                                    reader.readAsDataURL(file);
-                                                }
-                                            }}
-                                            className="hidden"
-                                        />
+                            {/* For Inventor/StartUp/Company: Show only Full Name */}
+                            {formData.userType !== 'Investor' && (
+                                <div>
+                                    <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Full Name <span className="text-red-500">*</span>
                                     </label>
-                                </div>
-                            </div>
-
-                            {/* User Photo Upload */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    User Photo
-                                </label>
-                                <div className="relative">
-                                    <label
-                                        onDragOver={(e) => {
-                                            e.preventDefault();
-                                            e.currentTarget.classList.add('bg-blue-50', 'border-blue-400');
-                                            e.currentTarget.style.borderColor = '#0a3d5c';
-                                            e.currentTarget.style.backgroundColor = '#f0f8ff';
-                                        }}
-                                        onDragLeave={(e) => {
-                                            e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400');
-                                            e.currentTarget.style.borderColor = '';
-                                            e.currentTarget.style.backgroundColor = '';
-                                        }}
-                                        onDrop={(e) => {
-                                            e.preventDefault();
-                                            e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400');
-                                            e.currentTarget.style.borderColor = '';
-                                            e.currentTarget.style.backgroundColor = '';
-                                            if (e.dataTransfer.files?.[0]) {
-                                                const file = e.dataTransfer.files[0];
-                                                const reader = new FileReader();
-                                                reader.onload = (event) => {
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        photo: file.name,
-                                                        photoPreview: event.target?.result as string,
-                                                    }));
-                                                    setFileObjects((prev) => ({ ...prev, photo: file }));
-                                                    setError('');
-                                                };
-                                                reader.readAsDataURL(file);
-                                            }
-                                        }}
-                                        className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:bg-gray-50 transition"
-                                    >
-                                        {formData.photoPreview ? (
-                                            <div className="w-full flex justify-center">
-                                                <div className="w-32 h-32 relative">
-                                                    <img src={formData.photoPreview} alt="Photo preview" className="w-full h-full object-cover rounded-full" style={{ borderColor: '#0a3d5c', borderWidth: '2px' }} />
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            setFormData((prev) => ({
-                                                                ...prev,
-                                                                photo: '',
-                                                                photoPreview: '',
-                                                            }));
-                                                            setFileObjects((prev) => {
-                                                                const { photo, ...rest } = prev;
-                                                                return rest;
-                                                            });
-                                                            // Reset the file input
-                                                            const fileInput = document.getElementById('photo') as HTMLInputElement;
-                                                            if (fileInput) {
-                                                                fileInput.value = '';
-                                                            }
-                                                        }}
-                                                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all z-10"
-                                                        title="Delete user photo"
-                                                    >
-                                                        <X size={14} />
-                                                    </button>
-                                                    <p className="text-sm text-green-600 text-center mt-2">✓ {formData.photo}</p>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="text-center pointer-events-none">
-                                                <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                                </svg>
-                                                <p className="text-sm text-gray-600">Drag and drop user photo here or click</p>
-                                            </div>
-                                        )}
-                                        <input
-                                            id="photo"
-                                            name="photo"
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) => {
-                                                if (e.target.files?.[0]) {
-                                                    const file = e.target.files[0];
-                                                    const reader = new FileReader();
-                                                    reader.onload = (event) => {
-                                                        setFormData((prev) => ({
-                                                            ...prev,
-                                                            photo: file.name,
-                                                            photoPreview: event.target?.result as string,
-                                                        }));
-                                                        setFileObjects((prev) => ({ ...prev, photo: file }));
-                                                        setError('');
-                                                    };
-                                                    reader.readAsDataURL(file);
-                                                }
-                                            }}
-                                            className="hidden"
-                                        />
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Full Name
-                                </label>
-                                <input
-                                    id="fullName"
-                                    name="fullName"
-                                    type="text"
-                                    value={formData.fullName}
-                                    onChange={handleChange}
-                                    placeholder="John Doe"
-                                    autoFocus
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
-                                    onFocus={(e) => {
-                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                        e.currentTarget.style.borderColor = '#0a3d5c';
-                                    }}
-                                    onBlur={(e) => {
-                                        e.currentTarget.style.boxShadow = 'none';
-                                        e.currentTarget.style.borderColor = '#d1d5db';
-                                    }}
-                                />
-                            </div>
-
-                            <div>
-                                <label htmlFor="personalEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Email
-                                </label>
-                                <input
-                                    id="personalEmail"
-                                    name="personalEmail"
-                                    type="email"
-                                    value={formData.personalEmail}
-                                    onChange={handleChange}
-                                    placeholder="you@example.com"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
-                                    onFocus={(e) => {
-                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                        e.currentTarget.style.borderColor = '#0a3d5c';
-                                    }}
-                                    onBlur={(e) => {
-                                        e.currentTarget.style.boxShadow = 'none';
-                                        e.currentTarget.style.borderColor = '#d1d5db';
-                                    }}
-                                />
-                            </div>
-
-                            {/* Password Field (Optional) */}
-                            <div>
-                                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Password <span className="text-gray-500 text-xs">(Optional)</span>
-                                </label>
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    placeholder="Enter your password (optional)"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
-                                    onFocus={(e) => {
-                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                        e.currentTarget.style.borderColor = '#0a3d5c';
-                                    }}
-                                    onBlur={(e) => {
-                                        e.currentTarget.style.boxShadow = 'none';
-                                        e.currentTarget.style.borderColor = '#d1d5db';
-                                    }}
-                                />
-                                <p className="mt-1 text-xs text-gray-500">Minimum 6 characters if provided. Account verification will be done via email OTP code.</p>
-                            </div>
-
-                            <div>
-                                <label htmlFor="telephone" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Telephone
-                                </label>
-                                <div className={`flex items-center gap-0 border rounded-lg overflow-hidden focus-within:ring-2 transition ${
-                                    telephoneError 
-                                        ? 'border-red-500 focus-within:ring-red-500/20 focus-within:border-red-500' 
-                                        : 'border-gray-300 focus-within:ring-[#0a3d5c]/20 focus-within:border-[#0a3d5c]'
-                                }`}>
-                                    {/* Country Code Selector */}
-                                    <SearchableCountrySelect
-                                        countries={countries}
-                                        value={phoneCountryCode}
-                                        onValueChange={(value) => {
-                                            setPhoneCountryCode(value);
-                                            // Re-validate when country code changes
-                                            if (formData.telephone) {
-                                                const phoneError = validatePhoneNumber(formData.telephone, value);
-                                                setTelephoneError(phoneError);
-                                            }
-                                        }}
-                                        type="phone"
-                                        placeholder="+1"
-                                        preferredCountryCode={
-                                            formData.country 
-                                                ? countries.find(c => c.name === formData.country)?.code 
-                                                : detectedCountryCode || undefined
-                                        }
-                                        triggerClassName="w-auto min-w-[100px] border-0 rounded-none border-r border-gray-300 rounded-l-lg focus:ring-0 focus:ring-offset-0 h-auto py-2 px-3"
-                                    />
-                                    
-                                    {/* Phone Number Input */}
                                     <input
-                                        id="telephone"
-                                        name="telephone"
-                                        type="tel"
-                                        value={formData.telephone}
+                                        id="fullName"
+                                        name="fullName"
+                                        type="text"
+                                        value={formData.fullName}
                                         onChange={handleChange}
-                                        placeholder="(555) 000-0000"
-                                        className="flex-1 px-4 py-2 border-0 outline-none transition"
+                                        placeholder="John Doe"
+                                        autoFocus
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
                                         onFocus={(e) => {
-                                            e.currentTarget.parentElement?.style.setProperty('box-shadow', '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c');
-                                            e.currentTarget.parentElement?.style.setProperty('border-color', '#0a3d5c');
+                                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                            e.currentTarget.style.borderColor = '#0a3d5c';
                                         }}
                                         onBlur={(e) => {
-                                            const phoneError = validatePhoneNumber(formData.telephone, phoneCountryCode);
-                                            setTelephoneError(phoneError);
-                                            if (!phoneError) {
-                                                e.currentTarget.parentElement?.style.setProperty('box-shadow', 'none');
-                                                e.currentTarget.parentElement?.style.setProperty('border-color', '#d1d5db');
-                                            }
+                                            e.currentTarget.style.boxShadow = 'none';
+                                            e.currentTarget.style.borderColor = '#d1d5db';
                                         }}
                                     />
                                 </div>
-                                {telephoneError && (
-                                    <p className="mt-1 text-sm text-red-600">{telephoneError}</p>
-                                )}
-                            </div>
+                            )}
 
-                            <div>
-                                <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Country
-                                </label>
-                                <SearchableCountrySelect
-                                    countries={countries}
-                                    value={formData.country}
-                                    onValueChange={(value) => {
-                                        setFormData((prev) => ({ ...prev, country: value }));
-                                        setError('');
-                                        // Update phone country code when country changes
-                                        const countryMatch = countries.find(c => c.name === value);
-                                        if (countryMatch) {
-                                            setPhoneCountryCode(countryMatch.phoneCode);
-                                            // Store the country code for proper flag display in phone selector
-                                            setDetectedCountryCode(countryMatch.code);
-                                        }
-                                    }}
-                                    type="country"
-                                    placeholder="Select a country"
-                                    triggerClassName="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition h-auto min-h-[42px]"
-                                />
-                            </div>
-
-                            <div>
-                                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-                                    City
-                                </label>
-                                <input
-                                    id="city"
-                                    name="city"
-                                    type="text"
-                                    value={formData.city}
-                                    onChange={handleChange}
-                                    placeholder="Lisbon"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition mb-1"
-                                    onFocus={(e) => {
-                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                        e.currentTarget.style.borderColor = '#0a3d5c';
-                                    }}
-                                    onBlur={(e) => {
-                                        e.currentTarget.style.boxShadow = 'none';
-                                        e.currentTarget.style.borderColor = '#d1d5db';
-                                    }}
-                                />
-                            </div>
+                            {/* For Investor: Personal Info step is skipped (Full Name is in step 2) */}
+                            {formData.userType === 'Investor' && (
+                                <div className="text-center py-8 text-gray-500">
+                                    <p>Personal information is not required for Investors.</p>
+                                    <p className="text-sm mt-2">Click "Next" to continue to Pitch Info.</p>
+                                </div>
+                            )}
                         </div>
                     )}
 
