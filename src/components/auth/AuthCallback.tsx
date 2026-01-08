@@ -114,11 +114,25 @@ export default function AuthCallback() {
           }
 
           setMessage('Setting up your account...');
+          
+          // Extract user metadata (handles both Google and LinkedIn)
+          const fullName = user.user_metadata?.full_name || 
+                          user.user_metadata?.name || 
+                          (user.user_metadata?.given_name && user.user_metadata?.family_name 
+                            ? `${user.user_metadata.given_name} ${user.user_metadata.family_name}` 
+                            : null) ||
+                          user.email?.split('@')[0] || 
+                          'User';
+          
+          const avatarUrl = user.user_metadata?.avatar_url || 
+                           user.user_metadata?.picture || 
+                           null;
+          
           await ensureUserProfile(
             user.id,
             user.email,
-            user.user_metadata?.full_name || user.user_metadata?.name,
-            user.user_metadata?.avatar_url || user.user_metadata?.picture
+            fullName,
+            avatarUrl
           );
 
           setMessage('Sign in successful! Redirecting...');
@@ -143,11 +157,25 @@ export default function AuthCallback() {
 
         // Ensure user profile exists in public.users and public.profiles tables
         setMessage('Setting up your account...');
+        
+        // Extract user metadata (handles both Google and LinkedIn)
+        const fullName = user.user_metadata?.full_name || 
+                        user.user_metadata?.name || 
+                        (user.user_metadata?.given_name && user.user_metadata?.family_name 
+                          ? `${user.user_metadata.given_name} ${user.user_metadata.family_name}` 
+                          : null) ||
+                        user.email?.split('@')[0] || 
+                        'User';
+        
+        const avatarUrl = user.user_metadata?.avatar_url || 
+                         user.user_metadata?.picture || 
+                         null;
+        
         await ensureUserProfile(
           user.id,
           user.email,
-          user.user_metadata?.full_name || user.user_metadata?.name,
-          user.user_metadata?.avatar_url || user.user_metadata?.picture
+          fullName,
+          avatarUrl
         );
 
         // Success - redirect to home
