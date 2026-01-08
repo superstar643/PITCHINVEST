@@ -43,9 +43,9 @@ create table if not exists public.profiles (
   inventor_name text,
   license_number text,
   release_date text,
-  initial_license_value text,
-  exploitation_license_royalty text,
-  patent_sale text,
+  initial_license_value text, -- Patent Exploitation Fee
+  exploitation_license_royalty text, -- Patent Exploitation Royalties
+  patent_sale text, -- Full Patent Assignment (100%)
   investors_count text,
 
   created_at timestamptz not null default now()
@@ -55,15 +55,21 @@ create table if not exists public.commercial_proposals (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null unique references public.users(id) on delete cascade,
 
-  -- Block 1: Equity Participation
+  -- Block 1: Investment Offer (%)
+  -- equity_capital_percentage = Equity
+  -- equity_total_value = Investment Amount
   equity_capital_percentage text,
   equity_total_value text,
 
-  -- Block 2: Brand Licensing (Exploitation)
+  -- Block 2: Brand Exploitation Rights
+  -- license_fee = Initial Licensing Fee
+  -- licensing_royalties_percentage = Royalties (%)
   license_fee text,
   licensing_royalties_percentage text,
 
-  -- Block 3: Franchising
+  -- Block 3: Franchise
+  -- franchisee_investment = Franchise Fee
+  -- monthly_royalties = Royalties (%)
   franchisee_investment text,
   monthly_royalties text,
 

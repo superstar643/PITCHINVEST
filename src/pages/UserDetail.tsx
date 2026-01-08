@@ -300,46 +300,46 @@ const UserDetail: React.FC = () => {
                   <div className="bg-white rounded-xl p-6 shadow-sm border">
                     <h3 className="font-semibold text-lg mb-4">Sales Conditions</h3>
                     <div className="space-y-4">
-                      {/* Equity Participation */}
+                      {/* Investment Offer (%) */}
                       {(proposals.equity_capital_percentage || proposals.equity_total_value) && (
                         <div className="border-l-4 border-[#0a3d5c] pl-4 py-2">
-                          <h4 className="font-semibold text-base mb-2">Equity Participation (Primary)</h4>
+                          <h4 className="font-semibold text-base mb-2">Investment Offer (%)</h4>
                           <div className="space-y-1 text-sm text-gray-600">
                             {proposals.equity_capital_percentage && (
-                              <div><span className="font-medium">Capital Percentage:</span> {proposals.equity_capital_percentage}</div>
+                              <div><span className="font-medium">Equity:</span> {proposals.equity_capital_percentage}</div>
                             )}
                             {proposals.equity_total_value && (
-                              <div><span className="font-medium">Total Value:</span> {proposals.equity_total_value}</div>
+                              <div><span className="font-medium">Investment Amount:</span> {proposals.equity_total_value}</div>
                             )}
                           </div>
                         </div>
                       )}
 
-                      {/* Brand Licensing */}
+                      {/* Brand Exploitation Rights */}
                       {(proposals.license_fee || proposals.licensing_royalties_percentage) && (
                         <div className="border-l-4 border-blue-500 pl-4 py-2">
-                          <h4 className="font-semibold text-base mb-2">Brand Licensing (Exploitation)</h4>
+                          <h4 className="font-semibold text-base mb-2">Brand Exploitation Rights</h4>
                           <div className="space-y-1 text-sm text-gray-600">
                             {proposals.license_fee && (
-                              <div><span className="font-medium">License Fee:</span> {proposals.license_fee}</div>
+                              <div><span className="font-medium">Initial Licensing Fee:</span> {proposals.license_fee}</div>
                             )}
                             {proposals.licensing_royalties_percentage && (
-                              <div><span className="font-medium">Royalties Percentage:</span> {proposals.licensing_royalties_percentage}</div>
+                              <div><span className="font-medium">Royalties (%):</span> {proposals.licensing_royalties_percentage}</div>
                             )}
                           </div>
                         </div>
                       )}
 
-                      {/* Franchising */}
+                      {/* Franchise */}
                       {(proposals.franchisee_investment || proposals.monthly_royalties) && (
                         <div className="border-l-4 border-green-500 pl-4 py-2">
-                          <h4 className="font-semibold text-base mb-2">Franchising</h4>
+                          <h4 className="font-semibold text-base mb-2">Franchise</h4>
                           <div className="space-y-1 text-sm text-gray-600">
                             {proposals.franchisee_investment && (
-                              <div><span className="font-medium">Franchisee Investment:</span> {proposals.franchisee_investment}</div>
+                              <div><span className="font-medium">Franchise Fee:</span> {proposals.franchisee_investment}</div>
                             )}
                             {proposals.monthly_royalties && (
-                              <div><span className="font-medium">Monthly Royalties:</span> {proposals.monthly_royalties}</div>
+                              <div><span className="font-medium">Royalties (%):</span> {proposals.monthly_royalties}</div>
                             )}
                           </div>
                         </div>

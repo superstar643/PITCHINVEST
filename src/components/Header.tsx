@@ -247,7 +247,6 @@ const Header: React.FC = () => {
                       align="end" 
                       className="w-56" 
                       style={{ 
-                        zIndex: 9999,
                         maxWidth: 'calc(100vw - 20px)'
                       }}
                     >
@@ -262,7 +261,7 @@ const Header: React.FC = () => {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         onClick={() => navigate(`/user/${displayUser.id}`)}
-                        className="hover:!bg-gray-100"
+                        className="cursor-pointer"
                       >
                         <User className="mr-2 h-4 w-4" />
                         <span>My Profile</span>
@@ -270,7 +269,7 @@ const Header: React.FC = () => {
                       
                       <DropdownMenuItem 
                         onClick={() => navigate('/settings')}
-                        className="hover:!bg-gray-100"
+                        className="cursor-pointer"
                       >
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Settings</span>
@@ -279,7 +278,7 @@ const Header: React.FC = () => {
                       <DropdownMenuItem 
                         onClick={handleSignOut}
                         disabled={isSigningOut}
-                        className="text-red-600 focus:text-red-600 hover:!text-red-700 hover:!bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="text-red-600 focus:text-red-600 hover:text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                       >
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>{isSigningOut ? 'Signing out...' : 'Sign out'}</span>

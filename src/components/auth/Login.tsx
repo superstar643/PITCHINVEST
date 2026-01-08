@@ -120,9 +120,17 @@ export default function Login() {
     try {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: provider as any,
-        options: { redirectTo },
+        options: { 
+          redirectTo,
+          queryParams: provider === 'google' ? {
+            access_type: 'offline',
+            prompt: 'consent',
+          } : undefined,
+        },
       });
       if (oauthError) throw oauthError;
+      // Note: User will be redirected to Google/LinkedIn, then back to /auth/callback
+      // The loading state will be reset when the page redirects
     } catch (e: any) {
       // Some projects use 'linkedin' instead of 'linkedin_oidc'
       if (provider === 'linkedin_oidc') {
@@ -141,7 +149,6 @@ export default function Login() {
         return;
       }
       setError(e?.message || 'Social login failed.');
-    } finally {
       setLoading(false);
     }
   }

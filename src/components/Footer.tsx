@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const Footer: React.FC = () => {
   const footerLinks = {
@@ -95,9 +96,15 @@ const Footer: React.FC = () => {
             <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
                 <li key={link.name}>
-                  <a href={link.href} className="text-gray-600 hover:text-amber-600 text-sm transition-colors">
-                    {link.name}
-                  </a>
+                  {link.name === 'Privacy Policy' ? (
+                    <Link to="/privacy-policy" className="text-gray-600 hover:text-amber-600 text-sm transition-colors">
+                      {link.name}
+                    </Link>
+                  ) : (
+                    <a href={link.href} className="text-gray-600 hover:text-amber-600 text-sm transition-colors">
+                      {link.name}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>

@@ -1088,17 +1088,17 @@ const Settings: React.FC = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="initialLicenseValue" className="text-sm font-semibold text-gray-700">Initial License Value</Label>
+                        <Label htmlFor="initialLicenseValue" className="text-sm font-semibold text-gray-700">Patent Exploitation Fee</Label>
                         <Input
                           id="initialLicenseValue"
                           value={formData.initialLicenseValue}
                           onChange={(e) => handleInputChange('initialLicenseValue', e.target.value)}
-                          placeholder="Enter initial license value"
+                          placeholder="Enter patent exploitation fee"
                           className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="exploitationLicenseRoyalty" className="text-sm font-semibold text-gray-700">Exploitation License Royalty</Label>
+                        <Label htmlFor="exploitationLicenseRoyalty" className="text-sm font-semibold text-gray-700">Patent Exploitation Royalties</Label>
                         <Input
                           id="exploitationLicenseRoyalty"
                           value={formData.exploitationLicenseRoyalty}
@@ -1108,7 +1108,7 @@ const Settings: React.FC = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="patentSale" className="text-sm font-semibold text-gray-700">Patent Sale</Label>
+                        <Label htmlFor="patentSale" className="text-sm font-semibold text-gray-700">Full Patent Assignment (100%)</Label>
                         <Input
                           id="patentSale"
                           value={formData.patentSale}
@@ -1136,7 +1136,7 @@ const Settings: React.FC = () => {
                 <h3 className="font-semibold text-lg text-[#0a3d5c] mb-4">Commercial Proposals</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="equityCapitalPercentage" className="text-sm font-semibold text-gray-700">Equity Capital Percentage</Label>
+                    <Label htmlFor="equityCapitalPercentage" className="text-sm font-semibold text-gray-700">Equity</Label>
                     <Input
                       id="equityCapitalPercentage"
                       value={formData.equityCapitalPercentage}
@@ -1146,52 +1146,52 @@ const Settings: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="equityTotalValue" className="text-sm font-semibold text-gray-700">Equity Total Value</Label>
+                    <Label htmlFor="equityTotalValue" className="text-sm font-semibold text-gray-700">Investment Amount</Label>
                     <Input
                       id="equityTotalValue"
                       value={formData.equityTotalValue}
                       onChange={(e) => handleInputChange('equityTotalValue', e.target.value)}
-                      placeholder="Enter total value"
-                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="licenseFee" className="text-sm font-semibold text-gray-700">License Fee</Label>
-                    <Input
-                      id="licenseFee"
-                      value={formData.licenseFee}
-                      onChange={(e) => handleInputChange('licenseFee', e.target.value)}
-                      placeholder="Enter license fee"
-                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="licensingRoyaltiesPercentage" className="text-sm font-semibold text-gray-700">Licensing Royalties Percentage</Label>
-                    <Input
-                      id="licensingRoyaltiesPercentage"
-                      value={formData.licensingRoyaltiesPercentage}
-                      onChange={(e) => handleInputChange('licensingRoyaltiesPercentage', e.target.value)}
-                      placeholder="Enter percentage"
-                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="franchiseeInvestment" className="text-sm font-semibold text-gray-700">Franchisee Investment</Label>
-                    <Input
-                      id="franchiseeInvestment"
-                      value={formData.franchiseeInvestment}
-                      onChange={(e) => handleInputChange('franchiseeInvestment', e.target.value)}
                       placeholder="Enter investment amount"
                       className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="monthlyRoyalties" className="text-sm font-semibold text-gray-700">Monthly Royalties</Label>
+                    <Label htmlFor="licenseFee" className="text-sm font-semibold text-gray-700">Initial Licensing Fee</Label>
+                    <Input
+                      id="licenseFee"
+                      value={formData.licenseFee}
+                      onChange={(e) => handleInputChange('licenseFee', e.target.value)}
+                      placeholder="Enter initial licensing fee"
+                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="licensingRoyaltiesPercentage" className="text-sm font-semibold text-gray-700">Royalties (%)</Label>
+                    <Input
+                      id="licensingRoyaltiesPercentage"
+                      value={formData.licensingRoyaltiesPercentage}
+                      onChange={(e) => handleInputChange('licensingRoyaltiesPercentage', e.target.value)}
+                      placeholder="Enter royalties percentage"
+                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="franchiseeInvestment" className="text-sm font-semibold text-gray-700">Franchise Fee</Label>
+                    <Input
+                      id="franchiseeInvestment"
+                      value={formData.franchiseeInvestment}
+                      onChange={(e) => handleInputChange('franchiseeInvestment', e.target.value)}
+                      placeholder="Enter franchise fee"
+                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="monthlyRoyalties" className="text-sm font-semibold text-gray-700">Royalties (%)</Label>
                     <Input
                       id="monthlyRoyalties"
                       value={formData.monthlyRoyalties}
                       onChange={(e) => handleInputChange('monthlyRoyalties', e.target.value)}
-                      placeholder="Enter monthly royalties"
+                      placeholder="Enter royalties percentage"
                       className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
                     />
                   </div>

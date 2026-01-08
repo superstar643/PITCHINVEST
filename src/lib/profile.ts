@@ -148,13 +148,13 @@ export function getAvailableOptions(proposals: ProfileData['proposals'], profile
   if (!proposals) return options;
   
   if (proposals.equity_capital_percentage || proposals.equity_total_value) {
-    options.push('Equity Participation');
+    options.push('Investment Offer (%)');
   }
   if (proposals.license_fee || proposals.licensing_royalties_percentage) {
-    options.push('Brand Licensing');
+    options.push('Brand Exploitation Rights');
   }
   if (proposals.franchisee_investment || proposals.monthly_royalties) {
-    options.push('Franchising');
+    options.push('Franchise');
   }
   if (proposals.patent_upfront_fee || proposals.patent_royalties) {
     options.push('Patent Licensing');
