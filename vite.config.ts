@@ -1,9 +1,20 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { existsSync, copyFileSync } from "node:fs";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
+  // Check if .env exists, if not, copy from .env.example
+  const envPath = path.resolve(process.cwd(), '.env');
+  const envExamplePath = path.resolve(process.cwd(), '.env.example');
+  
+  if (!existsSync(envPath) && existsSync(envExamplePath)) {
+    console.log('⚠️  .env file not found. Copying from .env.example...');
+    copyFileSync(envExamplePath, envPath);
+    console.log('✅ Created .env from .env.example');
+  }
+
   // Load env file based on `mode` in the current working directory.
   // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
   const env = loadEnv(mode, process.cwd(), '');
