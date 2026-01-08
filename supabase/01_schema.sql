@@ -11,7 +11,7 @@ create extension if not exists pgcrypto WITH SCHEMA public;
 
 create table if not exists public.users (
   id uuid primary key references auth.users(id) on delete cascade,
-  user_type text not null check (user_type in ('Inventor','StartUp','Company','Investor')),
+  user_type text check (user_type is null or user_type in ('Inventor','StartUp','Company','Investor')),
   full_name text not null,
   personal_email text not null,
   telephone text,

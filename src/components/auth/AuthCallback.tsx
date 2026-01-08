@@ -10,69 +10,33 @@ export default function AuthCallback() {
   useEffect(() => {
     let cancelled = false;
 
-    async function ensureUserProfile(userId: string, email: string, fullName?: string, avatarUrl?: string) {
+    async function checkRegistrationStatus(userId: string) {
       // Check if user record exists in public.users table
+      // DO NOT create user record here - registration form will handle that
       const { data: existingUser, error: userCheckError } = await supabase
         .from('users')
-        .select('id')
+        .select('id, user_type')
         .eq('id', userId)
         .maybeSingle();
 
       if (userCheckError) throw userCheckError;
 
-      if (!existingUser) {
-        // Create user record in public.users table
-        const { error: userError } = await supabase.from('users').upsert({
-          id: userId,
-          user_type: 'Investor', // Default to Investor, user can update later
-          full_name: fullName || email.split('@')[0] || 'User',
-          personal_email: email,
-          telephone: null,
-          country: null,
-          city: null,
-          cover_image_url: null,
-          photo_url: avatarUrl || null,
-        }, {
-          onConflict: 'id',
-        });
-
-        if (userError) throw userError;
-      }
-
       // Check if profile exists
       const { data: existingProfile, error: profileCheckError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, project_name')
         .eq('user_id', userId)
         .maybeSingle();
 
       if (profileCheckError) throw profileCheckError;
 
-      if (!existingProfile) {
-        // Create minimal profile record
-        const { error: profileError } = await supabase.from('profiles').upsert({
-          user_id: userId,
-          project_name: null,
-          project_category: null,
-          company_name: null,
-          company_nif: null,
-          company_telephone: null,
-          smart_money: null,
-          total_sale_of_project: null,
-          investment_preferences: null,
-          inventor_name: null,
-          license_number: null,
-          release_date: null,
-          initial_license_value: null,
-          exploitation_license_royalty: null,
-          patent_sale: null,
-          investors_count: null,
-        }, {
-          onConflict: 'user_id',
-        });
-
-        if (profileError) throw profileError;
-      }
+      // Registration is incomplete if:
+      // 1. User record doesn't exist in public.users table, OR
+      // 2. User exists but has no user_type (registration not completed), OR
+      // 3. Profile doesn't exist or has no project_name
+      const isIncomplete = !existingUser || !existingUser.user_type || !existingProfile || !existingProfile.project_name;
+      
+      return { isIncomplete };
     }
 
     async function run() {
@@ -113,33 +77,23 @@ export default function AuthCallback() {
             throw new Error('Failed to retrieve user information.');
           }
 
-          setMessage('Setting up your account...');
+          setMessage('Checking registration status...');
           
-          // Extract user metadata (handles both Google and LinkedIn)
-          const fullName = user.user_metadata?.full_name || 
-                          user.user_metadata?.name || 
-                          (user.user_metadata?.given_name && user.user_metadata?.family_name 
-                            ? `${user.user_metadata.given_name} ${user.user_metadata.family_name}` 
-                            : null) ||
-                          user.email?.split('@')[0] || 
-                          'User';
-          
-          const avatarUrl = user.user_metadata?.avatar_url || 
-                           user.user_metadata?.picture || 
-                           null;
-          
-          await ensureUserProfile(
-            user.id,
-            user.email,
-            fullName,
-            avatarUrl
-          );
+          const registrationStatus = await checkRegistrationStatus(user.id);
 
-          setMessage('Sign in successful! Redirecting...');
-          setTimeout(() => {
-            window.location.replace('/');
-          }, 500);
-          return;
+          if (registrationStatus.isIncomplete) {
+            setMessage('Redirecting to complete registration...');
+            setTimeout(() => {
+              window.location.replace('/register?oauth=true');
+            }, 500);
+            return;
+          } else {
+            setMessage('Sign in successful! Redirecting...');
+            setTimeout(() => {
+              window.location.replace('/');
+            }, 500);
+            return;
+          }
         }
 
         if (!data.session) {
@@ -155,34 +109,23 @@ export default function AuthCallback() {
           return;
         }
 
-        // Ensure user profile exists in public.users and public.profiles tables
-        setMessage('Setting up your account...');
+        // Check registration status - DO NOT create user records here
+        setMessage('Checking registration status...');
         
-        // Extract user metadata (handles both Google and LinkedIn)
-        const fullName = user.user_metadata?.full_name || 
-                        user.user_metadata?.name || 
-                        (user.user_metadata?.given_name && user.user_metadata?.family_name 
-                          ? `${user.user_metadata.given_name} ${user.user_metadata.family_name}` 
-                          : null) ||
-                        user.email?.split('@')[0] || 
-                        'User';
-        
-        const avatarUrl = user.user_metadata?.avatar_url || 
-                         user.user_metadata?.picture || 
-                         null;
-        
-        await ensureUserProfile(
-          user.id,
-          user.email,
-          fullName,
-          avatarUrl
-        );
+        const registrationStatus = await checkRegistrationStatus(user.id);
 
-        // Success - redirect to home
-        setMessage('Sign in successful! Redirecting...');
-        setTimeout(() => {
-          window.location.replace('/');
-        }, 500);
+        if (registrationStatus.isIncomplete) {
+          setMessage('Redirecting to complete registration...');
+          setTimeout(() => {
+            window.location.replace('/register?oauth=true');
+          }, 500);
+        } else {
+          // Success - redirect to home
+          setMessage('Sign in successful! Redirecting...');
+          setTimeout(() => {
+            window.location.replace('/');
+          }, 500);
+        }
       } catch (e: any) {
         if (cancelled) return;
         const errorMessage = e?.message || 'Auth callback failed. Please try again.';

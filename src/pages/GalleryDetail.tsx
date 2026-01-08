@@ -4,8 +4,6 @@ import galleryItems from '@/lib/galleryData';
 import users from '@/lib/usersData';
 import { GalleryCard } from '@/components/GalleryCard';
 import { MoveLeft, ChevronLeft, ChevronRight } from 'lucide-react';
-import { PlaceBidDialog } from '@/components/PlaceBidDialog';
-
 const color = '#0a3d5c';
 
 const GalleryDetail: React.FC = () => {
@@ -13,7 +11,6 @@ const GalleryDetail: React.FC = () => {
     const item = galleryItems.find(g => String(g.id) === id);
     const [currentIdx, setCurrentIdx] = useState(0);
     const navigate = useNavigate();
-    const [bidDialogOpen, setBidDialogOpen] = useState(false);
 
     // Find matching user by author name (fallback method when user_id not available)
     const findUserByAuthorName = (authorName: string | undefined) => {
@@ -148,24 +145,25 @@ const GalleryDetail: React.FC = () => {
                                     <div className="text-xl font-bold">45</div>
                                 </div>
                             </div>
-                            <div className="mt-6">
-                                <button onClick={() => setBidDialogOpen(true)} className="px-4 py-2 rounded-full bg-[#0a3d5c] text-white font-medium">Place a bid</button>
+                            <div className="mt-6 flex gap-3">
+                                <button 
+                                    onClick={() => navigate(`/auction/${item.id}`)} 
+                                    className="flex-1 px-4 py-2 rounded-full bg-[#0a3d5c] text-white font-medium hover:bg-[#062a3d] transition-all"
+                                >
+                                    View Auction
+                                </button>
+                                <button 
+                                    onClick={() => navigate(`/auction/${item.id}`)} 
+                                    className="px-4 py-2 rounded-full bg-[#0a3d5c] text-white font-medium hover:bg-[#062a3d] transition-all"
+                                >
+                                    Place a bid
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
             
-            {/* Place Bid Dialog */}
-            <PlaceBidDialog
-                open={bidDialogOpen}
-                onOpenChange={setBidDialogOpen}
-                auctionId={item.id?.toString() || ''}
-                currentBid={22000000}
-                itemName={item.title}
-                itemImage={item.imageUrl || ((item as any).images?.[0])}
-                minimumIncrement={100000}
-            />
             {/* Additional information section */}
             <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left: Descriptions and documents (span 2 cols on lg) */}
@@ -235,7 +233,16 @@ const GalleryDetail: React.FC = () => {
                             <div className="flex justify-between py-2 border-b"><span className="text-gray-500">Project ID</span><span className="font-semibold">PROJ-{item.id}</span></div>
                             <div className="flex justify-between py-2 border-b"><span className="text-gray-500">Status</span><span className="font-semibold">In Auction</span></div>
                             <div className="flex justify-between py-2 border-b"><span className="text-gray-500">Category</span><span className="font-semibold">{item.category}</span></div>
-                            <div className="flex justify-between py-2"><span className="text-gray-500">Listed</span><span className="font-semibold">Sep 2024</span></div>
+                            <div className="flex justify-between py-2 border-b"><span className="text-gray-500">Listed</span><span className="font-semibold">Sep 2024</span></div>
+                            <div className="flex justify-between items-center py-2">
+                                <span className="text-gray-500">Auction</span>
+                                <button 
+                                    onClick={() => navigate(`/auction/${item.id}`)}
+                                    className="font-semibold text-[#0a3d5c] hover:underline flex items-center gap-1"
+                                >
+                                    View Live Auction →
+                                </button>
+                            </div>
                         </div>
                     </div>
 

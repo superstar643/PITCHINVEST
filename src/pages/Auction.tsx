@@ -2,14 +2,18 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import galleryItems from '@/lib/galleryData';
 import users from '@/lib/usersData';
+import investers from '@/lib/investersData';
 import { Share2, ThumbsUp } from "lucide-react";
 import { PlaceBidDialog } from '@/components/PlaceBidDialog';
 
 function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userItem: any; isUser: boolean }) {
     const [index, setIndex] = useState(0);
+    // Initialize with a stable default size
     const [displaySize, setDisplaySize] = useState<{ w: number; h: number }>({ w: 800, h: 500 });
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const canvasWrapRef = useRef<HTMLDivElement | null>(null);
+    const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const isInitializedRef = useRef(false);
 
 
     const slides = ['https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424875670_34d29b62.webp',
@@ -34,18 +38,71 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
         const el = canvasWrapRef.current;
         if (!el) return;
 
+        const calculateSize = () => {
+            // Clear any pending timeout
+            if (resizeTimeoutRef.current) {
+                clearTimeout(resizeTimeoutRef.current);
+            }
+
+            // Debounce resize calculations
+            resizeTimeoutRef.current = setTimeout(() => {
+                requestAnimationFrame(() => {
+                    if (!el) return;
+                    
+                    const clientWidth = el.clientWidth;
+                    const clientHeight = el.clientHeight;
+                    
+                    const viewportW = typeof window !== "undefined" ? window.innerWidth : 0;
+                    
+                    // Ensure we have a valid width (at least 100px to avoid tiny sizes)
+                    if (clientWidth < 100) {
+                        // If width is too small, wait a bit and retry
+                        setTimeout(calculateSize, 100);
+                        return;
+                    }
+
+                    // Keep desktop (>1221px) behavior unchanged (cap at 800),
+                    // but allow smoother scaling up to tablet widths (<1222px).
+                    const maxW = viewportW > 0 && viewportW < 1222 ? 1100 : 800;
+                    // Responsive minimum width: smaller for mobile, reasonable for desktop
+                    // Use percentage-based minimum to maintain responsiveness
+                    const minWidth = viewportW > 640 ? Math.max(280, Math.floor(clientWidth * 0.5)) : Math.max(200, Math.floor(clientWidth * 0.6));
+                    // Use actual clientWidth, but ensure it meets minimum requirements and doesn't exceed max
+                    const calculatedWidth = Math.min(maxW, Math.max(minWidth, Math.floor(clientWidth)));
+                    const calculatedHeight = Math.round(calculatedWidth * (500 / 800));
+                    
+                    setDisplaySize(prev => {
+                        // Only update if there's a meaningful change (at least 20px difference to prevent flicker)
+                        const widthDiff = Math.abs(prev.w - calculatedWidth);
+                        const heightDiff = Math.abs(prev.h - calculatedHeight);
+                        
+                        if (widthDiff < 20 && heightDiff < 20 && isInitializedRef.current) {
+                            return prev;
+                        }
+                        isInitializedRef.current = true;
+                        return { w: calculatedWidth, h: calculatedHeight };
+                    });
+                });
+            }, 150); // Debounce delay
+        };
+
         const ro = new ResizeObserver(() => {
-            const viewportW = typeof window !== "undefined" ? window.innerWidth : 0;
-            // Keep desktop (>1221px) behavior unchanged (cap at 800),
-            // but allow smoother scaling up to tablet widths (<1222px).
-            const maxW = viewportW > 0 && viewportW < 1222 ? 1100 : 800;
-            const nextW = Math.min(maxW, Math.max(280, Math.floor(el.clientWidth)));
-            const nextH = Math.round(nextW * (500 / 800));
-            setDisplaySize(prev => (prev.w === nextW && prev.h === nextH ? prev : { w: nextW, h: nextH }));
+            calculateSize();
         });
 
+        // Initial calculation with a slight delay to ensure layout is complete
+        const initTimeout = setTimeout(() => {
+            calculateSize();
+        }, 100);
+        
         ro.observe(el);
-        return () => ro.disconnect();
+        return () => {
+            ro.disconnect();
+            if (resizeTimeoutRef.current) {
+                clearTimeout(resizeTimeoutRef.current);
+            }
+            clearTimeout(initTimeout);
+        };
     }, []);
 
     useEffect(() => {
@@ -55,12 +112,17 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
+        // Use displaySize directly (it already has proper min/max constraints)
+        // Only enforce a very small absolute minimum to prevent rendering errors
+        const absoluteMinW = 200;
+        const absoluteMinH = 125;
+        const W = Math.max(displaySize.w, absoluteMinW);
+        const H = Math.max(displaySize.h, absoluteMinH);
+
         const img = new Image();
         img.src = slides[index];
 
         img.onload = () => {
-            const W = displaySize.w;
-            const H = displaySize.h;
             const X = 0;
             const Y = 0;
 
@@ -242,6 +304,50 @@ const Auction: React.FC = () => {
     const item = galleryItem ?? userItem;
     const isUser = !!userItem && !galleryItem;
 
+    // Helper function to find user or investor by name and navigate to their profile
+    const handleBidderClick = (bidderName: string) => {
+        // Try to find in users first
+        const matchedUser = users.find(u => 
+            u.fullName.toLowerCase().includes(bidderName.toLowerCase()) || 
+            bidderName.toLowerCase().includes(u.fullName.toLowerCase())
+        );
+        
+        if (matchedUser && matchedUser.id) {
+            navigate(`/user/${matchedUser.id}`);
+            return;
+        }
+
+        // Try to find in investors
+        const matchedInvestor = investers.find(inv => 
+            inv.name.toLowerCase().includes(bidderName.toLowerCase()) || 
+            bidderName.toLowerCase().includes(inv.name.toLowerCase())
+        );
+        
+        if (matchedInvestor && matchedInvestor.id) {
+            navigate(`/investor/${matchedInvestor.id}`);
+            return;
+        }
+
+        // If no match found, could show a toast or do nothing
+        console.log(`No profile found for bidder: ${bidderName}`);
+    };
+
+    // Handle clicking on the product/slideshow - navigate to seller's profile
+    const handleProductClick = () => {
+        if (userItem && userItem.id) {
+            navigate(`/user/${userItem.id}`);
+        } else if (galleryItem && galleryItem.author) {
+            // Try to find user by author name
+            const matchedUser = users.find(u => 
+                u.fullName.toLowerCase().includes(galleryItem.author?.name.toLowerCase() || '') || 
+                galleryItem.author?.name.toLowerCase().includes(u.fullName.toLowerCase() || '')
+            );
+            if (matchedUser && matchedUser.id) {
+                navigate(`/user/${matchedUser.id}`);
+            }
+        }
+    };
+
     // Countdown state (start from 72 hours)
     const [secondsLeft, setSecondsLeft] = useState<number>(72 * 3600);
     
@@ -325,7 +431,12 @@ const Auction: React.FC = () => {
                                 <div className="text-sm font-semibold mb-3 max-[480px]:text-xs max-[480px]:mb-2">Current Bidders</div>
                                 <div className="space-y-3">
                                     {leftBidders.map((b, i) => (
-                                        <div key={i} className={`flex relative h-full w-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all max-[1221px]:gap-3 max-[1221px]:p-2 max-[1221px]:rounded-xl ${i === 0 ? 'ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50' : ''}`}>
+                                        <div 
+                                            key={i} 
+                                            onClick={() => handleBidderClick(b.name)}
+                                            className={`flex relative h-full w-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all cursor-pointer hover:bg-gray-800/90 max-[1221px]:gap-3 max-[1221px]:p-2 max-[1221px]:rounded-xl ${i === 0 ? 'ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50' : ''}`}
+                                            title="Click to view profile"
+                                        >
                                             <div className="relative flex-shrink-0 shadow-lg rounded-full w-20 h-20 p-2 max-[1221px]:w-14 max-[1221px]:h-14 max-[1221px]:p-1.5 max-[640px]:w-12 max-[640px]:h-12 max-[640px]:p-1" style={{ backgroundImage: "url('/assets/auction/background.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
                                                 <img src={b.avatar} alt={b.name} className="w-18 h-18 rounded-full object-cover max-[1221px]:w-12 max-[1221px]:h-12 max-[640px]:w-10 max-[640px]:h-10" />
                                             </div>
@@ -357,8 +468,12 @@ const Auction: React.FC = () => {
                             {/* Leading bid box - use main color */}
                             <div className="mt-6 w-full flex flex-col items-center max-[1221px]:mt-2">
 
-                                {/* Slideshow: use gallery images or user's product images */}
-                                <div className="w-full flex justify-center">
+                                {/* Slideshow: use gallery images or user's product images - Clickable to go to seller's profile */}
+                                <div 
+                                    className="w-full flex justify-center cursor-pointer"
+                                    onClick={handleProductClick}
+                                    title="Click to view seller's profile"
+                                >
                                     <Slideshow galleryItem={galleryItem} userItem={userItem} isUser={isUser} />
                                 </div>
                             </div>
@@ -370,7 +485,12 @@ const Auction: React.FC = () => {
                                 <div className="text-sm font-semibold mb-3 max-[480px]:text-xs max-[480px]:mb-2">Competing Bids</div>
                                 <div className="space-y-3">
                                     {rightBidders.map((b, i) => (
-                                        <div key={i} className={`flex relative h-full w-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all max-[1221px]:gap-3 max-[1221px]:p-2 max-[1221px]:rounded-xl ${i === 0 ? 'ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50' : ''}`}>
+                                        <div 
+                                            key={i} 
+                                            onClick={() => handleBidderClick(b.name)}
+                                            className={`flex relative h-full w-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all cursor-pointer hover:bg-gray-800/90 max-[1221px]:gap-3 max-[1221px]:p-2 max-[1221px]:rounded-xl ${i === 0 ? 'ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50' : ''}`}
+                                            title="Click to view profile"
+                                        >
                                             <div className="text-right flex flex-col items-end h-full mt-4 max-[1221px]:mt-0">
                                                 <div className="text-2xl font-bold text-[#d5b775] max-[1221px]:text-lg max-[640px]:text-base">$317,548</div>
                                             </div>

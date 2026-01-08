@@ -211,7 +211,7 @@ const Header: React.FC = () => {
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        className="cursor-pointer hover:opacity-80 transition-opacity rounded-full focus:outline-none focus:ring-2 focus:ring-[#0a3d5c] focus:ring-offset-2"
+                        className="cursor-pointer hover:opacity-80 transition-opacity rounded-full focus:outline-none"
                         style={{ 
                           padding: 0,
                           border: 'none',
@@ -234,10 +234,10 @@ const Header: React.FC = () => {
                           <img 
                             src={displayProfileData.photo_url} 
                             alt={displayProfileData?.full_name || displayUser.email || 'User'} 
-                            className="w-10 h-10 rounded-full border-2 border-[#0a3d5c] shadow-lg object-cover" 
+                            className="w-10 h-10 rounded-full shadow-lg object-cover" 
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-full border-2 border-[#0a3d5c] shadow-lg bg-[#0a3d5c] flex items-center justify-center text-white text-sm font-semibold">
+                          <div className="w-10 h-10 rounded-full shadow-lg bg-[#0a3d5c] flex items-center justify-center text-white text-sm font-semibold">
                             {(displayProfileData?.full_name?.[0] || displayUser.email?.[0] || 'U').toUpperCase()}
                           </div>
                         )}

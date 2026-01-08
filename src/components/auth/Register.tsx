@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
+import { ChevronRight, ChevronLeft, X } from 'lucide-react';
 import {
     Select,
     SelectContent,
@@ -32,6 +33,8 @@ const countries = getSortedCountries();
 
 export default function Register() {
     const OTP_TTL_SECONDS = 180;
+    const [searchParams] = useSearchParams();
+    const isOAuthUser = searchParams.get('oauth') === 'true';
     const { toast } = useToast();
     const [currentStep, setCurrentStep] = useState<Step>('usertype');
     const [phoneCountryCode, setPhoneCountryCode] = useState('+1'); // Default to US for personal telephone
@@ -99,6 +102,7 @@ export default function Register() {
     const [otpCode, setOtpCode] = useState('');
     const [otpSecondsLeft, setOtpSecondsLeft] = useState(0);
     const [showOtpModal, setShowOtpModal] = useState(false);
+    const [oauthUserData, setOauthUserData] = useState<{ name?: string; email?: string; photo?: string } | null>(null);
 
     // Registration steps for loading overlay
     const [registrationSteps, setRegistrationSteps] = useState<
@@ -108,6 +112,38 @@ export default function Register() {
         { label: 'Uploading files', status: 'pending' },
         { label: 'Creating your account', status: 'pending' },
     ]);
+
+    // Prefill OAuth user info and keep session handy
+    useEffect(() => {
+        if (!isOAuthUser) return;
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            const user = session?.user;
+            if (!user) return;
+
+            const fullName =
+                user.user_metadata?.full_name ||
+                user.user_metadata?.name ||
+                (user.user_metadata?.given_name && user.user_metadata?.family_name
+                    ? `${user.user_metadata.given_name} ${user.user_metadata.family_name}`
+                    : null) ||
+                user.email?.split('@')[0] ||
+                'User';
+
+            const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
+
+            setOauthUserData({
+                name: fullName || undefined,
+                email: user.email || undefined,
+                photo: avatarUrl || undefined,
+            });
+
+            setFormData((prev) => ({
+                ...prev,
+                fullName: prev.fullName || fullName || '',
+                personalEmail: prev.personalEmail || user.email || '',
+            }));
+        });
+    }, [isOAuthUser]);
 
     useEffect(() => {
         if (!otpSent || otpSecondsLeft <= 0) return;
@@ -213,24 +249,28 @@ export default function Register() {
 
     const userTypes = ['Inventor', 'StartUp', 'Company', 'Investor'];
 
-    const steps: { id: Step; title: string; description: string }[] = useMemo(() => [
-        { id: 'usertype', title: 'User Role', description: 'Select your role' },
-        { 
-            id: 'company', 
-            title: formData.userType === 'Inventor' ? 'Inventor Information' 
-                : formData.userType === 'StartUp' ? 'Startup Information'
-                : formData.userType === 'Company' ? 'Company Information'
-                : formData.userType === 'Investor' ? 'Investor Information'
-                : 'Business Info', 
-            description: formData.userType === 'Inventor' ? 'Tell us about your invention'
-                : formData.userType === 'StartUp' ? 'Tell us about your startup'
-                : formData.userType === 'Company' ? 'Tell us about your company'
-                : formData.userType === 'Investor' ? 'Tell us about your investment interests'
-                : 'Tell us about your business'
-        },
-        { id: 'personal', title: 'Personal Info', description: 'Tell us about yourself' },
-        { id: 'pitch', title: 'Pitch Info', description: formData.userType === 'Investor' ? 'Complete your profile' : 'Upload your pitch materials' },
-    ], [formData.userType]);
+    const steps: { id: Step; title: string; description: string }[] = useMemo(() => {
+        const all = [
+            { id: 'usertype' as Step, title: 'User Role', description: 'Select your role' },
+            { 
+                id: 'company' as Step, 
+                title: formData.userType === 'Inventor' ? 'Inventor Information' 
+                    : formData.userType === 'StartUp' ? 'Startup Information'
+                    : formData.userType === 'Company' ? 'Company Information'
+                    : formData.userType === 'Investor' ? 'Investor Information'
+                    : 'Business Info', 
+                description: formData.userType === 'Inventor' ? 'Tell us about your invention'
+                    : formData.userType === 'StartUp' ? 'Tell us about your startup'
+                    : formData.userType === 'Company' ? 'Tell us about your company'
+                    : formData.userType === 'Investor' ? 'Tell us about your investment interests'
+                    : 'Tell us about your business'
+            },
+            { id: 'personal' as Step, title: 'Personal Info', description: 'Tell us about yourself' },
+            { id: 'pitch' as Step, title: 'Pitch Info', description: formData.userType === 'Investor' ? 'Complete your profile' : 'Upload your pitch materials' },
+        ];
+
+        return isOAuthUser ? all.filter((step) => step.id !== 'personal') : all;
+    }, [formData.userType, isOAuthUser]);
 
     const currentStepIndex = steps.findIndex(s => s.id === currentStep);
     const progress = ((currentStepIndex + 1) / steps.length) * 100;
@@ -384,6 +424,7 @@ export default function Register() {
                 return true;
 
             case 'personal':
+            if (isOAuthUser) return true;
                 // Cover Image and Photo are now optional
                 // Only validate personal contact data
                 
@@ -442,12 +483,16 @@ export default function Register() {
         if (currentStep === 'usertype') {
             setCurrentStep('company');
         } else if (currentStep === 'company') {
-            setCurrentStep('personal');
+            setCurrentStep(isOAuthUser ? 'pitch' : 'personal');
         } else if (currentStep === 'personal') {
             setCurrentStep('pitch');
         } else if (currentStep === 'pitch') {
-            // Always open OTP modal for verification - OTP will be sent automatically via useEffect
-            setShowOtpModal(true);
+            if (isOAuthUser) {
+                await handleOAuthRegistration();
+            } else {
+                // Always open OTP modal for verification - OTP will be sent automatically via useEffect
+                setShowOtpModal(true);
+            }
         }
     };
 
@@ -569,16 +614,20 @@ export default function Register() {
             });
 
             // STEP 3: Insert or update users table (use upsert to handle retries)
+            // For OAuth users, use OAuth data as fallback if formData is empty
+            const finalFullName = formData.fullName || oauthUserData?.name || '';
+            const finalEmail = formData.personalEmail || oauthUserData?.email || '';
+            
             const { error: userError } = await supabase.from('users').upsert({
                 id: userId,
                 user_type: formData.userType,
-                full_name: formData.fullName,
-                personal_email: formData.personalEmail,
-                    telephone: formData.telephone,
-                    country: formData.country,
-                    city: formData.city,
+                full_name: finalFullName,
+                personal_email: finalEmail,
+                    telephone: formData.telephone || null, // OAuth users skip personal step, so these will be null
+                    country: formData.country || null,
+                    city: formData.city || null,
                 cover_image_url: fileUrls.coverImage || null,
-                photo_url: fileUrls.photo || null,
+                photo_url: fileUrls.photo || oauthUserData?.photo || null,
             }, {
                 onConflict: 'id' // Update if user already exists
             });
@@ -764,6 +813,75 @@ export default function Register() {
         }
     }
 
+    // OAuth-specific registration flow (skip OTP/personal step)
+    async function handleOAuthRegistration() {
+        setLoading(true);
+        setError('');
+
+        try {
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !session?.user) {
+                throw new Error('No active session. Please sign in again.');
+            }
+
+            const userId = session.user.id;
+            const fallbackName =
+                formData.fullName ||
+                oauthUserData?.name ||
+                session.user.email?.split('@')[0] ||
+                'User';
+
+            // Update registration steps for OAuth (no OTP)
+            setRegistrationSteps([
+                { label: 'Uploading files', status: 'loading' },
+                { label: 'Saving your profile', status: 'pending' },
+            ]);
+
+            // Update auth metadata
+            await supabase.auth.updateUser({
+                data: {
+                    full_name: fallbackName,
+                    name: fallbackName,
+                    display_name: fallbackName,
+                    user_type: formData.userType,
+                },
+            });
+
+            setRegistrationSteps([
+                { label: 'Uploading files', status: 'completed' },
+                { label: 'Saving your profile', status: 'loading' },
+            ]);
+
+            // Proceed with uploads and DB inserts
+            await handleRegistrationData(userId);
+
+            setRegistrationSteps([
+                { label: 'Uploading files', status: 'completed' },
+                { label: 'Saving your profile', status: 'completed' },
+            ]);
+
+            toast({
+                title: 'Registration complete!',
+                description: 'Your account has been created successfully.',
+            });
+
+            setTimeout(() => {
+                window.location.replace('/');
+            }, 1000);
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : 'Registration failed. Please try again.';
+            console.error('❌ OAuth Registration error:', e);
+            setError(msg);
+            toast({
+                title: 'Registration error',
+                description: msg,
+                variant: 'destructive',
+            });
+            setLoading(false);
+            setRegistrationSteps([]);
+        }
+    }
+
     const handleBack = () => {
         // Clear any errors when going back
         setError('');
@@ -779,7 +897,7 @@ export default function Register() {
         } else if (currentStep === 'personal') {
             setCurrentStep('company');
         } else if (currentStep === 'pitch') {
-            setCurrentStep('personal');
+            setCurrentStep(isOAuthUser ? 'company' : 'personal');
         }
     };
 
@@ -1881,61 +1999,26 @@ export default function Register() {
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Cover Image
                                 </label>
-                                <label
-                                    onDragOver={(e) => {
-                                        e.preventDefault();
-                                        e.currentTarget.classList.add('bg-blue-50', 'border-blue-400');
-                                        e.currentTarget.style.borderColor = '#0a3d5c';
-                                        e.currentTarget.style.backgroundColor = '#f0f8ff';
-                                    }}
-                                    onDragLeave={(e) => {
-                                        e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400');
-                                        e.currentTarget.style.borderColor = '';
-                                        e.currentTarget.style.backgroundColor = '';
-                                    }}
-                                    onDrop={(e) => {
-                                        e.preventDefault();
-                                        e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400');
-                                        e.currentTarget.style.borderColor = '';
-                                        e.currentTarget.style.backgroundColor = '';
-                                        if (e.dataTransfer.files?.[0]) {
-                                            const file = e.dataTransfer.files[0];
-                                            const reader = new FileReader();
-                                            reader.onload = (event) => {
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    coverImage: file.name,
-                                                    coverImagePreview: event.target?.result as string,
-                                                }));
-                                                setFileObjects((prev) => ({ ...prev, coverImage: file }));
-                                                setError('');
-                                            };
-                                            reader.readAsDataURL(file);
-                                        }
-                                    }}
-                                    className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:bg-gray-50 transition"
-                                >
-                                    {formData.coverImagePreview ? (
-                                        <div className="w-full">
-                                            <img src={formData.coverImagePreview} alt="Cover preview" className="w-full h-40 object-cover rounded-lg mb-2" />
-                                            <p className="text-sm text-green-600 text-center">✓ {formData.coverImage}</p>
-                                        </div>
-                                    ) : (
-                                        <div className="text-center pointer-events-none">
-                                            <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                            <p className="text-sm text-gray-600">Drag and drop cover image here or click</p>
-                                        </div>
-                                    )}
-                                    <input
-                                        id="coverImage"
-                                        name="coverImage"
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => {
-                                            if (e.target.files?.[0]) {
-                                                const file = e.target.files[0];
+                                <div className="relative">
+                                    <label
+                                        onDragOver={(e) => {
+                                            e.preventDefault();
+                                            e.currentTarget.classList.add('bg-blue-50', 'border-blue-400');
+                                            e.currentTarget.style.borderColor = '#0a3d5c';
+                                            e.currentTarget.style.backgroundColor = '#f0f8ff';
+                                        }}
+                                        onDragLeave={(e) => {
+                                            e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400');
+                                            e.currentTarget.style.borderColor = '';
+                                            e.currentTarget.style.backgroundColor = '';
+                                        }}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400');
+                                            e.currentTarget.style.borderColor = '';
+                                            e.currentTarget.style.backgroundColor = '';
+                                            if (e.dataTransfer.files?.[0]) {
+                                                const file = e.dataTransfer.files[0];
                                                 const reader = new FileReader();
                                                 reader.onload = (event) => {
                                                     setFormData((prev) => ({
@@ -1949,9 +2032,71 @@ export default function Register() {
                                                 reader.readAsDataURL(file);
                                             }
                                         }}
-                                        className="hidden"
-                                    />
-                                </label>
+                                        className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:bg-gray-50 transition"
+                                    >
+                                        {formData.coverImagePreview ? (
+                                            <div className="w-full relative">
+                                                <img src={formData.coverImagePreview} alt="Cover preview" className="w-full h-40 object-cover rounded-lg mb-2" />
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setFormData((prev) => ({
+                                                            ...prev,
+                                                            coverImage: '',
+                                                            coverImagePreview: '',
+                                                        }));
+                                                        setFileObjects((prev) => {
+                                                            const { coverImage, ...rest } = prev;
+                                                            return rest;
+                                                        });
+                                                        // Reset the file input
+                                                        const fileInput = document.getElementById('coverImage') as HTMLInputElement;
+                                                        if (fileInput) {
+                                                            fileInput.value = '';
+                                                        }
+                                                    }}
+                                                    className="absolute top-1 right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all z-10"
+                                                    title="Delete cover image"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                                <p className="text-sm text-green-600 text-center">✓ {formData.coverImage}</p>
+                                            </div>
+                                        ) : (
+                                            <div className="text-center pointer-events-none">
+                                                <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                <p className="text-sm text-gray-600">Drag and drop cover image here or click</p>
+                                            </div>
+                                        )}
+                                        <input
+                                            id="coverImage"
+                                            name="coverImage"
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                if (e.target.files?.[0]) {
+                                                    const file = e.target.files[0];
+                                                    const reader = new FileReader();
+                                                    reader.onload = (event) => {
+                                                        setFormData((prev) => ({
+                                                            ...prev,
+                                                            coverImage: file.name,
+                                                            coverImagePreview: event.target?.result as string,
+                                                        }));
+                                                        setFileObjects((prev) => ({ ...prev, coverImage: file }));
+                                                        setError('');
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            }}
+                                            className="hidden"
+                                        />
+                                    </label>
+                                </div>
                             </div>
 
                             {/* User Photo Upload */}
@@ -1959,63 +2104,26 @@ export default function Register() {
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     User Photo
                                 </label>
-                                <label
-                                    onDragOver={(e) => {
-                                        e.preventDefault();
-                                        e.currentTarget.classList.add('bg-blue-50', 'border-blue-400');
-                                        e.currentTarget.style.borderColor = '#0a3d5c';
-                                        e.currentTarget.style.backgroundColor = '#f0f8ff';
-                                    }}
-                                    onDragLeave={(e) => {
-                                        e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400');
-                                        e.currentTarget.style.borderColor = '';
-                                        e.currentTarget.style.backgroundColor = '';
-                                    }}
-                                    onDrop={(e) => {
-                                        e.preventDefault();
-                                        e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400');
-                                        e.currentTarget.style.borderColor = '';
-                                        e.currentTarget.style.backgroundColor = '';
-                                        if (e.dataTransfer.files?.[0]) {
-                                            const file = e.dataTransfer.files[0];
-                                            const reader = new FileReader();
-                                            reader.onload = (event) => {
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    photo: file.name,
-                                                    photoPreview: event.target?.result as string,
-                                                }));
-                                                setFileObjects((prev) => ({ ...prev, photo: file }));
-                                                setError('');
-                                            };
-                                            reader.readAsDataURL(file);
-                                        }
-                                    }}
-                                    className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:bg-gray-50 transition"
-                                >
-                                    {formData.photoPreview ? (
-                                        <div className="w-full flex justify-center">
-                                            <div className="w-32 h-32">
-                                                <img src={formData.photoPreview} alt="Photo preview" className="w-full h-full object-cover rounded-full" style={{ borderColor: '#0a3d5c', borderWidth: '2px' }} />
-                                                <p className="text-sm text-green-600 text-center mt-2">✓ {formData.photo}</p>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="text-center pointer-events-none">
-                                            <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                            </svg>
-                                            <p className="text-sm text-gray-600">Drag and drop user photo here or click</p>
-                                        </div>
-                                    )}
-                                    <input
-                                        id="photo"
-                                        name="photo"
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => {
-                                            if (e.target.files?.[0]) {
-                                                const file = e.target.files[0];
+                                <div className="relative">
+                                    <label
+                                        onDragOver={(e) => {
+                                            e.preventDefault();
+                                            e.currentTarget.classList.add('bg-blue-50', 'border-blue-400');
+                                            e.currentTarget.style.borderColor = '#0a3d5c';
+                                            e.currentTarget.style.backgroundColor = '#f0f8ff';
+                                        }}
+                                        onDragLeave={(e) => {
+                                            e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400');
+                                            e.currentTarget.style.borderColor = '';
+                                            e.currentTarget.style.backgroundColor = '';
+                                        }}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400');
+                                            e.currentTarget.style.borderColor = '';
+                                            e.currentTarget.style.backgroundColor = '';
+                                            if (e.dataTransfer.files?.[0]) {
+                                                const file = e.dataTransfer.files[0];
                                                 const reader = new FileReader();
                                                 reader.onload = (event) => {
                                                     setFormData((prev) => ({
@@ -2029,9 +2137,73 @@ export default function Register() {
                                                 reader.readAsDataURL(file);
                                             }
                                         }}
-                                        className="hidden"
-                                    />
-                                </label>
+                                        className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:bg-gray-50 transition"
+                                    >
+                                        {formData.photoPreview ? (
+                                            <div className="w-full flex justify-center">
+                                                <div className="w-32 h-32 relative">
+                                                    <img src={formData.photoPreview} alt="Photo preview" className="w-full h-full object-cover rounded-full" style={{ borderColor: '#0a3d5c', borderWidth: '2px' }} />
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            setFormData((prev) => ({
+                                                                ...prev,
+                                                                photo: '',
+                                                                photoPreview: '',
+                                                            }));
+                                                            setFileObjects((prev) => {
+                                                                const { photo, ...rest } = prev;
+                                                                return rest;
+                                                            });
+                                                            // Reset the file input
+                                                            const fileInput = document.getElementById('photo') as HTMLInputElement;
+                                                            if (fileInput) {
+                                                                fileInput.value = '';
+                                                            }
+                                                        }}
+                                                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all z-10"
+                                                        title="Delete user photo"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                    <p className="text-sm text-green-600 text-center mt-2">✓ {formData.photo}</p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-center pointer-events-none">
+                                                <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                </svg>
+                                                <p className="text-sm text-gray-600">Drag and drop user photo here or click</p>
+                                            </div>
+                                        )}
+                                        <input
+                                            id="photo"
+                                            name="photo"
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                if (e.target.files?.[0]) {
+                                                    const file = e.target.files[0];
+                                                    const reader = new FileReader();
+                                                    reader.onload = (event) => {
+                                                        setFormData((prev) => ({
+                                                            ...prev,
+                                                            photo: file.name,
+                                                            photoPreview: event.target?.result as string,
+                                                        }));
+                                                        setFileObjects((prev) => ({ ...prev, photo: file }));
+                                                        setError('');
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            }}
+                                            className="hidden"
+                                        />
+                                    </label>
+                                </div>
                             </div>
 
                             <div>
@@ -2451,8 +2623,8 @@ export default function Register() {
                         disabled={loading}
                         className="flex-1 flex items-center justify-center gap-1 px-4 py-2 text-white font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ backgroundColor: '#0a3d5c' }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#062a3d'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a3d5c'}
+                        onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = '#062a3d')}
+                        onMouseLeave={(e) => !loading && (e.currentTarget.style.backgroundColor = '#0a3d5c')}
                     >
                         {loading ? (
                             <span className="flex items-center gap-2">
@@ -2462,7 +2634,7 @@ export default function Register() {
                         ) : currentStep === 'pitch' ? (
                             <>
                                 Complete
-                                <ChevronRight size={18} />
+                                {!isOAuthUser && <ChevronRight size={18} />}
                             </>
                         ) : (
                             <>

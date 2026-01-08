@@ -102,6 +102,16 @@ const Settings: React.FC = () => {
   const [photoPreview, setPhotoPreview] = useState<string>('');
   const [coverImagePreview, setCoverImagePreview] = useState<string>('');
 
+  // Password states
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [isOAuthUser, setIsOAuthUser] = useState(false); // Track if user signed in via OAuth (no password)
+
   const loadProfileData = useCallback(async () => {
     if (USE_STATIC_PREVIEW) {
       const mock: ProfileData = {
@@ -312,6 +322,17 @@ const Settings: React.FC = () => {
     loadProfileData();
   }, [user, authLoading, navigate, loadProfileData]);
 
+  // Check if user is OAuth-only (no password)
+  useEffect(() => {
+    if (user) {
+      // Check if user signed in via OAuth (Google or LinkedIn)
+      // OAuth users have app_metadata.provider set and typically don't have a password
+      const provider = user.app_metadata?.provider;
+      const isOAuth = provider === 'google' || provider === 'linkedin' || provider === 'linkedin_oidc';
+      setIsOAuthUser(isOAuth);
+    }
+  }, [user]);
+
   // Auto-detect location on mount if country/city is not set
   useEffect(() => {
     if (!USE_STATIC_PREVIEW && user && !formData.country && !geolocationLoading) {
@@ -505,6 +526,124 @@ const Settings: React.FC = () => {
     }
   };
 
+  const handlePasswordChange = async () => {
+    if (!user) return;
+
+    // Validation - different for OAuth users vs password users
+    if (isOAuthUser) {
+      // OAuth users: only need new password and confirmation
+      if (!passwordData.newPassword || !passwordData.confirmPassword) {
+        setPasswordError('New password and confirmation are required');
+        return;
+      }
+    } else {
+      // Password users: need all fields including current password
+      if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+        setPasswordError('All password fields are required');
+        return;
+      }
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters long');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('New password and confirmation do not match');
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+      setPasswordError('');
+
+      // For non-OAuth users, verify the current password first
+      if (!isOAuthUser) {
+        const userEmail = user.email || formData.personalEmail;
+        if (!userEmail) {
+          throw new Error('Email address not found. Please update your email in Account settings.');
+        }
+
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: userEmail,
+          password: passwordData.currentPassword,
+        });
+
+        if (signInError) {
+          // Map Supabase error codes to user-friendly messages
+          if (signInError.message.includes('Invalid login credentials') || 
+              signInError.message.includes('invalid') ||
+              signInError.message.includes('Email not confirmed')) {
+            throw new Error('Current password is incorrect');
+          }
+          throw signInError;
+        }
+      }
+
+      // Update password (works for both OAuth users creating password and password users changing it)
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: passwordData.newPassword,
+      });
+
+      if (updateError) {
+        // Map Supabase error codes to user-friendly messages
+        let errorMessage = 'Failed to update password. Please try again.';
+        
+        if (updateError.message.includes('same password') || updateError.message.includes('identical')) {
+          errorMessage = 'New password must be different from your current password';
+        } else if (updateError.message.includes('weak') || updateError.message.includes('strength')) {
+          errorMessage = 'Password is too weak. Please choose a stronger password';
+        } else if (updateError.message.includes('network') || updateError.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your internet connection and try again';
+        } else if (updateError.message) {
+          errorMessage = updateError.message;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      toast({
+        title: 'Success',
+        description: isOAuthUser ? 'Password created successfully' : 'Password updated successfully',
+      });
+
+      // Clear password fields
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+
+      // Update OAuth status after password is created
+      if (isOAuthUser) {
+        setIsOAuthUser(false);
+      }
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      
+      // Handle different error types
+      let errorMessage = 'Failed to update password. Please try again.';
+      
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        errorMessage = 'Network error. Please check your internet connection and try again';
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else if (error.toString && error.toString().includes('fetch')) {
+        errorMessage = 'Network error. Please check your internet connection and try again';
+      }
+      
+      setPasswordError(errorMessage);
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!user) return;
 
@@ -517,99 +656,131 @@ const Settings: React.FC = () => {
 
       if (photoFile) {
         const { uploadFile } = await import('@/lib/storage');
-        const result = await uploadFile('avatars', photoFile, user.id, '');
+        const result = await uploadFile('user-photos', photoFile, user.id);
         if (result.url) {
           photoUrl = result.url;
+        } else if (result.error) {
+          throw new Error(`Failed to upload photo: ${result.error.message || 'Unknown error'}`);
         }
       }
 
       if (coverImageFile) {
         const { uploadFile } = await import('@/lib/storage');
-        const result = await uploadFile('covers', coverImageFile, user.id, '');
+        const result = await uploadFile('cover-images', coverImageFile, user.id);
         if (result.url) {
           coverImageUrl = result.url;
+        } else if (result.error) {
+          throw new Error(`Failed to upload cover image: ${result.error.message || 'Unknown error'}`);
         }
       }
 
       // Update users table (email is not updated as it cannot be changed)
+      // If photoUrl is empty string, set it to null to remove the photo
       const { error: userError } = await supabase
         .from('users')
         .update({
           full_name: formData.fullName,
           // personal_email is intentionally excluded - email cannot be changed
-          telephone: formData.telephone,
-          country: formData.country,
-          city: formData.city,
-          photo_url: photoUrl,
-          cover_image_url: coverImageUrl,
+          telephone: formData.telephone || null,
+          country: formData.country || null,
+          city: formData.city || null,
+          photo_url: photoUrl || null,
+          cover_image_url: coverImageUrl || null,
         })
         .eq('id', user.id);
 
       if (userError) throw userError;
 
-      // Update profiles table
-      if (profileData?.profile) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            project_name: formData.projectName,
-            project_category: formData.projectCategory,
-            company_name: formData.companyName,
-            company_nif: formData.companyNIF,
-            company_telephone: formData.companyTelephone,
-            smart_money: formData.smartMoney,
-            total_sale_of_project: formData.totalSaleOfProject,
-            investment_preferences: formData.investmentPreferences,
-            inventor_name: formData.inventorName,
-            license_number: formData.licenseNumber,
-            release_date: formData.releaseDate,
-            initial_license_value: formData.initialLicenseValue,
-            exploitation_license_royalty: formData.exploitationLicenseRoyalty,
-            patent_sale: formData.patentSale,
-            investors_count: formData.investorsCount,
-          })
-          .eq('user_id', user.id);
+      // Update or insert profiles table (upsert)
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          user_id: user.id,
+          project_name: formData.projectName || null,
+          project_category: formData.projectCategory || null,
+          company_name: formData.companyName || null,
+          company_nif: formData.companyNIF || null,
+          company_telephone: formData.companyTelephone || null,
+          smart_money: formData.smartMoney || null,
+          total_sale_of_project: formData.totalSaleOfProject || null,
+          investment_preferences: formData.investmentPreferences || null,
+          inventor_name: formData.inventorName || null,
+          license_number: formData.licenseNumber || null,
+          release_date: formData.releaseDate || null,
+          initial_license_value: formData.initialLicenseValue || null,
+          exploitation_license_royalty: formData.exploitationLicenseRoyalty || null,
+          patent_sale: formData.patentSale || null,
+          investors_count: formData.investorsCount || null,
+        }, {
+          onConflict: 'user_id'
+        });
 
-        if (profileError) throw profileError;
-      }
+      if (profileError) throw profileError;
 
-      // Update commercial_proposals table
-      if (profileData?.proposals) {
+      // Update or insert commercial_proposals table (upsert)
+      // Only upsert if there's at least one field with data
+      const hasProposalData = 
+        formData.equityCapitalPercentage || 
+        formData.equityTotalValue || 
+        formData.licenseFee || 
+        formData.licensingRoyaltiesPercentage || 
+        formData.franchiseeInvestment || 
+        formData.monthlyRoyalties || 
+        formData.patentUpfrontFee || 
+        formData.patentRoyalties;
+
+      if (hasProposalData) {
         const { error: proposalsError } = await supabase
           .from('commercial_proposals')
-          .update({
-            equity_capital_percentage: formData.equityCapitalPercentage,
-            equity_total_value: formData.equityTotalValue,
-            license_fee: formData.licenseFee,
-            licensing_royalties_percentage: formData.licensingRoyaltiesPercentage,
-            franchisee_investment: formData.franchiseeInvestment,
-            monthly_royalties: formData.monthlyRoyalties,
-            patent_upfront_fee: formData.patentUpfrontFee,
-            patent_royalties: formData.patentRoyalties,
-          })
-          .eq('user_id', user.id);
+          .upsert({
+            user_id: user.id,
+            equity_capital_percentage: formData.equityCapitalPercentage || null,
+            equity_total_value: formData.equityTotalValue || null,
+            license_fee: formData.licenseFee || null,
+            licensing_royalties_percentage: formData.licensingRoyaltiesPercentage || null,
+            franchisee_investment: formData.franchiseeInvestment || null,
+            monthly_royalties: formData.monthlyRoyalties || null,
+            patent_upfront_fee: formData.patentUpfrontFee || null,
+            patent_royalties: formData.patentRoyalties || null,
+          }, {
+            onConflict: 'user_id'
+          });
 
         if (proposalsError) throw proposalsError;
       }
 
-      // Update pitch_materials table
-      if (profileData?.materials) {
-        const { error: materialsError } = await supabase
-          .from('pitch_materials')
-          .update({
-            description: formData.description,
-            fact_sheet: formData.factSheet,
-            technical_sheet: formData.technicalSheet,
-          })
-          .eq('user_id', user.id);
+      // Update or insert pitch_materials table (upsert)
+      const { error: materialsError } = await supabase
+        .from('pitch_materials')
+        .upsert({
+          user_id: user.id,
+          description: formData.description || null,
+          fact_sheet: formData.factSheet || null,
+          technical_sheet: formData.technicalSheet || null,
+        }, {
+          onConflict: 'user_id'
+        });
 
-        if (materialsError) throw materialsError;
-      }
+      if (materialsError) throw materialsError;
 
       toast({
         title: 'Success',
         description: 'Profile updated successfully',
       });
+
+      // Clear file states after successful upload
+      setPhotoFile(null);
+      setCoverImageFile(null);
+      
+      // Update previews with new URLs
+      if (photoUrl) {
+        setPhotoPreview(photoUrl);
+        setFormData(prev => ({ ...prev, photoUrl }));
+      }
+      if (coverImageUrl) {
+        setCoverImagePreview(coverImageUrl);
+        setFormData(prev => ({ ...prev, coverImageUrl }));
+      }
 
       // Reload profile data
       await loadProfileData();
@@ -690,14 +861,33 @@ const Settings: React.FC = () => {
                         <img
                           src={photoPreview}
                           alt="Profile"
-                            className="w-32 h-32 rounded-full object-cover border-4 border-[#0a3d5c] shadow-lg"
+                            className="w-32 h-32 rounded-full object-cover shadow-lg"
                         />
                           <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <Camera className="h-6 w-6 text-white" />
                           </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setPhotoPreview('');
+                              setPhotoFile(null);
+                              setFormData(prev => ({ ...prev, photoUrl: '' }));
+                              // Reset the file input
+                              const fileInput = document.getElementById('profile-photo-input') as HTMLInputElement;
+                              if (fileInput) {
+                                fileInput.value = '';
+                              }
+                            }}
+                            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all z-10"
+                            title="Delete profile photo"
+                          >
+                            <X size={14} />
+                          </button>
                         </div>
                       ) : (
-                        <div className="w-32 h-32 rounded-full bg-gradient-to-br from-[#0a3d5c] to-[#062a3d] flex items-center justify-center border-4 border-[#0a3d5c] shadow-lg">
+                        <div className="w-32 h-32 rounded-full bg-gradient-to-br from-[#0a3d5c] to-[#062a3d] flex items-center justify-center shadow-lg">
                           <Camera className="h-10 w-10 text-white" />
                         </div>
                       )}
@@ -732,18 +922,25 @@ const Settings: React.FC = () => {
                           alt="Cover"
                           className="w-full h-56 object-cover"
                         />
-                        <Button
+                        <button
                           type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute top-3 right-3 bg-white/90 hover:bg-white shadow-md rounded-full"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             setCoverImagePreview('');
                             setCoverImageFile(null);
+                            setFormData(prev => ({ ...prev, coverImageUrl: '' }));
+                            // Reset the file input
+                            const fileInput = document.getElementById('cover-image-input') as HTMLInputElement;
+                            if (fileInput) {
+                              fileInput.value = '';
+                            }
                           }}
+                          className="absolute top-3 right-3 w-8 h-8 bg-white/90 hover:bg-white shadow-md rounded-full flex items-center justify-center transition-all z-10"
+                          title="Delete cover image"
                         >
                           <X className="h-4 w-4 text-gray-700" />
-                        </Button>
+                        </button>
                       </div>
                     ) : (
                       <div className="w-full h-56 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border-2 border-dashed border-gray-200 hover:border-[#0a3d5c] transition-colors">
@@ -1335,25 +1532,43 @@ const Settings: React.FC = () => {
           <TabsContent value="security" className="space-y-6">
             <Card className="rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-[#0a3d5c] to-[#062a3d] text-white pb-4">
-                <CardTitle className="text-white text-2xl">Change Password</CardTitle>
-                <CardDescription className="text-white/90">Update your password to keep your account secure</CardDescription>
+                <CardTitle className="text-white text-2xl">
+                  {isOAuthUser ? 'Create Password' : 'Change Password'}
+                </CardTitle>
+                <CardDescription className="text-white/90">
+                  {isOAuthUser 
+                    ? 'Create a password to enable email/password login' 
+                    : 'Update your password to keep your account secure'}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6 pt-6">
-                <div className="space-y-2">
-                  <Label htmlFor="currentPassword" className="text-sm font-semibold text-gray-700">Current Password</Label>
-                  <Input
-                    id="currentPassword"
-                    type="password"
-                    placeholder="Enter current password"
-                    className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                  />
-                </div>
+                {!isOAuthUser && (
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPassword" className="text-sm font-semibold text-gray-700">Current Password</Label>
+                    <Input
+                      id="currentPassword"
+                      type="password"
+                      value={passwordData.currentPassword}
+                      onChange={(e) => {
+                        setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }));
+                        setPasswordError('');
+                      }}
+                      placeholder="Enter current password"
+                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="newPassword" className="text-sm font-semibold text-gray-700">New Password</Label>
                   <Input
                     id="newPassword"
                     type="password"
-                    placeholder="Enter new password"
+                    value={passwordData.newPassword}
+                    onChange={(e) => {
+                      setPasswordData(prev => ({ ...prev, newPassword: e.target.value }));
+                      setPasswordError('');
+                    }}
+                    placeholder="Enter new password (min 6 characters)"
                     className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
                   />
                 </div>
@@ -1362,16 +1577,42 @@ const Settings: React.FC = () => {
                   <Input
                     id="confirmPassword"
                     type="password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => {
+                      setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }));
+                      setPasswordError('');
+                    }}
                     placeholder="Confirm new password"
                     className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
                   />
                 </div>
+                {passwordError && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-700">{passwordError}</p>
+                  </div>
+                )}
                 <div className="flex justify-end pt-4 border-t border-gray-200">
                   <Button
-                    className="bg-[#0a3d5c] hover:bg-[#0a3d5c]/90 text-white rounded-full px-6 shadow-md hover:shadow-lg transition-all"
+                    onClick={handlePasswordChange}
+                    disabled={
+                      changingPassword || 
+                      !passwordData.newPassword || 
+                      !passwordData.confirmPassword ||
+                      (!isOAuthUser && !passwordData.currentPassword)
+                    }
+                    className="bg-[#0a3d5c] hover:bg-[#0a3d5c]/90 text-white rounded-full px-6 shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Lock className="h-4 w-4 mr-2" />
-                    Update Password
+                    {changingPassword ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white mr-2"></div>
+                        {isOAuthUser ? 'Creating...' : 'Updating...'}
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="h-4 w-4 mr-2" />
+                        {isOAuthUser ? 'Create Password' : 'Update Password'}
+                      </>
+                    )}
                   </Button>
                 </div>
               </CardContent>
