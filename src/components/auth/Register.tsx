@@ -376,7 +376,7 @@ export default function Register() {
                     if (formData.userType === 'Inventor') {
                         setError('Please fill at least one sale option: Patent Exploitation Fee OR Full Patent Assignment (100%)');
                     } else {
-                        setError('Please fill at least one complete commercial proposal option (Equity Participation, Brand Licensing, Franchising, Patent Licensing, or Total Sale)');
+                        setError('Please fill at least one complete commercial proposal option (Investment Offer, Brand Exploitation Rights, Franchise, or Total Sale)');
                     }
                     return false;
                 }
@@ -599,7 +599,7 @@ export default function Register() {
                 license_number: formData.licenseNumber || null,
                 release_date: formData.releaseDate || null,
                 initial_license_value: formData.initialLicenseValue || null,
-                exploitation_license_royalty: null, // Removed for StartUp and Company
+                exploitation_license_royalty: formData.userType === 'Inventor' ? (formData.exploitationLicenseRoyalty || null) : null, // Only for Inventor
                 patent_sale: formData.patentSale || null,
                 investors_count: formData.investorsCount || null,
             };
@@ -629,7 +629,7 @@ export default function Register() {
                     franchisee_investment: formData.franchiseeInvestment || null,
                     monthly_royalties: formData.monthlyRoyalties || null,
                     patent_upfront_fee: formData.userType === 'Inventor' ? (formData.initialLicenseValue || null) : null,
-                    patent_royalties: null, // Removed for StartUp and Company
+                    patent_royalties: formData.userType === 'Inventor' ? (formData.exploitationLicenseRoyalty || null) : null, // Only for Inventor
                 };
 
                 const { error: proposalError } = await supabase.from('commercial_proposals').upsert(proposalData, {
@@ -1015,6 +1015,30 @@ export default function Register() {
                                         />
                                     </div>
 
+                                    {/* Patent Exploitation Royalties */}
+                                    <div>
+                                        <label htmlFor="exploitationLicenseRoyalty" className="block text-sm font-medium text-gray-700 mb-1">
+                                            Patent Exploitation Royalties
+                                        </label>
+                                        <input
+                                            id="exploitationLicenseRoyalty"
+                                            name="exploitationLicenseRoyalty"
+                                            type="text"
+                                            value={formData.exploitationLicenseRoyalty}
+                                            onChange={handleChange}
+                                            placeholder="Ex: 6%"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                            onFocus={(e) => {
+                                                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                                e.currentTarget.style.borderColor = '#0a3d5c';
+                                            }}
+                                            onBlur={(e) => {
+                                                e.currentTarget.style.boxShadow = 'none';
+                                                e.currentTarget.style.borderColor = '#d1d5db';
+                                            }}
+                                        />
+                                    </div>
+
                                     {/* Full Patent Assignment (100%) */}
                                     <div>
                                         <label htmlFor="patentSale" className="block text-sm font-medium text-gray-700 mb-1">
@@ -1247,17 +1271,17 @@ export default function Register() {
 
                             {/* Commercial Proposal Options - All 4 blocks for StartUp */}
                             <div className="space-y-6 mt-6">
-                                {/* Block 1: Equity Participation - Highlighted for StartUp */}
+                                {/* Block 1: Investment Offer (%) - Highlighted for StartUp */}
                                 <div className={`border rounded-lg p-5 ${formData.userType === 'StartUp' ? 'border-[#0a3d5c] bg-blue-50/30' : 'border-gray-200 bg-gray-50'}`}>
                                     <h3 className="text-base font-semibold text-gray-800 mb-4">
-                                Equity Participation
+                                Investment Offer (%)
                                         {formData.userType === 'StartUp' && <span className="ml-2 text-xs text-[#0a3d5c]">(Primary)</span>}
                                     </h3>
                                     
                                     <div className="space-y-4">
                                         <div>
                                             <label htmlFor="capitalPercentage" className="block text-sm font-medium text-gray-700 mb-1">
-                                                Capital Percentage
+                                                Equity
                                             </label>
                                             <input
                                                 id="capitalPercentage"
@@ -1279,7 +1303,7 @@ export default function Register() {
                                         </div>
                                         <div>
                                             <label htmlFor="capitalTotalValue" className="block text-sm font-medium text-gray-700 mb-1">
-                                                Total Value
+                                                Investment Amount
                                             </label>
                                             <input
                                                 id="capitalTotalValue"
@@ -1302,13 +1326,13 @@ export default function Register() {
                                     </div>
                                 </div>
 
-                                {/* Block 2: Brand Licensing (Exploitation) */}
+                                {/* Block 2: Brand Exploitation Rights */}
                                 <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
-                                    <h3 className="text-base font-semibold text-gray-800 mb-4">Brand Licensing (Exploitation)</h3>
+                                    <h3 className="text-base font-semibold text-gray-800 mb-4">Brand Exploitation Rights</h3>
                                     <div className="space-y-4">
                                         <div>
                                             <label htmlFor="licenseFee" className="block text-sm font-medium text-gray-700 mb-1">
-                                                License Fee
+                                                Initial Licensing Fee
                                             </label>
                                             <input
                                                 id="licenseFee"
@@ -1330,7 +1354,7 @@ export default function Register() {
                                         </div>
                                         <div>
                                             <label htmlFor="licensingRoyaltiesPercentage" className="block text-sm font-medium text-gray-700 mb-1">
-                                                Royalties Percentage
+                                                Royalties (%)
                                             </label>
                                             <input
                                                 id="licensingRoyaltiesPercentage"
@@ -1353,13 +1377,13 @@ export default function Register() {
                                     </div>
                                 </div>
 
-                                {/* Block 3: Franchising */}
+                                {/* Block 3: Franchise */}
                                 <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
-                                    <h3 className="text-base font-semibold text-gray-800 mb-4">Franchising</h3>
+                                    <h3 className="text-base font-semibold text-gray-800 mb-4">Franchise</h3>
                                     <div className="space-y-4">
                                         <div>
                                             <label htmlFor="franchiseeInvestment" className="block text-sm font-medium text-gray-700 mb-1">
-                                                Franchisee Investment
+                                                Franchise Fee
                                             </label>
                                             <input
                                                 id="franchiseeInvestment"
@@ -1381,7 +1405,7 @@ export default function Register() {
                                         </div>
                                         <div>
                                             <label htmlFor="monthlyRoyalties" className="block text-sm font-medium text-gray-700 mb-1">
-                                                Monthly Royalties
+                                                Royalties (%)
                                             </label>
                                             <input
                                                 id="monthlyRoyalties"
@@ -1586,13 +1610,13 @@ export default function Register() {
 
                                     {/* Commercial Proposal Options - All 4 blocks for Company */}
                                     <div className="space-y-6 mt-6">
-                                        {/* Block 1: Equity Participation */}
+                                        {/* Block 1: Investment Offer (%) */}
                                         <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
-                                            <h3 className="text-base font-semibold text-gray-800 mb-4">Equity Participation</h3>
+                                            <h3 className="text-base font-semibold text-gray-800 mb-4">Investment Offer (%)</h3>
                                             <div className="space-y-4">
                                                 <div>
                                                     <label htmlFor="capitalPercentage" className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Capital Percentage
+                                                        Equity
                                                     </label>
                                                     <input
                                                         id="capitalPercentage"
@@ -1614,7 +1638,7 @@ export default function Register() {
                                                 </div>
                                                 <div>
                                                     <label htmlFor="capitalTotalValue" className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Total Value
+                                                        Investment Amount
                                                     </label>
                                                     <input
                                                         id="capitalTotalValue"
@@ -1637,13 +1661,13 @@ export default function Register() {
                                             </div>
                                         </div>
 
-                                        {/* Block 2: Brand Licensing */}
+                                        {/* Block 2: Brand Exploitation Rights */}
                                         <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
-                                            <h3 className="text-base font-semibold text-gray-800 mb-4">Brand Licensing (Exploitation)</h3>
+                                            <h3 className="text-base font-semibold text-gray-800 mb-4">Brand Exploitation Rights</h3>
                                             <div className="space-y-4">
                                                 <div>
                                                     <label htmlFor="licenseFee" className="block text-sm font-medium text-gray-700 mb-1">
-                                                        License Fee
+                                                        Initial Licensing Fee
                                                     </label>
                                                     <input
                                                         id="licenseFee"
@@ -1665,7 +1689,7 @@ export default function Register() {
                                                 </div>
                                                 <div>
                                                     <label htmlFor="licensingRoyaltiesPercentage" className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Royalties Percentage
+                                                        Royalties (%)
                                                     </label>
                                                     <input
                                                         id="licensingRoyaltiesPercentage"
@@ -1688,16 +1712,16 @@ export default function Register() {
                                             </div>
                                         </div>
 
-                                        {/* Block 3: Franchising - Highlighted for Company */}
+                                        {/* Block 3: Franchise - Highlighted for Company */}
                                         <div className={`border rounded-lg p-5 ${formData.userType === 'Company' ? 'border-[#0a3d5c] bg-blue-50/30' : 'border-gray-200 bg-gray-50'}`}>
                                             <h3 className="text-base font-semibold text-gray-800 mb-4">
-                                                Franchising
+                                                Franchise
                                                 {formData.userType === 'Company' && <span className="ml-2 text-xs text-[#0a3d5c]">(Primary)</span>}
                                             </h3>
                                             <div className="space-y-4">
                                                 <div>
                                                     <label htmlFor="franchiseeInvestment" className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Franchisee Investment
+                                                        Franchise Fee
                                                     </label>
                                                     <input
                                                         id="franchiseeInvestment"
@@ -1719,7 +1743,7 @@ export default function Register() {
                                                 </div>
                                                 <div>
                                                     <label htmlFor="monthlyRoyalties" className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Monthly Royalties
+                                                        Royalties (%)
                                                     </label>
                                                     <input
                                                         id="monthlyRoyalties"
