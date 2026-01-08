@@ -1,194 +1,347 @@
-import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import AppLayout from '@/components/AppLayout';
-import users from '@/lib/usersData';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { ThumbsUp, Eye, MoveLeft, Share2, Lock } from 'lucide-react';
+import { fetchUserProfile, getAvailableOptions, type ProfileData } from '@/lib/profile';
+import { supabase } from '@/lib/supabase';
 import investers from '@/lib/investersData';
-import { ThumbsUp, Eye, MoveLeft, Share2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const InvestorDetail: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const user = investers.find((u: any) => String(u.id) === id);
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
-  if (!user) {
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        // Check if user is logged in
+        const { data: { session } } = await supabase.auth.getSession();
+        setIsLoggedIn(!!session);
+
+        // Fetch profile data
+        if (id) {
+          let data: ProfileData | null = null;
+          
+          // Check if ID is numeric (investor IDs in investersData are numeric like 101, 102)
+          const isNumericId = !isNaN(Number(id));
+          
+          if (isNumericId) {
+            // For numeric IDs, check static data first
+            const staticInvestor = investers.find(inv => String(inv.id) === String(id));
+            
+            if (staticInvestor) {
+              // Map static investor data to ProfileData format
+              data = {
+                user: {
+                  id: String(staticInvestor.id),
+                  user_type: 'Investor',
+                  full_name: staticInvestor.name,
+                  personal_email: '',
+                  telephone: '',
+                  country: staticInvestor.country || '',
+                  city: staticInvestor.city || '',
+                  cover_image_url: staticInvestor.coverImage || null,
+                  photo_url: staticInvestor.avatar || null,
+                  created_at: new Date().toISOString(),
+                },
+                profile: {
+                  id: `profile-${staticInvestor.id}`,
+                  user_id: String(staticInvestor.id),
+                  project_name: staticInvestor.projectInfo?.title || null,
+                  project_category: staticInvestor.projectInfo?.category || null,
+                  company_name: null,
+                  company_nif: null,
+                  company_telephone: null,
+                  smart_money: null,
+                  total_sale_of_project: null,
+                  investment_preferences: staticInvestor.description || null,
+                  inventor_name: null,
+                  license_number: null,
+                  release_date: null,
+                  initial_license_value: null,
+                  exploitation_license_royalty: null,
+                  patent_sale: null,
+                  investors_count: null,
+                  created_at: new Date().toISOString(),
+                },
+                proposals: null,
+                materials: {
+                  id: `materials-${staticInvestor.id}`,
+                  user_id: String(staticInvestor.id),
+                  pitch_video_url: staticInvestor.videoPitch || null,
+                  photos_urls: staticInvestor.images || [],
+                  pitch_videos_urls: staticInvestor.presentationVideos || [],
+                  description: staticInvestor.description || null,
+                  fact_sheet: staticInvestor.docs?.find(d => d.name?.includes('Technical') || d.name?.includes('Fact'))?.url || null,
+                  technical_sheet: staticInvestor.docs?.find(d => d.name?.includes('Technical') || d.name?.includes('Presentation'))?.url || null,
+                  created_at: new Date().toISOString(),
+                },
+              };
+            }
+          } else {
+            // For UUID IDs, try to fetch from Supabase
+            try {
+              data = await fetchUserProfile(id);
+              // If fetched user is not an Investor, set to null
+              if (data && data.user && data.user.user_type !== 'Investor') {
+                data = null;
+              }
+            } catch (error) {
+              console.error('Error fetching from Supabase:', error);
+              data = null;
+            }
+          }
+          
+          setProfileData(data);
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+        setProfileData(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (id) loadProfile();
+  }, [id]);
+
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">Investor not found</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#0a3d5c]/20 border-t-[#0a3d5c] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
     );
   }
 
-  // Prepare header image and images grid
-  const color = '#ffffff';
-  const images = user.images;
+  if (!profileData || !profileData.user || profileData.user.user_type !== 'Investor') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Investor not found</p>
+          <button
+            onClick={() => navigate(-1)}
+            className="mt-4 px-4 py-2 bg-[#0a3d5c] text-white rounded-lg"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-  // fill up to 9 with placeholders if necessary
-  while (images.length < 9) images.push('/assets/1.avif');
+  const { user, profile } = profileData;
 
-  const videoPitch: string | undefined = (user as any).videoPitch;
-  const presentationVideos: string[] = (user as any).presentationVideos ?? [];
-  const docs: { name: string; url?: string }[] = (user as any).docs ?? [];
+  const handleMessageClick = () => {
+    if (!isLoggedIn) {
+      setShowLoginModal(true);
+    } else {
+      navigate(`/messages/${user.id}`);
+    }
+  };
 
   return (
-    <div className="bg-white pt-20 px-4 md:px-6 pb-12">
-      <div className="max-w-6xl mx-auto">
-        <div className="relative w-full z-1 md:h-96 sm:h-80 flex flex-col-reverse rounded-2xl overflow-hidden shadow-sm" style={{ backgroundSize: 'cover', backgroundPosition: 'center' }}>
-          <img src={user.coverImage} alt="header-bg" className="w-full h-full object-cover absolute top-0 left-0 z-0" />
-          <div className="flex items-start gap-6 z-10 bg-white/10 backdrop-blur-md p-4 rounded-b-2xl w-full">
-            <div className="flex-shrink-0">
-              <img src={user.avatar} alt={user.name} className="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover" />
-            </div>
-
-            <div className="flex-1">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-2xl md:text-3xl font-bold" style={{ color }}>{user.name}</h1>
-                  <div className="text-sm text-white">{(user as any).projectInfo?.title ?? (user as any).role ?? ''}</div>
-                </div>
-                <div className="ml-auto flex items-center gap-3">
-                  <button onClick={() => navigate(-1)} className="flex items-center gap-2 px-3 py-2 rounded-full bg-white border shadow-sm text-sm">
-                    <MoveLeft size={16} /> Back
-                  </button>
-                  <button className="flex items-center gap-2 px-3 py-2 rounded-full bg-white border shadow-sm text-sm" onClick={() => (navigator as any)?.share ? (navigator as any).share({ title: user.name, text: (user as any).projectInfo?.title ?? '', url: window.location.href }) : null}>
-                    <Share2 size={14} /> Share
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-2 text-sm text-white flex items-center gap-2">
-                <span>{user.city}, {user.country}</span>
-                {(user as any).countryFlag ? <span className="text-xs px-2 py-1 bg-gray-100 rounded">{(user as any).countryFlag}</span> : null}
-                <span className={`ml-3 text-xs px-2 py-1 rounded-full ${((user as any).availableStatus) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{((user as any).availableStatus) ? 'Available' : 'Unavailable'}</span>
-              </div>
-
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <div className="text-sm text-white">Investment:</div>
-                <div className="font-semibold">{(user as any).investmentPercent ?? '-'}% por {(user as any).investmentAmount ?? ((user as any).projectInfo?.minInvestment ?? '-')}</div>
-                <div className="text-sm text-green-600 font-semibold ml-4">{(user as any).commission ?? '-'}% Comissão</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left / main column */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Description / message */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border">
-              <h3 className="font-semibold text-lg">Investor Message</h3>
-              <p className="text-sm text-gray-600 mt-3">{(user as any).description ?? `${user.name} is an investor interested in strategic partnerships and high-impact startups.`}</p>
-            </div>
-
-            {/* Project information */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border">
-              <h3 className="font-semibold text-lg">Project Information</h3>
-              <div className="mt-3 text-sm text-gray-600">
-                <div className="mb-2"><span className="font-semibold">Project:</span> {(user as any).projectInfo?.title ?? '-'}</div>
-                <div className="mb-2"><span className="font-semibold">Summary:</span> {(user as any).projectInfo?.summary ?? '-'}</div>
-                <div className="mb-2"><span className="font-semibold">Category:</span> {(user as any).projectInfo?.category ?? '-'}</div>
-                <div className="mb-2"><span className="font-semibold">Stage:</span> {(user as any).projectInfo?.stage ?? '-'}</div>
-                <div className="mb-2"><span className="font-semibold">Minimum Investment:</span> {(user as any).projectInfo?.minInvestment ?? '-'}</div>
-              </div>
-            </div>
-
-            {/* Nine photos */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border">
-              <h3 className="font-semibold text-lg">Photos</h3>
-              <div className="mt-4 grid grid-cols-3 gap-3">
-                {images.slice(0, 9).map((src, idx) => (
-                  <div key={idx} className="w-full h-28 bg-gray-100 rounded overflow-hidden">
-                    {src ? <img src={src} alt={`photo-${idx}`} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-400">No image</div>}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Video Pitch */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border">
-              <h3 className="font-semibold text-lg">Video Pitch</h3>
-              <div className="mt-4">
-                {videoPitch ? (
-                  <div className="aspect-video">
-                    <iframe src={videoPitch} title="Video pitch" className="w-full h-full" allowFullScreen />
-                  </div>
-                ) : (
-                  <div className="w-full h-40 bg-gray-100 rounded flex items-center justify-center text-gray-500">No video pitch available</div>
-                )}
-              </div>
-            </div>
-
-            {/* Presentation videos (two) */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border">
-              <h3 className="font-semibold text-lg">Presentation Videos</h3>
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[0, 1].map(i => (
-                  <div key={i} className="w-full">
-                    {presentationVideos[i] ? (
-                      <div className="aspect-video">
-                        <iframe src={presentationVideos[i]} title={`presentation-${i}`} className="w-full h-full" allowFullScreen />
-                      </div>
-                    ) : (
-                      <div className="w-full h-40 bg-gray-100 rounded flex items-center justify-center text-gray-500">No presentation video</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Documents */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border">
-              <h3 className="font-semibold text-lg">Documents</h3>
-              <div className="mt-3 space-y-2">
-                {docs.length > 0 ? docs.map((d, i) => (
-                  <div key={i} className="flex items-center justify-between border rounded p-3">
-                    <div className="text-sm">{d.name}</div>
-                    {d.url ? <a href={d.url} target="_blank" rel="noreferrer" className="text-sm text-[#0a3d5c]">Open</a> : <div className="text-sm text-gray-400">No file</div>}
-                  </div>
-                )) : (
-                  <div className="text-sm text-gray-500">No technical specifications or presentation sheet uploaded.</div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right column: summary / stats / actions */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl p-4 shadow-sm border">
-              <div className="text-sm text-gray-500">Project Snapshot</div>
-              <div className="text-2xl font-bold text-[#0a3d5c] mt-2">{(user as any).projectInfo?.title ?? ''}</div>
-              <div className="mt-4 text-sm text-gray-600">{(user as any).projectInfo?.summary ?? ''}</div>
-              <div className="mt-4">
-                <div className="text-xs text-gray-500">Partners</div>
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  {((user as any).partners ?? []).slice(0, 6).map((p: string, i: number) => (
-                    <div key={i} className="h-10 flex items-center justify-center bg-white border rounded">
-                      <img src={p} alt={`partner-${i}`} className="max-h-8 object-contain" />
+    <>
+      <div className="bg-white pt-20 px-4 md:px-6 pb-12">
+        <div className="max-w-6xl mx-auto">
+          <div className="relative w-full z-1 md:h-96 sm:h-80 flex flex-col-reverse rounded-2xl overflow-hidden shadow-sm">
+            {user.cover_image_url ? (
+              <img 
+                src={user.cover_image_url} 
+                alt="header-bg" 
+                className="w-full h-full object-cover absolute top-0 left-0 z-0" 
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-[#0a3d5c] to-[#062a3d] absolute top-0 left-0 z-0" />
+            )}
+            
+            <div className="z-10 bg-white/10 backdrop-blur-md p-4 sm:p-5 rounded-b-2xl w-full">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+                <div className="flex-shrink-0 flex justify-center sm:justify-start">
+                  {user.photo_url ? (
+                    <img
+                      src={user.photo_url}
+                      alt={user.full_name}
+                      className="w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full border-4 border-white shadow-lg object-cover"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full border-4 border-white shadow-lg bg-[#0a3d5c] flex items-center justify-center text-white text-xl sm:text-2xl font-bold">
+                      {user.full_name.charAt(0).toUpperCase()}
                     </div>
-                  ))}
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0 text-center sm:text-left">
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+                    <div className="min-w-0">
+                      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white truncate">
+                        {user.full_name}
+                      </h1>
+                      {profile?.investment_preferences && (
+                        <div className="text-sm text-white/90 mt-1 line-clamp-2">
+                          {profile.investment_preferences}
+                        </div>
+                      )}
+                    </div>
+                    <div className="sm:ml-auto flex items-center justify-center sm:justify-end gap-2 flex-wrap">
+                      <button
+                        onClick={() => navigate(-1)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-full bg-white border shadow-sm text-sm hover:bg-gray-50 transition"
+                      >
+                        <MoveLeft size={16} /> Back
+                      </button>
+                      <button
+                        className="flex items-center gap-2 px-3 py-2 rounded-full bg-white border shadow-sm text-sm hover:bg-gray-50 transition"
+                        onClick={() => {
+                          if (navigator?.share) {
+                            navigator.share({
+                              title: user.full_name,
+                              text: profile?.investment_preferences || '',
+                              url: window.location.href,
+                            });
+                          }
+                        }}
+                      >
+                        <Share2 size={14} /> Share
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 text-sm text-white flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                    {user.city && user.country && (
+                      <span className="whitespace-nowrap">
+                        {user.city}, {user.country}
+                      </span>
+                    )}
+                    <span className="text-xs px-2 py-1 bg-white/20 rounded">
+                      Investor
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="bg-white rounded-xl p-4 shadow-sm border">
-              <h4 className="text-xs text-gray-500">Key Facts</h4>
-              <div className="mt-3 text-sm">
-                <div className="flex justify-between py-2 border-b"><span className="text-gray-500">Investor ID</span><span className="font-semibold">{user.id}</span></div>
-                <div className="flex justify-between py-2 border-b"><span className="text-gray-500">Role</span><span className="font-semibold">{(user as any).role ?? '-'}</span></div>
-                <div className="flex justify-between py-2 border-b"><span className="text-gray-500">Location</span><span className="font-semibold">{user.city}, {user.country}</span></div>
-                <div className="flex justify-between py-2"><span className="text-gray-500">Min Investment</span><span className="font-semibold">{(user as any).projectInfo?.minInvestment ?? '-'}</span></div>
+          <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left / main column */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Investment Preferences */}
+              {profile?.investment_preferences && (
+                <div className="bg-white rounded-xl p-6 shadow-sm border">
+                  <h3 className="font-semibold text-lg mb-3">Investment Preferences</h3>
+                  <p className="text-sm text-gray-600 whitespace-pre-wrap">{profile.investment_preferences}</p>
+                </div>
+              )}
+
+              {/* About Section - Optional description if available */}
+              <div className="bg-white rounded-xl p-6 shadow-sm border">
+                <h3 className="font-semibold text-lg mb-3">About</h3>
+                <p className="text-sm text-gray-600">
+                  {profile?.investment_preferences 
+                    ? `Experienced ${user.user_type || 'Investor'} focused on investment opportunities. ${profile.investment_preferences}`
+                    : `Experienced ${user.user_type || 'Investor'} with expertise in various investment sectors.`}
+                </p>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-4 shadow-sm border">
-              <h4 className="text-xs text-gray-500">Share</h4>
-              <div className="mt-3 flex gap-3">
-                <button className="w-9 h-9 rounded-full bg-gray-50 border flex items-center justify-center">🔗</button>
-                <button className="w-9 h-9 rounded-full bg-gray-50 border flex items-center justify-center">🐦</button>
-                <button className="w-9 h-9 rounded-full bg-gray-50 border flex items-center justify-center">📘</button>
+            {/* Right column: actions and info */}
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl p-4 shadow-sm border">
+                <div className="flex flex-col gap-3">
+                  <button 
+                    onClick={handleMessageClick}
+                    className="w-full px-4 py-3 rounded-full bg-[#0a3d5c] text-white font-medium hover:bg-[#062a3d] transition"
+                  >
+                    Message
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl p-4 shadow-sm border">
+                <h4 className="text-xs text-gray-500 mb-3">Key Facts</h4>
+                <div className="space-y-2 text-sm">
+                  {user.user_type && (
+                    <div className="flex justify-between py-2 border-b">
+                      <span className="text-gray-500">Type</span>
+                      <span className="font-semibold">{user.user_type}</span>
+                    </div>
+                  )}
+                  {user.city && user.country && (
+                    <div className="flex justify-between py-2">
+                      <span className="text-gray-500">Location</span>
+                      <span className="font-semibold">{user.city}, {user.country}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl p-4 shadow-sm border">
+                <h4 className="text-xs text-gray-500 mb-3">Share</h4>
+                <div className="flex gap-3">
+                  <button 
+                    className="w-9 h-9 rounded-full bg-gray-50 border flex items-center justify-center hover:bg-gray-100 transition"
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.href);
+                    }}
+                  >
+                    🔗
+                  </button>
+                  <button className="w-9 h-9 rounded-full bg-gray-50 border flex items-center justify-center hover:bg-gray-100 transition">
+                    🐦
+                  </button>
+                  <button className="w-9 h-9 rounded-full bg-gray-50 border flex items-center justify-center hover:bg-gray-100 transition">
+                    📘
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Login Required Modal */}
+      <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sign In Required</DialogTitle>
+            <DialogDescription>
+              You need to create an account to send messages. Please register first.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-3 mt-4">
+            <button
+              onClick={() => {
+                setShowLoginModal(false);
+                navigate('/register');
+              }}
+              className="flex-1 px-4 py-2 bg-[#0a3d5c] text-white rounded-lg font-medium hover:bg-[#062a3d] transition"
+            >
+              Register
+            </button>
+            <button
+              onClick={() => {
+                setShowLoginModal(false);
+                navigate('/login');
+              }}
+              className="flex-1 px-4 py-2 border border-[#0a3d5c] text-[#0a3d5c] rounded-lg font-medium hover:bg-[#0a3d5c]/10 transition"
+            >
+              Sign In
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

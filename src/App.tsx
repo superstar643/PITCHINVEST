@@ -5,15 +5,19 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
+import { PageTransitionLoader } from "@/components/PageTransitionLoader";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
+import AuthCallback from "./components/auth/AuthCallback";
+import ResetPassword from "./components/auth/ResetPassword";
 import Gallery from "./pages/Gallery";
 import GalleryDetail from "./pages/GalleryDetail";
 import Auction from "./pages/Auction";
 import Message from "./pages/Message";
 import UserDetail from "./pages/UserDetail";
+import Settings from "./pages/Settings";
 import Investors from "./pages/Investors";
 import InvestorDetail from "./pages/InvestorDetail";
 import Blog from "./pages/Blog";
@@ -29,10 +33,18 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+        >
+          <PageTransitionLoader />
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Routes wrapped with AppLayout to include Header/Footer */}
             <Route path="/" element={<Index />} />
@@ -43,6 +55,7 @@ const App = () => (
             <Route path="/contact" element={<AppLayout><Contact /></AppLayout>} />
             <Route path="/about" element={<AppLayout><About /></AppLayout>} />
             <Route path="/user/:id" element={<AppLayout><UserDetail /></AppLayout>} />
+            <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
             <Route path="/investor/:id" element={<AppLayout><InvestorDetail /></AppLayout>} />
             <Route path="/auction/:id" element={<AppLayout><Auction /></AppLayout>} />
             <Route path="/messages" element={<AppLayout><Message /></AppLayout>} />

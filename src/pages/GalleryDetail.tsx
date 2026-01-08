@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import galleryItems from '@/lib/galleryData';
+import users from '@/lib/usersData';
 import { GalleryCard } from '@/components/GalleryCard';
 import { MoveLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PlaceBidDialog } from '@/components/PlaceBidDialog';
 
 const color = '#0a3d5c';
 
@@ -11,6 +13,25 @@ const GalleryDetail: React.FC = () => {
     const item = galleryItems.find(g => String(g.id) === id);
     const [currentIdx, setCurrentIdx] = useState(0);
     const navigate = useNavigate();
+    const [bidDialogOpen, setBidDialogOpen] = useState(false);
+
+    // Find matching user by author name (fallback method when user_id not available)
+    const findUserByAuthorName = (authorName: string | undefined) => {
+        if (!authorName) return null;
+        return users.find(u => 
+            u.fullName.toLowerCase().includes(authorName.toLowerCase()) || 
+            authorName.toLowerCase().includes(u.fullName.toLowerCase())
+        );
+    };
+
+    const handleAuthorClick = () => {
+        if (item?.author) {
+            const matchedUser = findUserByAuthorName(item.author.name);
+            if (matchedUser && matchedUser.id) {
+                navigate(`/user/${matchedUser.id}`);
+            }
+        }
+    };
 
     if (!item) {
         return (
@@ -86,7 +107,10 @@ const GalleryDetail: React.FC = () => {
                         {item.subtitle && <p className="text-gray-600 mt-2">{item.subtitle}</p>}
                         <p className="text-sm text-gray-500 mt-2">{item.description}</p>
 
-                        <div className="mt-6 bg-white rounded-xl p-4 shadow-sm border">
+                        <div 
+                            onClick={handleAuthorClick}
+                            className="mt-6 bg-white rounded-xl p-4 shadow-sm border cursor-pointer hover:bg-gray-50 transition"
+                        >
                             <h4 className="text-xs font-semibold text-gray-500">INVENTOR</h4>
                             <div className="flex items-center gap-4 mt-3">
                                 <img src={item.author?.avatarUrl} alt={item.author?.name} className="w-14 h-14 rounded-full object-cover border" />
@@ -125,12 +149,23 @@ const GalleryDetail: React.FC = () => {
                                 </div>
                             </div>
                             <div className="mt-6">
-                                <button onClick={() => navigate(`/auction/${item.id}`)} className="px-4 py-2 rounded-full bg-[#0a3d5c] text-white font-medium">Place a bid</button>
+                                <button onClick={() => setBidDialogOpen(true)} className="px-4 py-2 rounded-full bg-[#0a3d5c] text-white font-medium">Place a bid</button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+            
+            {/* Place Bid Dialog */}
+            <PlaceBidDialog
+                open={bidDialogOpen}
+                onOpenChange={setBidDialogOpen}
+                auctionId={item.id?.toString() || ''}
+                currentBid={22000000}
+                itemName={item.title}
+                itemImage={item.imageUrl || ((item as any).images?.[0])}
+                minimumIncrement={100000}
+            />
             {/* Additional information section */}
             <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left: Descriptions and documents (span 2 cols on lg) */}

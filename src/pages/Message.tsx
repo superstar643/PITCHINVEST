@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import users from "@/lib/usersData";
+import { ChevronLeft } from "lucide-react";
 
 const MAIN_COLOR = "#0a3d5c";
 
@@ -14,13 +15,14 @@ const Message: React.FC = () => {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Record<number, Msg[]>>({});
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  // (responsive handled with CSS; keep JS minimal)
 
   // initialize a small mock conversation for selected users
   useEffect(() => {
     const initial: Record<number, Msg[]> = {};
     users.slice(0, 6).forEach((u, idx) => {
       initial[u.id] = [
-        { id: 1, fromMe: false, text: `Hi, I'm ${u.name}. How can I help?`, time: "09:00" },
+        { id: 1, fromMe: false, text: `Hi, I'm ${u.fullName}. How can I help?`, time: "09:00" },
         ...(u.availableStatus ? [{ id: 2, fromMe: true, text: "Hello — I'd like to know more about your startup.", time: "09:02" }] : []),
       ];
     });
@@ -40,6 +42,7 @@ const Message: React.FC = () => {
   }, [messages, selectedId]);
 
   const selectedUser = useMemo(() => users.find(u => u.id === selectedId), [selectedId]);
+  const showList = !id; // /messages => list view (mobile), /messages/:id => chat view (mobile)
 
   const send = () => {
     if (!selectedId || !input.trim()) return;
@@ -49,11 +52,11 @@ const Message: React.FC = () => {
   };
 
   return (
-    <div className="min-h-8/9 p-4 bg-gray-50 pt-24">
-      <div className="max-w-6xl mx-auto bg-white rounded-md shadow overflow-hidden" style={{ minHeight: '70vh', maxHeight: '70vh' }}>
-        <div className="flex h-full">
+    <div className="min-h-[calc(100vh-6rem)] p-4 bg-gray-50 pt-24">
+      <div className="max-w-6xl mx-auto bg-white rounded-md shadow overflow-hidden" style={{ minHeight: '70vh' }}>
+        <div className="flex flex-col md:flex-row h-full">
           {/* Left: Users list */}
-          <aside className="w-80 border-r">
+          <aside className={`w-full md:w-80 border-r ${showList ? 'block' : 'hidden md:block'}`}>
             <div className="p-4 flex items-center justify-between" style={{ background: MAIN_COLOR, color: 'white' }}>
               <h2 className="font-bold">Messages</h2>
               <button onClick={() => navigate('/messages')} className="text-sm opacity-90">All</button>
@@ -70,13 +73,13 @@ const Message: React.FC = () => {
                   aria-pressed={selectedId === u.id}
                   className={`w-full text-left flex items-center gap-3 px-3 py-2 border-b hover:bg-gray-50 ${selectedId === u.id ? 'bg-gray-100' : ''}`}
                 >
-                  <img src={u.avatar} alt={u.name} className="border-2 w-16 h-16 rounded-full object-cover" style={{borderColor: MAIN_COLOR}}/>
+                  <img src={u.photo} alt={u.fullName} className="border-2 w-16 h-16 rounded-full object-cover" style={{borderColor: MAIN_COLOR}}/>
                   <div className="flex-1">
                     <div className="flex justify-between items-center">
-                      <div className="font-semibold text-md">{u.name}</div>
+                      <div className="font-semibold text-md">{u.fullName}</div>
                       <div className="text-sm text-gray-500">{u.availableStatus ? <span className="text-green-500">Online</span> : <span className="text-gray-400">Offline</span>}</div>
                     </div>
-                    <div className="text-sm text-gray-500">{u.startup} • {u.city}</div>
+                    <div className="text-sm text-gray-500">{u.projectName} • {u.city}</div>
                   </div>
                 </button>
               ))}
@@ -84,14 +87,20 @@ const Message: React.FC = () => {
           </aside>
 
           {/* Right: Chat area */}
-          <main className="flex-1 flex flex-col h-full">
+          <main className={`flex-1 flex flex-col h-full ${showList ? 'hidden md:flex' : 'flex'}`}>
             <div className="p-4 border-b flex items-center gap-4">
-              <button onClick={() => navigate(-1)} className="text-sm text-gray-600">Back</button>
+              <button
+                onClick={() => (id ? navigate('/messages') : navigate(-1))}
+                className="md:hidden text-sm text-gray-600 inline-flex items-center gap-1 hover:text-gray-800"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Back
+              </button>
               {selectedUser ? (
                 <div className="flex items-center gap-3">
-                  <img src={selectedUser.avatar} alt={selectedUser.name} className="w-12 h-12 rounded-full object-cover" />
+                  <img src={selectedUser.photo} alt={selectedUser.fullName} className="w-12 h-12 rounded-full object-cover" />
                   <div>
-                    <div className="font-bold">{selectedUser.name}</div>
+                    <div className="font-bold">{selectedUser.fullName}</div>
                     <div className="text-xs text-gray-500">{selectedUser.companyName} • {selectedUser.countryFlag}</div>
                   </div>
                 </div>
@@ -100,7 +109,7 @@ const Message: React.FC = () => {
               )}
             </div>
 
-            <div className="flex-1 p-4 overflow-y-auto min-h-[55vh] max-h-[55vh] custom-scrollbar" ref={scrollRef}>
+            <div className="flex-1 p-4 overflow-y-auto min-h-[55vh] custom-scrollbar" ref={scrollRef}>
               {!selectedUser && (
                 <div className="text-center text-gray-400 mt-20">No conversation selected</div>
               )}
@@ -126,7 +135,7 @@ const Message: React.FC = () => {
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') send(); }}
                   disabled={!selectedUser}
-                  placeholder={selectedUser ? `Message ${selectedUser.name}...` : 'Select a user to send a message'}
+                  placeholder={selectedUser ? `Message ${selectedUser.fullName}...` : 'Select a user to send a message'}
                   className="flex-1 px-3 py-2 rounded border"
                 />
                 <button

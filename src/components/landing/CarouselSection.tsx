@@ -241,8 +241,8 @@ export default function CarouselSection() {
   const progress = carouselImages.length > 1 ? (currentIndex / (carouselImages.length - 1)) * 100 : 100;
 
   return (
-    <section className="py-10 md:py-20 bg-gradient-to-b from-slate-50 to-white min-h-[calc(100vh-100px)]">
-      <div className="mx-auto px-4 md:px-8 2xl:px-32 lg:px-12 w-full">
+    <section className="py-10 md:py-20 bg-gradient-to-b from-slate-50 to-white min-h-[calc(100vh-100px)] overflow-x-hidden w-full max-w-full">
+      <div className="mx-auto px-4 md:px-8 2xl:px-32 lg:px-12 w-full max-w-full overflow-x-hidden">
         {/* Tagline */}
         <div className="text-center mb-8">
           <h1 className="text-xl md:text-2xl lg:text-3xl font-medium text-gray-800">
@@ -262,9 +262,9 @@ export default function CarouselSection() {
               }}
             >
               {/* Header with background */}
-              <div className="relative h-32 lg:h-36" style={{ backgroundImage: `url(${investorData[currentIndex].left.headerBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+              <div className="relative h-32 lg:h-36" style={{ backgroundImage: `url(${investorData[currentIndex].left.coverImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
                 <div className="absolute -bottom-14 left-4">
-                  <img src={investorData[currentIndex].left.avatar} alt={investorData[currentIndex].left.name} className="w-32 h-32 lg:w-36 lg:h-36 shadow-lg rounded-full border-4 border-[#0a3d5c] object-cover" />
+                  <img src={investorData[currentIndex].left.photo} alt={investorData[currentIndex].left.fullName} className="w-32 h-32 lg:w-36 lg:h-36 shadow-lg rounded-full border-4 border-[#0a3d5c] object-cover" />
                 </div>
                 <div className="absolute top-2 right-2 flex flex-col items-center bg-white rounded-full p-1.5">
                   <img src={investorData[currentIndex].left.companyLogo} alt={investorData[currentIndex].left.companyName} className="w-10 h-10 rounded-full" />
@@ -275,8 +275,8 @@ export default function CarouselSection() {
                 <div className="text-right text-sm font-semibold text-gray-700 mb-3">{investorData[currentIndex].left.companyName}</div>
 
                 <div className="space-y-1.5 text-sm mb-3">
-                  <div><span className="font-semibold">Nome:</span> {investorData[currentIndex].left.name}</div>
-                  <div><span className="font-semibold">Startup:</span> {investorData[currentIndex].left.startup}</div>
+                  <div><span className="font-semibold">Nome:</span> {investorData[currentIndex].left.fullName}</div>
+                  <div><span className="font-semibold">Startup:</span> {investorData[currentIndex].left.projectName}</div>
                   <div><span className="font-semibold">Cidade:</span> {investorData[currentIndex].left.city}</div>
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">País:</span> {investorData[currentIndex].left.country} <span>{investorData[currentIndex].left.countryFlag}</span>
@@ -299,13 +299,13 @@ export default function CarouselSection() {
                 </div>
 
                 <div className="text-center mb-3">
-                  <div className="text-xl font-bold">{investorData[currentIndex].left.investmentPercent}% por {investorData[currentIndex].left.investmentAmount}</div>
+                  <div className="text-xl font-bold">{investorData[currentIndex].left.capitalPercentage}% por {investorData[currentIndex].left.capitalTotalValue}</div>
                   <div className="text-green-600 font-bold text-sm">{investorData[currentIndex].left.commission}% Comissão</div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mb-3">
-                  <img src={investorData[currentIndex].left.productImage1} alt="Product 1" className="w-full h-24 lg:h-28 object-cover rounded-lg" />
-                  <img src={investorData[currentIndex].left.productImage2} alt="Product 2" className="w-full h-24 lg:h-28 object-cover rounded-lg" />
+                  {investorData[currentIndex].left.photos[0] && <img src={investorData[currentIndex].left.photos[0]} alt="Product 1" className="w-full h-24 lg:h-28 object-cover rounded-lg" />}
+                  {investorData[currentIndex].left.photos[1] && <img src={investorData[currentIndex].left.photos[1]} alt="Product 2" className="w-full h-24 lg:h-28 object-cover rounded-lg" />}
                 </div>
 
                 <div className="bg-gray-50 rounded-lg py-3 text-center">
@@ -335,7 +335,7 @@ export default function CarouselSection() {
           </div>
 
           {/* Center Carousel - order-1 on mobile (top), order-2 on desktop (middle) */}
-          <div className="order-1 lg:order-2 w-full lg:w-auto relative" style={{ maxWidth: '100%' }}>
+          <div className="order-1 lg:order-2 w-full lg:w-auto relative overflow-x-hidden" style={{ maxWidth: '100%' }}>
             {/* Left Arrow Button */}
             <button
               onClick={handlePrevious}
@@ -345,14 +345,14 @@ export default function CarouselSection() {
               <ChevronLeft size={24} />
             </button>
 
-            <div className="relative flex items-center justify-center" style={{ perspective: '1200px', minHeight: '500px' }}>
+            <div className="relative flex items-center justify-center overflow-x-hidden overflow-y-visible" style={{ perspective: '1200px', minHeight: '500px', width: '100%', maxWidth: '100%', contain: 'layout' }}>
               {/* Previous Previous Image - Very Small - Clickable */}
               <img
                 src={carouselImages[visible.prevprev]}
                 alt="Previous Previous"
                 onClick={() => setCurrentIndex(visible.prevprev)}
                 className="hidden lg:block absolute w-[400px] h-[500px] object-cover rounded-lg opacity-60 transition-all duration-700 cursor-pointer hover:opacity-75 border-8 p-2 bg-white border-[#0a3d5c]"
-                style={{ transform: 'translateX(-800px)  rotateY(45deg) scale(0.6) translateY(0)', zIndex: 0 }}
+                style={{ transform: 'translateX(-800px) rotateY(45deg) scale(0.6) translateY(0)', zIndex: 0, clipPath: 'inset(0)' }}
               />
               {/* Previous Image - Clickable */}
               <img
@@ -360,7 +360,7 @@ export default function CarouselSection() {
                 alt="Previous"
                 onClick={() => setCurrentIndex(visible.prev)}
                 className="hidden lg:block absolute 2xl:w-[550px] 2xl:h-[450px] lg:h-[300px] w-[550px] h-[350px] object-cover rounded-lg opacity-80 transition-all duration-700 cursor-pointer hover:opacity-100 border-8 p-2 bg-white border-[#0a3d5c]"
-                style={{ transform: 'translateX(-500px) rotateY(25deg) scale(0.8) translateY(0)', zIndex: 1 }}
+                style={{ transform: 'translateX(-500px) rotateY(25deg) scale(0.8) translateY(0)', zIndex: 1, clipPath: 'inset(0)' }}
               />
 
               {/* Current Image - Large with Shadow */}
@@ -377,7 +377,7 @@ export default function CarouselSection() {
                 alt="Next"
                 onClick={() => setCurrentIndex(visible.next)}
                 className="hidden lg:block absolute 2xl:w-[550px] 2xl:h-[450px] lg:h-[300px] w-[550px] h-[350px] object-cover rounded-lg opacity-80 transition-all duration-700 cursor-pointer hover:opacity-100 border-8 p-2 bg-white border-[#0a3d5c]"
-                style={{ transform: 'translateX(500px) rotateY(-25deg) scale(0.8) translateY(0)', zIndex: 1 }}
+                style={{ transform: 'translateX(500px) rotateY(-25deg) scale(0.8) translateY(0)', zIndex: 1, clipPath: 'inset(0)' }}
               />
               {/* Next Next Image - Very Small - Clickable */}
               <img
@@ -385,7 +385,7 @@ export default function CarouselSection() {
                 alt="Next Next"
                 onClick={() => setCurrentIndex(visible.nextnext)}
                 className="hidden lg:block absolute w-[400px] h-[500px] object-cover rounded-lg opacity-60 transition-all duration-700 cursor-pointer hover:opacity-75 border-8 p-2 bg-white border-[#0a3d5c]"
-                style={{ transform: 'translateX(800px) rotateY(-45deg) scale(0.6) translateY(0)', zIndex: 0 }}
+                style={{ transform: 'translateX(800px) rotateY(-45deg) scale(0.6) translateY(0)', zIndex: 0, clipPath: 'inset(0)' }}
               />
             </div>
 

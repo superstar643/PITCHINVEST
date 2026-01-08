@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Link } from 'react-router-dom';
 import { X } from 'lucide-react';
 import LanguageSelector from './LanguageSelector';
+import { useAuth } from '@/hooks/useAuth';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -10,6 +11,21 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+  const { user, loading } = useAuth();
+  const [showAuthButtons, setShowAuthButtons] = useState(false);
+
+  // Check if window width is between 500px and 639px
+  useEffect(() => {
+    const checkWidth = () => {
+      const width = window.innerWidth;
+      setShowAuthButtons(width >= 500 && width < 640);
+    };
+
+    // Check on mount and resize
+    checkWidth();
+    window.addEventListener('resize', checkWidth);
+    return () => window.removeEventListener('resize', checkWidth);
+  }, []);
   return (
     <>
       {/* Overlay */}
@@ -42,6 +58,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
           {/* Menu Items */}
           <div className="flex-1 overflow-y-auto p-6">
+            {/* Auth Actions (only show when user is NOT signed in, visible from 500px to 639px) */}
+            {!user && !loading && showAuthButtons && (
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <Link to="/login" onClick={onClose}>
+                  <Button
+                    variant="outline"
+                    className="w-full border-[#0a3d5c] text-[#0a3d5c] hover:bg-[#0a3d5c]/10 font-semibold"
+                  >
+                    Login
+                  </Button>
+                </Link>
+                <Link to="/register" onClick={onClose}>
+                  <Button className="w-full bg-[#0a3d5c] hover:bg-[#0a3d5c]/90 text-white font-semibold">
+                    Sign Up
+                  </Button>
+                </Link>
+              </div>
+            )}
+
             <nav className="flex flex-col gap-2">
               <Link to="/gallery" onClick={onClose}>
                 <Button 

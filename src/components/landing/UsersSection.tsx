@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import UserCard from './UserCard';
 import users from '@/lib/usersData';
 import FilterBar from '@/components/FilterBar';
+import { getSortedCountries } from '@/lib/countries';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -9,32 +10,115 @@ const UsersSection: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchValue, setSearchValue] = useState('');
   const [countryValue, setCountryValue] = useState('all');
+  const [categoryValue, setCategoryValue] = useState('all');
+  const [cityValue, setCityValue] = useState('all');
+  const [investmentRangeValue, setInvestmentRangeValue] = useState('all');
+  const [equityRangeValue, setEquityRangeValue] = useState('all');
+  const [availabilityValue, setAvailabilityValue] = useState('all');
 
-  // Extract unique countries from users
-  const countries = useMemo(() => {
-    const countrySet = new Set<string>();
-    users.forEach(user => {
-      if (user.country) countrySet.add(user.country);
-    });
-    return Array.from(countrySet).sort();
+  // Use comprehensive countries list from countries.ts (all countries worldwide)
+  const allCountries = useMemo(() => {
+    return getSortedCountries().map(country => country.name);
   }, []);
 
-  // Filter users based on search and country
+  // Extract unique categories from users
+  const categories = useMemo(() => {
+    const categorySet = new Set<string>();
+    users.forEach(user => {
+      if (user.projectCategory) categorySet.add(user.projectCategory);
+    });
+    return Array.from(categorySet).sort();
+  }, []);
+
+  // Extract unique cities from users
+  const cities = useMemo(() => {
+    const citySet = new Set<string>();
+    users.forEach(user => {
+      if (user.city) citySet.add(user.city);
+    });
+    return Array.from(citySet).sort();
+  }, []);
+
+  // Helper function to parse investment amount from string like '1.800000€'
+  const parseInvestmentAmount = (value: string): number => {
+    const cleaned = value.replace(/[€,.]/g, '');
+    const numStr = cleaned.replace(/(\d{1})(\d{6})$/, '$1.$2'); // Convert '1800000' to '1.800000'
+    return parseFloat(numStr) || 0;
+  };
+
+  // Filter users based on all filters
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
       // Search filter
       const matchesSearch = searchValue === '' || 
-        user.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-        user.startup?.toLowerCase().includes(searchValue.toLowerCase()) ||
+        user.fullName.toLowerCase().includes(searchValue.toLowerCase()) ||
+        user.projectName?.toLowerCase().includes(searchValue.toLowerCase()) ||
         user.companyName?.toLowerCase().includes(searchValue.toLowerCase()) ||
         user.city?.toLowerCase().includes(searchValue.toLowerCase());
 
       // Country filter
       const matchesCountry = countryValue === 'all' || user.country === countryValue;
+      
+      // Category filter
+      const matchesCategory = categoryValue === 'all' || user.projectCategory === categoryValue;
+      
+      // City filter
+      const matchesCity = cityValue === 'all' || user.city === cityValue;
 
-      return matchesSearch && matchesCountry;
+      // Investment Amount Range filter
+      let matchesInvestmentRange = true;
+      if (investmentRangeValue !== 'all') {
+        const investmentAmount = parseInvestmentAmount(user.capitalTotalValue);
+        switch (investmentRangeValue) {
+          case 'Under €1.5M':
+            matchesInvestmentRange = investmentAmount < 1.5;
+            break;
+          case '€1.5M - €2M':
+            matchesInvestmentRange = investmentAmount >= 1.5 && investmentAmount < 2.0;
+            break;
+          case '€2M - €2.5M':
+            matchesInvestmentRange = investmentAmount >= 2.0 && investmentAmount < 2.5;
+            break;
+          case '€2.5M - €3M':
+            matchesInvestmentRange = investmentAmount >= 2.5 && investmentAmount < 3.0;
+            break;
+          case 'Over €3M':
+            matchesInvestmentRange = investmentAmount >= 3.0;
+            break;
+        }
+      }
+
+      // Equity Percentage Range filter
+      let matchesEquityRange = true;
+      if (equityRangeValue !== 'all') {
+        switch (equityRangeValue) {
+          case 'Under 12%':
+            matchesEquityRange = user.capitalPercentage < 12;
+            break;
+          case '12% - 15%':
+            matchesEquityRange = user.capitalPercentage >= 12 && user.capitalPercentage < 15;
+            break;
+          case '15% - 18%':
+            matchesEquityRange = user.capitalPercentage >= 15 && user.capitalPercentage < 18;
+            break;
+          case '18% - 20%':
+            matchesEquityRange = user.capitalPercentage >= 18 && user.capitalPercentage < 20;
+            break;
+          case 'Over 20%':
+            matchesEquityRange = user.capitalPercentage >= 20;
+            break;
+        }
+      }
+
+      // Availability Status filter
+      const matchesAvailability = availabilityValue === 'all' || 
+        (availabilityValue === 'Available' && user.availableStatus) ||
+        (availabilityValue === 'Unavailable' && !user.availableStatus);
+
+      return matchesSearch && matchesCountry && matchesCategory && matchesCity && 
+             matchesInvestmentRange && matchesEquityRange && matchesAvailability;
     });
-  }, [searchValue, countryValue]);
+  }, [searchValue, countryValue, categoryValue, cityValue, investmentRangeValue, equityRangeValue, availabilityValue]);
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
@@ -46,14 +130,40 @@ const UsersSection: React.FC = () => {
     return filteredUsers.slice(startIndex, endIndex);
   }, [filteredUsers, currentPage]);
 
+  // Investment ranges for filter
+  const investmentRanges = [
+    'Under €1.5M',
+    '€1.5M - €2M',
+    '€2M - €2.5M',
+    '€2.5M - €3M',
+    'Over €3M'
+  ];
+
+  // Equity percentage ranges for filter
+  const equityRanges = [
+    'Under 12%',
+    '12% - 15%',
+    '15% - 18%',
+    '18% - 20%',
+    'Over 20%'
+  ];
+
+  // Availability options
+  const availabilities = ['Available', 'Unavailable'];
+
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchValue, countryValue]);
+  }, [searchValue, countryValue, categoryValue, cityValue, investmentRangeValue, equityRangeValue, availabilityValue]);
 
   const handleReset = () => {
     setSearchValue('');
     setCountryValue('all');
+    setCategoryValue('all');
+    setCityValue('all');
+    setInvestmentRangeValue('all');
+    setEquityRangeValue('all');
+    setAvailabilityValue('all');
     setCurrentPage(1);
   };
 
@@ -115,8 +225,23 @@ const UsersSection: React.FC = () => {
           onSearchChange={setSearchValue}
           countryValue={countryValue}
           onCountryChange={setCountryValue}
+          categoryValue={categoryValue}
+          onCategoryChange={setCategoryValue}
+          cityValue={cityValue}
+          onCityChange={setCityValue}
+          investmentRangeValue={investmentRangeValue}
+          onInvestmentRangeChange={setInvestmentRangeValue}
+          equityRangeValue={equityRangeValue}
+          onEquityRangeChange={setEquityRangeValue}
+          availabilityValue={availabilityValue}
+          onAvailabilityChange={setAvailabilityValue}
           onReset={handleReset}
-          countries={countries}
+          countries={allCountries}
+          categories={categories}
+          cities={cities}
+          investmentRanges={investmentRanges}
+          equityRanges={equityRanges}
+          availabilities={availabilities}
           searchPlaceholder="Search startups, founders..."
         />
 

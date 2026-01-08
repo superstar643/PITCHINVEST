@@ -2,9 +2,9 @@ import React from 'react';
 
 const HeroSection: React.FC = () => {
   return (
-    <section id="hero-section" className="relative min-h-screen flex flex-col w-full">
+    <section id="hero-section" className="relative min-h-screen flex flex-col w-full overflow-x-hidden max-w-full">
       {/* Image Section - responsive height */}
-      <div className="relative flex-1 flex items-center justify-center overflow-hidden min-h-[400px] md:min-h-[600px] lg:h-auto lg:flex-1">
+      <div className="relative flex-1 flex items-center justify-center overflow-hidden min-h-[400px] md:min-h-[600px] lg:h-auto lg:flex-1 w-full max-w-full">
         <img
           src="assets/hero-back.png"
           alt="Pitch Invest World Map"
@@ -35,8 +35,8 @@ const HeroSection: React.FC = () => {
       </div>
 
       {/* Bottom Features Section - responsive padding and layout */}
-      <div className="bg-gray-50 py-6 md:py-10 lg:py-12 lg:px-28 xl:px-36 sm:px-0 2xl:px-52 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
+      <div className="bg-gray-50 py-6 md:py-10 lg:py-12 lg:px-28 xl:px-36 sm:px-0 2xl:px-52 relative overflow-hidden w-full max-w-full">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10 w-full">
           <div className="grid grid-cols-1 md:grid-cols-3">
             {/* Investment Platforms */}
             <div className="text-center border-b md:border-b-0 md:border-r border-gray-200 pb-6 md:pb-0 mb-6 md:mb-0">

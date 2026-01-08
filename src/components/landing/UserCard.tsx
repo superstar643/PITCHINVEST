@@ -4,20 +4,20 @@ import { useNavigate } from 'react-router-dom';
 
 interface UserCardProps {
   id?: number | string;
-  name: string;
-  startup: string;
+  fullName: string;
+  projectName: string;
   city: string;
   country: string;
   countryFlag: string;
-  avatar: string;
+  photo: string;
   companyLogo: string;
   companyName: string;
-  headerBg: string;
-  investmentPercent: number;
-  investmentAmount: string;
+  coverImage: string;
+  capitalPercentage: number;
+  capitalTotalValue: string;
   commission: number;
-  productImage1: string;
-  productImage2: string;
+  photos: string[];
+  description?: string;
   approvalRate: number;
   likes: number;
   views: number;
@@ -25,9 +25,9 @@ interface UserCardProps {
 }
 
 const UserCard: React.FC<UserCardProps> = ({
-  id, name, startup, city, country, countryFlag, avatar, companyLogo,
-  companyName, headerBg, investmentPercent, investmentAmount,
-  commission, productImage1, productImage2, approvalRate, likes, views, availableStatus
+  id, fullName, projectName, city, country, countryFlag, photo, companyLogo,
+  companyName, coverImage, capitalPercentage, capitalTotalValue,
+  commission, photos, description, approvalRate, likes, views, availableStatus
 }) => {
   const [messageClick, setMessageClick] = useState(false);
   const navigate = useNavigate();
@@ -57,9 +57,9 @@ const UserCard: React.FC<UserCardProps> = ({
       }}
     >
       {/* Header with background */}
-      <div className="relative h-28" style={{ backgroundImage: `url(${headerBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      <div className="relative h-28" style={{ backgroundImage: `url(${coverImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <div className="absolute -bottom-12 left-3">
-          <img src={avatar} alt={name} className="w-28 h-28 shadow-lg rounded-full border-4 border-[#0a3d5c] object-cover" />
+          <img src={photo} alt={fullName} className="w-28 h-28 shadow-lg rounded-full border-4 border-[#0a3d5c] object-cover" />
         </div>
         <div className="absolute top-2 right-2 flex flex-col items-center bg-white rounded-full p-1">
           <img src={companyLogo} alt={companyName} className="w-8 h-8 rounded-full" />
@@ -70,8 +70,8 @@ const UserCard: React.FC<UserCardProps> = ({
         <div className="text-right text-xs font-semibold text-gray-700 mb-2">{companyName}</div>
 
         <div className="space-y-1 text-xs mb-2">
-          <div><span className="font-semibold">Nome:</span> {name}</div>
-          <div><span className="font-semibold">Startup:</span> {startup}</div>
+          <div><span className="font-semibold">Nome:</span> {fullName}</div>
+          <div><span className="font-semibold">Startup:</span> {projectName}</div>
           <div><span className="font-semibold">Cidade:</span> {city}</div>
           <div className="flex items-center gap-2">
             <span className="font-semibold">País:</span> {country} <span>{countryFlag}</span>
@@ -94,17 +94,17 @@ const UserCard: React.FC<UserCardProps> = ({
         </div>
 
         <div className="text-center mb-2">
-          <div className="text-lg font-bold">{investmentPercent}% por {investmentAmount}</div>
+          <div className="text-lg font-bold">{capitalPercentage}% por {capitalTotalValue}</div>
           <div className="text-green-600 font-bold text-xs">{commission}% Comissão</div>
         </div>
 
         <div className="grid grid-cols-2 gap-2 mb-2">
-          <img src={productImage1} alt="Product 1" className="w-full h-20 object-cover rounded-lg" />
-          <img src={productImage2} alt="Product 2" className="w-full h-20 object-cover rounded-lg" />
+          {photos[0] && <img src={photos[0]} alt="Product 1" className="w-full h-20 object-cover rounded-lg" />}
+          {photos[1] && <img src={photos[1]} alt="Product 2" className="w-full h-20 object-cover rounded-lg" />}
         </div>
 
         <div className="bg-gray-50 rounded-lg py-2 text-center">
-          <div className="text-sm font-bold">Office Computer for utility purposes</div>
+          <div className="text-sm font-bold">{description || 'Office Computer for utility purposes'}</div>
           <div className="text-xs text-gray-600 mb-1">PUBLIC APPROVAL</div>
           <div className="text-xl font-bold text-green-600 mb-1">{approvalRate}%</div>
           <div className="flex justify-center gap-2 text-xs text-gray-600">

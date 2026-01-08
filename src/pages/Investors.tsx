@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import investers from '@/lib/investersData';
 import InvestorCard from '@/components/landing/InvestorCard';
 import FilterBar from '@/components/FilterBar';
+import { getSortedCountries } from '@/lib/countries';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -9,6 +10,10 @@ const Investors: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchValue, setSearchValue] = useState('');
   const [countryValue, setCountryValue] = useState('all');
+  const [categoryValue, setCategoryValue] = useState('all');
+  const [stageValue, setStageValue] = useState('all');
+  const [cityValue, setCityValue] = useState('all');
+  const [roleValue, setRoleValue] = useState('all');
 
   // Stats for the hero section
   const stats = [
@@ -18,28 +23,75 @@ const Investors: React.FC = () => {
     { value: '95%', label: 'SUCCESS RATE' },
   ];
 
-  // Extract unique countries from investors
-  const countries = useMemo(() => {
-    const countrySet = new Set<string>();
-    investers.forEach(investor => {
-      if (investor.country) countrySet.add(investor.country);
-    });
-    return Array.from(countrySet).sort();
+  // Use comprehensive countries list from countries.ts (all countries worldwide)
+  const allCountries = useMemo(() => {
+    return getSortedCountries().map(country => country.name);
   }, []);
 
-  // Filter investors based on search and country
+  // Extract unique categories from investors
+  const categories = useMemo(() => {
+    const categorySet = new Set<string>();
+    investers.forEach(investor => {
+      if (investor.projectInfo?.category) categorySet.add(investor.projectInfo.category);
+    });
+    return Array.from(categorySet).sort();
+  }, []);
+
+  // Extract unique stages from investors
+  const stages = useMemo(() => {
+    const stageSet = new Set<string>();
+    investers.forEach(investor => {
+      if (investor.projectInfo?.stage) stageSet.add(investor.projectInfo.stage);
+    });
+    return Array.from(stageSet).sort();
+  }, []);
+
+  // Extract unique cities from investors
+  const cities = useMemo(() => {
+    const citySet = new Set<string>();
+    investers.forEach(investor => {
+      if (investor.city) citySet.add(investor.city);
+    });
+    return Array.from(citySet).sort();
+  }, []);
+
+  // Extract unique roles from investors
+  const roles = useMemo(() => {
+    const roleSet = new Set<string>();
+    investers.forEach(investor => {
+      if (investor.role) roleSet.add(investor.role);
+    });
+    return Array.from(roleSet).sort();
+  }, []);
+
+  // Filter investors based on all filters
   const filteredInvestors = useMemo(() => {
     return investers.filter(investor => {
       // Search filter
       const matchesSearch = searchValue === '' || 
         investor.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-        investor.city.toLowerCase().includes(searchValue.toLowerCase());
+        investor.city?.toLowerCase().includes(searchValue.toLowerCase()) ||
+        investor.companyName?.toLowerCase().includes(searchValue.toLowerCase()) ||
+        investor.projectInfo?.title?.toLowerCase().includes(searchValue.toLowerCase());
+      
       // Country filter
       const matchesCountry = countryValue === 'all' || investor.country === countryValue;
+      
+      // Category filter
+      const matchesCategory = categoryValue === 'all' || investor.projectInfo?.category === categoryValue;
+      
+      // Stage filter
+      const matchesStage = stageValue === 'all' || investor.projectInfo?.stage === stageValue;
+      
+      // City filter
+      const matchesCity = cityValue === 'all' || investor.city === cityValue;
+      
+      // Role filter
+      const matchesRole = roleValue === 'all' || investor.role === roleValue;
 
-      return matchesSearch && matchesCountry;
+      return matchesSearch && matchesCountry && matchesCategory && matchesStage && matchesCity && matchesRole;
     });
-  }, [searchValue, countryValue]);
+  }, [searchValue, countryValue, categoryValue, stageValue, cityValue, roleValue]);
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredInvestors.length / ITEMS_PER_PAGE);
@@ -54,7 +106,7 @@ const Investors: React.FC = () => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchValue, countryValue]);
+  }, [searchValue, countryValue, categoryValue, stageValue, cityValue, roleValue]);
 
   // Scroll to top when page changes
   useEffect(() => {
@@ -64,6 +116,10 @@ const Investors: React.FC = () => {
   const handleReset = () => {
     setSearchValue('');
     setCountryValue('all');
+    setCategoryValue('all');
+    setStageValue('all');
+    setCityValue('all');
+    setRoleValue('all');
     setCurrentPage(1);
   };
 
@@ -147,8 +203,20 @@ const Investors: React.FC = () => {
           onSearchChange={setSearchValue}
           countryValue={countryValue}
           onCountryChange={setCountryValue}
+          categoryValue={categoryValue}
+          onCategoryChange={setCategoryValue}
+          stageValue={stageValue}
+          onStageChange={setStageValue}
+          cityValue={cityValue}
+          onCityChange={setCityValue}
+          roleValue={roleValue}
+          onRoleChange={setRoleValue}
           onReset={handleReset}
-          countries={countries}
+          countries={allCountries}
+          categories={categories}
+          stages={stages}
+          cities={cities}
+          roles={roles}
           searchPlaceholder="Search investors, companies..."
         />
 
@@ -158,7 +226,7 @@ const Investors: React.FC = () => {
               key={u.id}
               id={u.id}
               name={u.name}
-              startup={u.startup}
+              startup={u.projectInfo?.title || ''}
               avatar={u.avatar}
               companyLogo={u.companyLogo}
               companyName={u.companyName}

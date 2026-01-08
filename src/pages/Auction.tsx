@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import galleryItems from '@/lib/galleryData';
 import users from '@/lib/usersData';
 import { Share2, ThumbsUp } from "lucide-react";
+import { PlaceBidDialog } from '@/components/PlaceBidDialog';
 
 function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userItem: any; isUser: boolean }) {
     const [index, setIndex] = useState(0);
-    const [badgeRotation, setBadgeRotation] = useState(-50);
-    const [charAngleStep, setCharAngleStep] = useState(6);
-    const [startAngle, setStartAngle] = useState(0);
-    const [text, setText] = useState("Established 2012");
+    const [displaySize, setDisplaySize] = useState<{ w: number; h: number }>({ w: 800, h: 500 });
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const canvasWrapRef = useRef<HTMLDivElement | null>(null);
 
 
     const slides = ['https://d64gsuwffb70l.cloudfront.net/691bae6041555f05a5561a30_1763424875670_34d29b62.webp',
@@ -27,59 +27,85 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
     const next = () => setIndex((i) => (i + 1) % slides.length);
 
     // Get item name for caption
-    const itemName = isUser ? (userItem as any).name : (galleryItem as any).title || 'Product';
+    const itemName = isUser ? (userItem as any).fullName : (galleryItem as any).title || 'Product';
     const itemDescription = isUser ? 'Premium Quality Product' : (galleryItem as any).description || 'High-end investment product';
 
     useEffect(() => {
+        const el = canvasWrapRef.current;
+        if (!el) return;
+
+        const ro = new ResizeObserver(() => {
+            const viewportW = typeof window !== "undefined" ? window.innerWidth : 0;
+            // Keep desktop (>1221px) behavior unchanged (cap at 800),
+            // but allow smoother scaling up to tablet widths (<1222px).
+            const maxW = viewportW > 0 && viewportW < 1222 ? 1100 : 800;
+            const nextW = Math.min(maxW, Math.max(280, Math.floor(el.clientWidth)));
+            const nextH = Math.round(nextW * (500 / 800));
+            setDisplaySize(prev => (prev.w === nextW && prev.h === nextH ? prev : { w: nextW, h: nextH }));
+        });
+
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
         const img = new Image();
-        img.src = slides[index];   // <-- your uploaded file
+        img.src = slides[index];
 
         img.onload = () => {
-            const canvas = document.getElementById("screen");
-            const ctx = canvas.getContext("2d");
+            const W = displaySize.w;
+            const H = displaySize.h;
+            const X = 0;
+            const Y = 0;
 
-            const W = 800;       // width of warped area
-            const H = 500;       // height of warped area
-            const X = 0;       // x offset inside canvas
-            const Y = 0;        // y offset inside canvas
+            const dpr = typeof window !== "undefined" ? (window.devicePixelRatio || 1) : 1;
+            canvas.width = Math.round(W * dpr);
+            canvas.height = Math.round(H * dpr);
+            canvas.style.width = `${W}px`;
+            canvas.style.height = `${H}px`;
 
-            const curveStrength = 0.5;  // 0 = no curve, 1 = very curved
-            const borderCurve = 100;  // Border top/bottom curvature
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, W, H);
 
-            // White background
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const curveStrength = 0.5; // 0 = no curve, 1 = very curved
+            const borderCurve = Math.max(60, Math.round(H * 0.2));
+            const verticalStretch = Math.round(H * 0.4);
 
-            const steps = 1600;               // number of vertical slices
+            // Reduce work on small screens to keep it smooth.
+            const steps = Math.min(1600, Math.max(450, Math.floor(W * 2)));
             const sliceW = img.width / steps;
 
             for (let i = 0; i < steps; i++) {
-                const t = i / (steps - 1);   // 0 → 1 across width
+                const t = i / (steps - 1);
+                const curve = Math.cos((t - 0.5) * Math.PI) * curveStrength;
 
-                // Curve shape: center goes backward, edges forward
-                const curve =
-                    Math.cos((t - 0.5) * Math.PI) * curveStrength;
-
-                const targetHeight = H - curve * 200; // vertical stretch
+                const targetHeight = H - curve * verticalStretch;
                 const targetY = Y + (H - targetHeight) / 2;
 
                 ctx.drawImage(
                     img,
-                    i * sliceW, 0, sliceW, img.height,   // source slice
+                    i * sliceW, 0, sliceW, img.height,
                     X + t * W, targetY, sliceW * (W / img.width), targetHeight
                 );
             }
 
-            // ===== Draw curved border on top =====
+            // Curved border
             ctx.save();
-            ctx.strokeStyle = "#000";   // border color
-            ctx.lineWidth = 5;          // thickness
+            ctx.strokeStyle = "#000";
+            ctx.lineWidth = 5;
 
             ctx.beginPath();
-            ctx.moveTo(X + 3, Y + 3);   // inset by ~3px
+            ctx.moveTo(X + 3, Y + 3);
 
             ctx.quadraticCurveTo(
                 X + W / 2,
-                Y + borderCurve - 10,    // slightly reduced curve for inner effect
+                Y + borderCurve - 10,
                 X + W - 3,
                 Y + 3
             );
@@ -97,77 +123,66 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
             ctx.stroke();
             ctx.restore();
         };
-    }, [index]);
+    }, [displaySize.h, displaySize.w, index, slides]);
 
     return (
-        <div className="w-full flex flex-col items-center gap-6">
+        <div className="w-full flex flex-col items-center gap-6 max-[1221px]:gap-4 max-[640px]:gap-3">
             {/* 3D Frame Container */}
-            <div className="w-full px-4">
+            <div className="w-full px-4 max-[640px]:px-2">
                 {/* Main image container with side borders */}
                 <div className="relative bg-gradient-to-b rounded-3xl flex flex-col items-center">
                     {/* Image */}
-                    <div className="relative rounded-2xl overflow-visible z-1" style={{
-                        filter: "drop-shadow(0 40px 40px rgba(0, 0, 0, 0.6)) drop-shadow(0 10px 20px rgba(0, 0, 0, 0.4))"
-                    }}>
+                    <div
+                        ref={canvasWrapRef}
+                        className="relative rounded-2xl overflow-visible z-1 w-full flex justify-center max-[480px]:px-1"
+                        style={{
+                            filter: "drop-shadow(0 40px 40px rgba(0, 0, 0, 0.6)) drop-shadow(0 10px 20px rgba(0, 0, 0, 0.4))"
+                        }}
+                    >
                         {/* <img
                             src={slides[index]}
                             alt={`slide-${index}`}
                             className="w-full  object-contain bg-gray-100"
                         /> */}
-                        <canvas
-                            id="screen"
-                            width="800"
-                            height="500"
-                        ></canvas>
+                        <canvas ref={canvasRef} id="screen" />
                         {/* Navigation Arrows - Positioned on sides of image */}
                         {slides.length > 1 && (
                             <>
                                 <button
                                     onClick={prev}
                                     aria-label="previous"
-                                    className="absolute -left-4 top-1/2 -translate-y-1/2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black rounded-full p-3 shadow-lg hover:shadow-xl transition-all text-2xl font-bold w-12 h-12 flex items-center justify-center z-10"
+                                    className="absolute -left-4 top-1/2 -translate-y-1/2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black rounded-full p-3 shadow-lg hover:shadow-xl transition-all text-2xl font-bold w-12 h-12 flex items-center justify-center z-10 max-[640px]:-left-3 max-[640px]:w-10 max-[640px]:h-10 max-[640px]:text-xl"
                                 >
                                     ‹
                                 </button>
                                 <button
                                     onClick={next}
                                     aria-label="next"
-                                    className="absolute -right-4 top-1/2 -translate-y-1/2 bg-gradient-to-l from-yellow-400 to-yellow-600 text-black rounded-full p-3 shadow-lg hover:shadow-xl transition-all text-2xl font-bold w-12 h-12 flex items-center justify-center"
+                                    className="absolute -right-4 top-1/2 -translate-y-1/2 bg-gradient-to-l from-yellow-400 to-yellow-600 text-black rounded-full p-3 shadow-lg hover:shadow-xl transition-all text-2xl font-bold w-12 h-12 flex items-center justify-center max-[640px]:-right-2 max-[640px]:w-10 max-[640px]:h-10 max-[640px]:text-xl"
                                 >
                                     ›
                                 </button>
                             </>
                         )}
-                        <div className='absolute right-5 top-10 items-center justify-center flex gap-2'>
-                            <button className='flex items-center gap-2 px-4 py-2 rounded-full bg-[#ffffffe0] border-[#877c63] border hover:bg-gray-100 transition-all text-gray-700 font-medium'>
+                        <div className='absolute right-5 top-10 items-center justify-center flex gap-2 max-[1221px]:right-3 max-[1221px]:top-3'>
+                            <button className='flex items-center gap-2 px-4 py-2 rounded-full bg-[#ffffffe0] border-[#877c63] border hover:bg-gray-100 transition-all text-gray-700 font-medium max-[480px]:px-3 max-[480px]:py-1.5 max-[480px]:text-xs'>
                                 <Share2 size={12} />
                                 Share
                             </button>
-                            <button className='flex items-center justify-center w-8 h-8 rounded-full bg-[#d5b775] hover:bg-[#c5a665] transition-all shadow-md'>
+                            <button className='flex items-center justify-center w-8 h-8 rounded-full bg-[#d5b775] hover:bg-[#c5a665] transition-all shadow-md max-[640px]:w-7 max-[640px]:h-7'>
                                 <ThumbsUp size={12} className="text-white" fill="white" />
                             </button>
                         </div>
 
-                        <div className="w-12" style={{
-                            position: "absolute",
-                            top: "50%",
-                            left: 40,
-                            transform: "translateY(-50%)",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 8,
-                            zIndex: 20,
-                        }}>
+                        <div className="mt-3 w-full flex gap-2 z-20 min-[1222px]:absolute min-[1222px]:left-10 min-[1222px]:top-1/2 min-[1222px]:-translate-y-1/2 min-[1222px]:mt-0 min-[1222px]:w-12 min-[1222px]:flex-col min-[1222px]:justify-start max-[1221px]:absolute max-[1221px]:left-10 max-[1221px]:top-1/2 max-[1221px]:-translate-y-1/2 max-[1221px]:mt-0 max-[1221px]:w-10 max-[1221px]:flex-col max-[1221px]:justify-start max-[1221px]:gap-2 max-[640px]:left-8 max-[640px]:w-9 max-[640px]:gap-1.5">
                             {slides.length > 1 && (
                                 slides.map((s, i) => (
-                                    <div className='w-12 h-12' style={{
+                                    <div key={i} className='w-12 h-12 max-[1221px]:w-10 max-[1221px]:h-10 max-[640px]:w-9 max-[640px]:h-9' style={{
                                         font: "26px Monaco, MonoSpace",
-                                        // transform: `rotate(${-0 + 35 * ( i - slides.length / 2 )}deg)`
                                     }}>
                                         <button
-                                            key={i}
                                             onClick={() => setIndex(i)}
-                                            className={`w-12 h-12 rounded-lg overflow-hidden border shadow-lg transition-all ${i === index ? 'border-yellow-400 ring-2 ring-yellow-400 scale-105' : 'border-gray-400'
+                                            className={`w-12 h-12 rounded-lg overflow-hidden border shadow-lg transition-all max-[1221px]:w-10 max-[1221px]:h-10 max-[640px]:w-9 max-[640px]:h-9 ${i === index ? 'border-yellow-400 ring-2 ring-yellow-400 scale-105' : 'border-gray-400'
                                                 }`}
                                         >
                                             <img src={s} alt={`thumb-${i}`} className="w-full h-full object-cover" />
@@ -181,16 +196,16 @@ function Slideshow({ galleryItem, userItem, isUser }: { galleryItem: any; userIt
                     <div className="relative">
                         {/* Caption Text */}
                         <div className="text-center max-w-xl px-4">
-                            <p className="text-xl font-semibold text-yellow-600 dark:text-yellow-400">
+                            <p className="text-xl font-semibold text-yellow-600 dark:text-yellow-400 max-[640px]:text-sm">
                                 Neutron25, anti-stress, anti-anxiety,
                             </p>
-                            <p className="text-xl font-semibold text-yellow-600 dark:text-yellow-400">
+                            <p className="text-xl font-semibold text-yellow-600 dark:text-yellow-400 max-[640px]:text-sm">
                                 Anti panic attacks
                             </p>
                         </div>
 
                         {/* Advertisement Banner */}
-                        <div className="max-w-2xl mt-1">
+                        <div className="max-w-2xl mt-1 max-[480px]:hidden">
                             <div className="bg-gradient-to-r from-teal-900 via-teal-800 to-teal-900 rounded-lg border-2 border-teal-700 shadow-xl overflow-hidden relative">
                                 <div className="relative z-10 flex items-center">
                                     <div className="flex-1">
@@ -229,6 +244,9 @@ const Auction: React.FC = () => {
 
     // Countdown state (start from 72 hours)
     const [secondsLeft, setSecondsLeft] = useState<number>(72 * 3600);
+    
+    // Place Bid Dialog state
+    const [bidDialogOpen, setBidDialogOpen] = useState(false);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -274,50 +292,52 @@ const Auction: React.FC = () => {
             {/* subtle overlay to ensure foreground legibility */}
             <div className="absolute inset-0 bg-transparent pointer-events-none" />
 
-            <div className="relative z-10 2xl:mt-0 lg:-mt-40 max-w-8xl mx-auto h-full 2xl:scale-100 lg:scale-75">
+            <div className="relative z-10 2xl:mt-0 min-[1222px]:-mt-40 max-w-8xl mx-auto h-full 2xl:scale-100 min-[1222px]:scale-75 max-[1221px]:px-3">
                 <div className="flex flex-col gap-6 w-full justify-center items-center">
                     <div className='relative flex items-start justify-center gap-3 w-full pt-8'>
                         <div className="w-full flex justify-center flex-col items-center mb-2">
-                            <div className={`flex relative h-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50`} style={{ boxShadow: "0px 20px 30px 10px #00000050" }}>
-                                <div className="relative flex-shrink-0 shadow-lg rounded-full w-20 h-20 p-2" style={{ backgroundImage: "url('/assets/auction/background.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
-                                    <img src={userItem.avatar} alt={userItem.name} className="w-18 h-18 rounded-full object-cover" />
+                            <div 
+                                onClick={() => userItem && navigate(`/user/${userItem.id}`)}
+                                className={`flex relative h-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50 max-[1221px]:w-full max-[1221px]:max-w-[clamp(320px,92vw,1221px)] max-[1221px]:mx-auto max-[1221px]:gap-3 max-[1221px]:p-2 cursor-pointer hover:bg-gray-800/85`} 
+                                style={{ boxShadow: "0px 20px 30px 10px #00000050" }}
+                            >
+                                <div className="relative flex-shrink-0 shadow-lg rounded-full w-20 h-20 p-2 max-[1221px]:w-14 max-[1221px]:h-14 max-[1221px]:p-1.5" style={{ backgroundImage: "url('/assets/auction/background.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                                    <img src={userItem.photo} alt={userItem.fullName} className="w-18 h-18 rounded-full object-cover max-[1221px]:w-12 max-[1221px]:h-12" />
                                 </div>
                                 <div className='flex flex-col justify-center flex-1'>
-                                    <div className="text-lg font-bold text-white">{userItem.name}</div>
-                                    <div className='text-sm font-medium text-yellow-300/70 mt-1'>Warsaw</div>
-                                    <div className='text-md font-medium text-gray-300 flex gap-2'>Portugal
+                                    <div className="text-lg font-bold text-white max-[1221px]:text-base">{userItem.fullName}</div>
+                                    <div className='text-sm font-medium text-yellow-300/70 mt-1 max-[1221px]:text-xs max-[1221px]:mt-0'>Warsaw</div>
+                                    <div className='text-md font-medium text-gray-300 flex gap-2 max-[1221px]:text-xs'>Portugal
                                         <img src={flags[0]} alt='Flag' className='w-6 h-4 rounded mt-1 object-cover shadow-md' />
                                     </div>
                                 </div>
-                                <div className="text-right flex flex-col items-end h-full mt-4">
-                                    <div className="text-2xl font-bold text-[#d5b775]">$317,548</div>
+                                <div className="text-right flex flex-col items-end h-full mt-4 max-[1221px]:mt-0">
+                                    <div className="text-2xl font-bold text-[#d5b775] max-[1221px]:text-lg">$317,548</div>
                                 </div>
                                 <img src='/assets/auction/percent.png' width={30} height={30} className="absolute top-2 right-2" />
                             </div>
                         </div>
                     </div>
-                    <div className='flex relative'>
+                    <div className='flex relative max-[1221px]:w-full max-[1221px]:flex-col max-[1221px]:items-center max-[1221px]:gap-6 max-[640px]:gap-4'>
                         {/* Left bidders */}
-                        <div className="w-full md:min-w-[380px] flex flex-col relative gap-8 -top-8" style={{
-                            perspective: "1000px"
-                        }}>
-                            <div className="bg-gray-800/75 text-white rounded-xl p-4 shadow-lg border border-white/10" style={{ transform: "rotateY(20deg)", boxShadow: "-45px 45px 15px 0px #00000050" }}>
-                                <div className="text-sm font-semibold mb-3">Current Bidders</div>
+                        <div className="w-full flex flex-col relative gap-8 min-[1222px]:min-w-[380px] min-[1222px]:-top-8 min-[1222px]:[perspective:1000px] max-[1221px]:max-w-none max-[1221px]:gap-4">
+                            <div className="w-full bg-gray-800/75 text-white rounded-xl p-4 border border-white/10 shadow-lg min-[1222px]:[transform:rotateY(20deg)] min-[1222px]:shadow-[-45px_45px_15px_0px_#00000050] max-[1221px]:p-3 max-[640px]:p-2">
+                                <div className="text-sm font-semibold mb-3 max-[480px]:text-xs max-[480px]:mb-2">Current Bidders</div>
                                 <div className="space-y-3">
                                     {leftBidders.map((b, i) => (
-                                        <div key={i} className={`flex relative h-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all ${i === 0 ? 'ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50' : ''}`}>
-                                            <div className="relative flex-shrink-0 shadow-lg rounded-full w-20 h-20 p-2" style={{ backgroundImage: "url('/assets/auction/background.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
-                                                <img src={b.avatar} alt={b.name} className="w-18 h-18 rounded-full object-cover" />
+                                        <div key={i} className={`flex relative h-full w-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all max-[1221px]:gap-3 max-[1221px]:p-2 max-[1221px]:rounded-xl ${i === 0 ? 'ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50' : ''}`}>
+                                            <div className="relative flex-shrink-0 shadow-lg rounded-full w-20 h-20 p-2 max-[1221px]:w-14 max-[1221px]:h-14 max-[1221px]:p-1.5 max-[640px]:w-12 max-[640px]:h-12 max-[640px]:p-1" style={{ backgroundImage: "url('/assets/auction/background.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                                                <img src={b.avatar} alt={b.name} className="w-18 h-18 rounded-full object-cover max-[1221px]:w-12 max-[1221px]:h-12 max-[640px]:w-10 max-[640px]:h-10" />
                                             </div>
                                             <div className='flex flex-col justify-center flex-1'>
-                                                <div className="text-lg font-bold text-white">{b.name}</div>
-                                                <div className='text-sm font-medium text-yellow-300/70 mt-1'>Warsaw</div>
-                                                <div className='text-md font-medium text-gray-300 flex gap-2'>Portugal
+                                                <div className="text-lg font-bold text-white max-[1221px]:text-base max-[640px]:text-sm">{b.name}</div>
+                                                <div className='text-sm font-medium text-yellow-300/70 mt-1 max-[640px]:hidden'>Warsaw</div>
+                                                <div className='text-md font-medium text-gray-300 flex gap-2 max-[640px]:hidden'>Portugal
                                                     <img src={flags[i]} alt='Flag' className='w-6 h-4 rounded mt-1 object-cover shadow-md' />
                                                 </div>
                                             </div>
-                                            <div className="text-right flex flex-col items-end h-full mt-4">
-                                                <div className="text-2xl font-bold text-[#d5b775]">$317,548</div>
+                                            <div className="text-right flex flex-col items-end h-full mt-4 max-[1221px]:mt-0">
+                                                <div className="text-2xl font-bold text-[#d5b775] max-[1221px]:text-lg max-[640px]:text-base">$317,548</div>
                                             </div>
                                             <img src='/assets/auction/percent.png' width={30} height={30} className="absolute top-2 right-2" />
                                         </div>
@@ -326,16 +346,16 @@ const Auction: React.FC = () => {
                             </div>
                             {/* Countdown below leading bid box */}
                             <div className="mt-2 rounded-full justify-center px-4 py-2 text-white items-center flex gap-2" style={{ background: color }}>
-                                <div className="text-lg uppercase">Time Remaining: </div>
-                                <div className="font-semibold text-md">{formatCountdown(secondsLeft)}</div>
+                                <div className="text-lg uppercase max-[1221px]:text-sm max-[640px]:text-xs">Time Remaining: </div>
+                                <div className="font-semibold text-md max-[1221px]:text-sm max-[640px]:text-xs">{formatCountdown(secondsLeft)}</div>
                             </div>
                             {/* <button onClick={() => navigate('/')} className="px-4 py-2 rounded-full bg-white/10 text-white border text-sm md:text-base">Go To Back</button> */}
                         </div>
 
                         {/* Center image - moved lower and smaller */}
-                        <div className="w-full md:min-w-2/5 flex flex-col items-center justify-between gap-8 md:gap-24">
+                        <div className="w-full min-[1222px]:min-w-2/5 flex flex-col items-center justify-between gap-8 md:gap-24 max-[1221px]:max-w-none max-[1221px]:gap-4">
                             {/* Leading bid box - use main color */}
-                            <div className="mt-6 w-full flex flex-col items-center">
+                            <div className="mt-6 w-full flex flex-col items-center max-[1221px]:mt-2">
 
                                 {/* Slideshow: use gallery images or user's product images */}
                                 <div className="w-full flex justify-center">
@@ -345,38 +365,47 @@ const Auction: React.FC = () => {
                         </div>
 
                         {/* Right bidders */}
-                        <div className="w-full md:min-w-[380px] flex flex-col relative gap-8 -top-8" style={{
-                            perspective: "1000px"
-                        }}>
-                            <div className="bg-gray-800/75 text-white rounded-xl p-4 shadow-lg border border-white/10 drop-shadow-2xl" style={{ transform: "rotateY(-20deg)", boxShadow: "45px 45px 15px 0px #00000050" }}>
-                                <div className="text-sm font-semibold mb-3">Competing Bids</div>
+                        <div className="w-full flex flex-col relative gap-8 min-[1222px]:min-w-[380px] min-[1222px]:-top-8 min-[1222px]:[perspective:1000px] max-[1221px]:max-w-none max-[1221px]:gap-4">
+                            <div className="w-full bg-gray-800/75 text-white rounded-xl p-4 border border-white/10 drop-shadow-2xl shadow-lg min-[1222px]:[transform:rotateY(-20deg)] min-[1222px]:shadow-[45px_45px_15px_0px_#00000050] max-[1221px]:p-3 max-[640px]:p-2">
+                                <div className="text-sm font-semibold mb-3 max-[480px]:text-xs max-[480px]:mb-2">Competing Bids</div>
                                 <div className="space-y-3">
                                     {rightBidders.map((b, i) => (
-                                        <div key={i} className={`flex relative h-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all ${i === 0 ? 'ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50' : ''}`}>
-                                            <div className="text-right flex flex-col items-end h-full mt-4">
-                                                <div className="text-2xl font-bold text-[#d5b775]">$317,548</div>
+                                        <div key={i} className={`flex relative h-full w-full items-center gap-4 bg-gray-800/75 p-2 rounded-2xl border transition-all max-[1221px]:gap-3 max-[1221px]:p-2 max-[1221px]:rounded-xl ${i === 0 ? 'ring-2 ring-yellow-400 border-yellow-400 shadow-2xl shadow-yellow-400/50' : ''}`}>
+                                            <div className="text-right flex flex-col items-end h-full mt-4 max-[1221px]:mt-0">
+                                                <div className="text-2xl font-bold text-[#d5b775] max-[1221px]:text-lg max-[640px]:text-base">$317,548</div>
                                             </div>
                                             <div className='flex flex-col justify-center items-end flex-1'>
-                                                <div className="text-lg font-bold text-white">{b.name}</div>
-                                                <div className='text-sm font-medium text-yellow-300/70 mt-1'>Warsaw</div>
-                                                <div className='text-md font-medium text-gray-300 flex gap-2'>
+                                                <div className="text-lg font-bold text-white max-[1221px]:text-base max-[640px]:text-sm">{b.name}</div>
+                                                <div className='text-sm font-medium text-yellow-300/70 mt-1 max-[640px]:hidden'>Warsaw</div>
+                                                <div className='text-md font-medium text-gray-300 flex gap-2 max-[640px]:hidden'>
                                                     <img src={flags[flags.length - i - 1]} alt='Flag' className='w-6 h-4 rounded mt-1 object-cover shadow-md' />
                                                     Portugal
                                                 </div>
                                             </div>
-                                            <div className="relative flex-shrink-0 shadow-lg rounded-full w-20 h-20 p-2" style={{ backgroundImage: "url('/assets/auction/background.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
-                                                <img src={b.avatar} alt={b.name} className="w-18 h-18 rounded-full object-cover" />
+                                            <div className="relative flex-shrink-0 shadow-lg rounded-full w-20 h-20 p-2 max-[1221px]:w-14 max-[1221px]:h-14 max-[1221px]:p-1.5 max-[640px]:w-12 max-[640px]:h-12 max-[640px]:p-1" style={{ backgroundImage: "url('/assets/auction/background.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                                                <img src={b.avatar} alt={b.name} className="w-18 h-18 rounded-full object-cover max-[1221px]:w-12 max-[1221px]:h-12 max-[640px]:w-10 max-[640px]:h-10" />
                                             </div>
                                             <img src='/assets/auction/percent.png' width={30} height={30} className="absolute top-2 left-2" />
                                         </div>
                                     ))}
                                 </div>
                             </div>
-                            <button onClick={() => navigate('/')} className="px-4 py-2 md:px-6 md:py-3 rounded-full text-white font-semibold" style={{ background: color }}>Place Bid</button>
+                            <button onClick={() => setBidDialogOpen(true)} className="px-4 py-2 md:px-6 md:py-3 rounded-full text-white font-semibold max-[1221px]:py-2 max-[1221px]:text-sm" style={{ background: color }}>Place Bid</button>
                         </div>
                     </div>
                 </div>
             </div>
+            
+            {/* Place Bid Dialog */}
+            <PlaceBidDialog
+                open={bidDialogOpen}
+                onOpenChange={setBidDialogOpen}
+                auctionId={id || ''}
+                currentBid={317548}
+                itemName={userItem?.fullName || galleryItem?.title || 'Auction Item'}
+                itemImage={userItem?.photo || galleryItem?.imageUrl}
+                minimumIncrement={5000}
+            />
         </div>
     );
 };

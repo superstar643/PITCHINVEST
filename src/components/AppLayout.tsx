@@ -17,10 +17,12 @@ interface AppLayoutProps {
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen flex flex-col custom-scrollbar">
+    <div className="min-h-screen flex flex-col custom-scrollbar overflow-x-hidden w-full max-w-full">
       <Header />
-      <main className="flex-1">
-        {children ? children : <><HeroSection /><CarouselSection /><UsersSection /></>}
+      <main className="flex-1 w-full overflow-x-hidden max-w-full">
+        <div className="w-full max-w-full overflow-x-hidden">
+          {children ? children : <><HeroSection /><CarouselSection /><UsersSection /></>}
+        </div>
       </main>
       <Footer />
     </div>

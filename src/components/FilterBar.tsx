@@ -8,6 +8,8 @@ import {
   SelectValue,
 } from './ui/select';
 import { Button } from './ui/button';
+import { SearchableCountrySelect } from './ui/searchable-country-select';
+import { getSortedCountries } from '@/lib/countries';
 
 interface FilterBarProps {
   searchValue: string;
@@ -23,9 +25,33 @@ interface FilterBarProps {
   onCategoryChange?: (value: string) => void;
   proposalTypeValue?: string;
   onProposalTypeChange?: (value: string) => void;
+  stageValue?: string;
+  onStageChange?: (value: string) => void;
+  cityValue?: string;
+  onCityChange?: (value: string) => void;
+  roleValue?: string;
+  onRoleChange?: (value: string) => void;
+  investmentRangeValue?: string;
+  onInvestmentRangeChange?: (value: string) => void;
+  equityRangeValue?: string;
+  onEquityRangeChange?: (value: string) => void;
+  availabilityValue?: string;
+  onAvailabilityChange?: (value: string) => void;
+  tagValue?: string;
+  onTagChange?: (value: string) => void;
+  popularityValue?: string;
+  onPopularityChange?: (value: string) => void;
   statuses?: string[];
   categories?: string[];
   proposalTypes?: string[];
+  stages?: string[];
+  cities?: string[];
+  roles?: string[];
+  investmentRanges?: string[];
+  equityRanges?: string[];
+  availabilities?: string[];
+  tags?: string[];
+  popularities?: string[];
   searchPlaceholder?: string;
 }
 
@@ -40,16 +66,48 @@ const FilterBar: React.FC<FilterBarProps> = ({
   onCountryChange,
   proposalTypeValue,
   onProposalTypeChange,
+  stageValue,
+  onStageChange,
+  cityValue,
+  onCityChange,
+  roleValue,
+  onRoleChange,
+  investmentRangeValue,
+  onInvestmentRangeChange,
+  equityRangeValue,
+  onEquityRangeChange,
+  availabilityValue,
+  onAvailabilityChange,
   onReset,
   statuses,
   categories,
   countries,
   proposalTypes,
+  stages,
+  cities,
+  roles,
+  investmentRanges,
+  equityRanges,
+  availabilities,
+  tagValue,
+  onTagChange,
+  popularityValue,
+  onPopularityChange,
+  tags,
+  popularities,
   searchPlaceholder = "Search projects, innovations...",
 }) => {
   const showStatus = statusValue !== undefined && onStatusChange !== undefined;
   const showCategory = categoryValue !== undefined && onCategoryChange !== undefined;
   const showProposalType = proposalTypeValue !== undefined && onProposalTypeChange !== undefined;
+  const showStage = stageValue !== undefined && onStageChange !== undefined;
+  const showCity = cityValue !== undefined && onCityChange !== undefined;
+  const showRole = roleValue !== undefined && onRoleChange !== undefined;
+  const showInvestmentRange = investmentRangeValue !== undefined && onInvestmentRangeChange !== undefined;
+  const showEquityRange = equityRangeValue !== undefined && onEquityRangeChange !== undefined;
+  const showAvailability = availabilityValue !== undefined && onAvailabilityChange !== undefined;
+  const showTag = tagValue !== undefined && onTagChange !== undefined;
+  const showPopularity = popularityValue !== undefined && onPopularityChange !== undefined;
 
   return (
     <div className="flex items-center gap-2 md:gap-3 mb-8 bg-white py-3 px-4 rounded-full shadow-[0_2px_12px_rgba(0,0,0,0.08)] border border-gray-100 overflow-x-auto">
@@ -82,6 +140,70 @@ const FilterBar: React.FC<FilterBarProps> = ({
         </Select>
       )}
 
+      {/* Availability Status Dropdown - Optional - Show before Country */}
+      {showAvailability && (
+        <Select value={availabilityValue} onValueChange={onAvailabilityChange}>
+          <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
+            <SelectValue placeholder="All Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            {availabilities?.map((availability) => (
+              <SelectItem key={availability} value={availability}>
+                {availability}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+      {/* Country Dropdown - Using SearchableCountrySelect like Settings/Registration */}
+      <SearchableCountrySelect
+        countries={getSortedCountries()}
+        value={countryValue === 'all' ? '' : countryValue}
+        onValueChange={(value) => {
+          onCountryChange(value || 'all');
+        }}
+        type="country"
+        placeholder="All Countries"
+        triggerClassName="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20"
+      />
+
+      {/* Tags Dropdown - Optional */}
+      {showTag && (
+        <Select value={tagValue} onValueChange={onTagChange}>
+          <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
+            <SelectValue placeholder="Tags" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Tags</SelectItem>
+            {tags?.map((tag) => (
+              <SelectItem key={tag} value={tag}>
+                {tag}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+      {/* Popularity Dropdown - Optional */}
+      {showPopularity && (
+        <Select value={popularityValue} onValueChange={onPopularityChange}>
+          <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
+            <SelectValue placeholder="Popularity" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Popularity</SelectItem>
+            {popularities?.map((popularity) => (
+              <SelectItem key={popularity} value={popularity}>
+                {popularity}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+
       {/* Category Dropdown - Optional */}
       {showCategory && (
         <Select value={categoryValue} onValueChange={onCategoryChange}>
@@ -99,20 +221,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
         </Select>
       )}
 
-      {/* Country Dropdown */}
-      <Select value={countryValue} onValueChange={onCountryChange}>
-        <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
-          <SelectValue placeholder="Country" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Countries</SelectItem>
-          {countries?.map((country) => (
-            <SelectItem key={country} value={country}>
-              {country}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+
 
       {/* Proposal Type Dropdown - Optional */}
       {showProposalType && (
@@ -130,6 +239,77 @@ const FilterBar: React.FC<FilterBarProps> = ({
           </SelectContent>
         </Select>
       )}
+
+      {/* Stage Dropdown - Optional */}
+      {showStage && (
+        <Select value={stageValue} onValueChange={onStageChange}>
+          <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
+            <SelectValue placeholder="Stage" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Stages</SelectItem>
+            {stages?.map((stage) => (
+              <SelectItem key={stage} value={stage}>
+                {stage}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+
+      {/* Role/Investor Type Dropdown - Optional */}
+      {showRole && (
+        <Select value={roleValue} onValueChange={onRoleChange}>
+          <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
+            <SelectValue placeholder="Investor Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            {roles?.map((role) => (
+              <SelectItem key={role} value={role}>
+                {role}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+      {/* Investment Amount Range Dropdown - Optional */}
+      {showInvestmentRange && (
+        <Select value={investmentRangeValue} onValueChange={onInvestmentRangeChange}>
+          <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
+            <SelectValue placeholder="Investment Range" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Ranges</SelectItem>
+            {investmentRanges?.map((range) => (
+              <SelectItem key={range} value={range}>
+                {range}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+      {/* Equity Percentage Range Dropdown - Optional */}
+      {showEquityRange && (
+        <Select value={equityRangeValue} onValueChange={onEquityRangeChange}>
+          <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
+            <SelectValue placeholder="Equity %" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All %</SelectItem>
+            {equityRanges?.map((range) => (
+              <SelectItem key={range} value={range}>
+                {range}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+
 
       {/* Reset Button */}
       <Button

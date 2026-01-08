@@ -2,13 +2,14 @@ import React, { useState, useMemo } from 'react';
 import { GalleryCard } from '@/components/GalleryCard';
 import galleryItems from '@/lib/galleryData';
 import FilterBar from '@/components/FilterBar';
+import { getSortedCountries } from '@/lib/countries';
 
 const Gallery: React.FC = () => {
     const [searchValue, setSearchValue] = useState('');
     const [statusValue, setStatusValue] = useState('all');
-    const [categoryValue, setCategoryValue] = useState('all');
     const [countryValue, setCountryValue] = useState('all');
-    const [proposalTypeValue, setProposalTypeValue] = useState('all');
+    const [tagValue, setTagValue] = useState('all');
+    const [popularityValue, setPopularityValue] = useState('all');
 
     // Extract unique statuses from gallery items
     const statuses = useMemo(() => {
@@ -19,35 +20,29 @@ const Gallery: React.FC = () => {
         return Array.from(statusSet).sort();
     }, []);
 
-    // Extract unique categories from gallery items
-    const categories = useMemo(() => {
-        const categorySet = new Set<string>();
-        galleryItems.forEach(item => {
-            if (item.category) categorySet.add(item.category);
-        });
-        return Array.from(categorySet).sort();
+    // Use comprehensive countries list from countries.ts (all countries worldwide)
+    const allCountries = useMemo(() => {
+        return getSortedCountries().map(country => country.name);
     }, []);
 
-    // Extract unique countries from gallery items
-    const countries = useMemo(() => {
-        const countrySet = new Set<string>();
+    // Extract unique tags/badges from gallery items
+    const tags = useMemo(() => {
+        const tagSet = new Set<string>();
         galleryItems.forEach(item => {
-            if (item.location) countrySet.add(item.location);
-            if (item.author?.country) countrySet.add(item.author.country);
-        });
-        return Array.from(countrySet).sort();
-    }, []);
-
-    // Extract unique proposal types from gallery items
-    const proposalTypes = useMemo(() => {
-        const typeSet = new Set<string>();
-        galleryItems.forEach(item => {
-            if (item.actions) {
-                item.actions.forEach(action => typeSet.add(action));
+            if (item.badges && item.badges.length > 0) {
+                item.badges.forEach(badge => tagSet.add(badge));
             }
         });
-        return Array.from(typeSet).sort();
+        return Array.from(tagSet).sort();
     }, []);
+
+    // Popularity options based on likes/views
+    const popularityOptions = [
+        'Most Popular',
+        'High Engagement',
+        'Moderate Engagement',
+        'Low Engagement'
+    ];
 
     // Filter gallery items based on all filters
     const filteredItems = useMemo(() => {
@@ -59,33 +54,53 @@ const Gallery: React.FC = () => {
                 item.description?.toLowerCase().includes(searchValue.toLowerCase()) ||
                 item.category?.toLowerCase().includes(searchValue.toLowerCase());
 
-            // Status filter
+            // Status filter (Available/Unavailable)
             const matchesStatus = statusValue === 'all' || 
                 item.availableLabel === statusValue;
-
-            // Category filter
-            const matchesCategory = categoryValue === 'all' || 
-                item.category === categoryValue;
 
             // Country filter
             const matchesCountry = countryValue === 'all' || 
                 item.location === countryValue ||
                 item.author?.country === countryValue;
 
-            // Proposal Type filter
-            const matchesProposalType = proposalTypeValue === 'all' || 
-                item.actions?.includes(proposalTypeValue);
+            // Tags filter (badges like FEATURED, TRENDING, VALIDATED)
+            const matchesTag = tagValue === 'all' || 
+                (item.badges && item.badges.includes(tagValue));
 
-            return matchesSearch && matchesStatus && matchesCategory && matchesCountry && matchesProposalType;
+            // Popularity filter based on likes and views
+            let matchesPopularity = true;
+            if (popularityValue !== 'all') {
+                const likes = item.likes || 0;
+                const views = item.views || 0;
+                const engagementScore = likes * 10 + views; // Weighted engagement score
+                
+                switch (popularityValue) {
+                    case 'Most Popular':
+                        // Top 20% by engagement score
+                        matchesPopularity = engagementScore >= 100000;
+                        break;
+                    case 'High Engagement':
+                        matchesPopularity = engagementScore >= 50000 && engagementScore < 100000;
+                        break;
+                    case 'Moderate Engagement':
+                        matchesPopularity = engagementScore >= 20000 && engagementScore < 50000;
+                        break;
+                    case 'Low Engagement':
+                        matchesPopularity = engagementScore < 20000;
+                        break;
+                }
+            }
+
+            return matchesSearch && matchesStatus && matchesCountry && matchesTag && matchesPopularity;
         });
-    }, [searchValue, statusValue, categoryValue, countryValue, proposalTypeValue]);
+    }, [searchValue, statusValue, countryValue, tagValue, popularityValue]);
 
     const handleReset = () => {
         setSearchValue('');
         setStatusValue('all');
-        setCategoryValue('all');
         setCountryValue('all');
-        setProposalTypeValue('all');
+        setTagValue('all');
+        setPopularityValue('all');
     };
 
     const stats = [
@@ -132,17 +147,18 @@ const Gallery: React.FC = () => {
                     onSearchChange={setSearchValue}
                     statusValue={statusValue}
                     onStatusChange={setStatusValue}
-                    categoryValue={categoryValue}
-                    onCategoryChange={setCategoryValue}
                     countryValue={countryValue}
                     onCountryChange={setCountryValue}
-                    proposalTypeValue={proposalTypeValue}
-                    onProposalTypeChange={setProposalTypeValue}
+                    tagValue={tagValue}
+                    onTagChange={setTagValue}
+                    popularityValue={popularityValue}
+                    onPopularityChange={setPopularityValue}
                     onReset={handleReset}
                     statuses={statuses}
-                    categories={categories}
-                    countries={countries}
-                    proposalTypes={proposalTypes}
+                    countries={allCountries}
+                    tags={tags}
+                    popularities={popularityOptions}
+                    searchPlaceholder="Search projects, innovations..."
                 />
 
                 <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-8">

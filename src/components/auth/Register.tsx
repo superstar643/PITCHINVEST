@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import {
@@ -8,26 +8,36 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { supabase } from '@/lib/supabase';
+import { base64ToFile, uploadFile, uploadMultipleFiles } from '@/lib/storage';
+import { useToast } from '@/hooks/use-toast';
+import { LoadingOverlay } from '@/components/ui/loading-overlay';
+import { Spinner } from '@/components/ui/spinner';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import ReactCountryFlag from 'react-country-flag';
+import { getSortedCountries, getCountryByCode, getCountryByPhoneCode } from '@/lib/countries';
+import { getCachedGeolocation } from '@/lib/geolocation';
+import { SearchableCountrySelect } from '@/components/ui/searchable-country-select';
 
 type Step = 'usertype' | 'company' | 'personal' | 'pitch';
 
-// Country mapping with flags and phone codes
-const countries = [
-    { name: 'Portugal', flag: '/assets/flags/PT.png', code: 'PT', phoneCode: '+351' },
-    { name: 'Spain', flag: '/assets/flags/ES.png', code: 'ES', phoneCode: '+34' },
-    { name: 'France', flag: '/assets/flags/FR.png', code: 'FR', phoneCode: '+33' },
-    { name: 'Germany', flag: '/assets/flags/DE.png', code: 'DE', phoneCode: '+49' },
-    { name: 'Italy', flag: '/assets/flags/IT.png', code: 'IT', phoneCode: '+39' },
-    { name: 'United Kingdom', flag: '/assets/flags/GB.png', code: 'GB', phoneCode: '+44' },
-    { name: 'United States', flag: '/assets/flags/US.png', code: 'US', phoneCode: '+1' },
-    { name: 'Brazil', flag: '/assets/flags/BR.png', code: 'BR', phoneCode: '+55' },
-    { name: 'Other', flag: '', code: 'OTHER', phoneCode: '+' },
-];
+// Use comprehensive countries list
+const countries = getSortedCountries();
 
 export default function Register() {
+    const OTP_TTL_SECONDS = 180;
+    const { toast } = useToast();
     const [currentStep, setCurrentStep] = useState<Step>('usertype');
     const [phoneCountryCode, setPhoneCountryCode] = useState('+1'); // Default to US for personal telephone
     const [companyPhoneCountryCode, setCompanyPhoneCountryCode] = useState('+1'); // Default to US for company telephone
+    const [detectedCountryCode, setDetectedCountryCode] = useState<string | null>(null); // Store detected ISO country code
+    const [companyPhoneGeolocationAttempted, setCompanyPhoneGeolocationAttempted] = useState(false); // Track if we've tried to detect company phone location
     const [telephoneError, setTelephoneError] = useState('');
     const [companyTelephoneError, setCompanyTelephoneError] = useState('');
     const [formData, setFormData] = useState({
@@ -65,6 +75,7 @@ export default function Register() {
         photoPreview: '',
         fullName: '',
         personalEmail: '',
+        password: '',
         telephone: '',
         country: '',
         city: '',
@@ -79,6 +90,126 @@ export default function Register() {
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [geolocationLoading, setGeolocationLoading] = useState(false);
+
+    // Always use OTP verification (password is optional)
+    
+    // Email OTP (required to get an authenticated session for Storage uploads)
+    const [otpSent, setOtpSent] = useState(false);
+    const [otpCode, setOtpCode] = useState('');
+    const [otpSecondsLeft, setOtpSecondsLeft] = useState(0);
+    const [showOtpModal, setShowOtpModal] = useState(false);
+
+    // Registration steps for loading overlay
+    const [registrationSteps, setRegistrationSteps] = useState<
+        Array<{ label: string; status: 'pending' | 'loading' | 'completed' }>
+    >([
+        { label: 'Verifying email code', status: 'pending' },
+        { label: 'Uploading files', status: 'pending' },
+        { label: 'Creating your account', status: 'pending' },
+    ]);
+
+    useEffect(() => {
+        if (!otpSent || otpSecondsLeft <= 0) return;
+        const t = window.setInterval(() => setOtpSecondsLeft((s) => s - 1), 1000);
+        return () => window.clearInterval(t);
+    }, [otpSent, otpSecondsLeft]);
+
+    // Auto-send OTP when modal opens
+    useEffect(() => {
+        if (showOtpModal && !otpSent && !loading) {
+            sendOtpCode();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [showOtpModal]);
+
+    // Auto-detect location when entering personal info step
+    useEffect(() => {
+        if (currentStep === 'personal' && !formData.country && !geolocationLoading) {
+            setGeolocationLoading(true);
+            getCachedGeolocation()
+                .then((geoData) => {
+                    if (geoData && geoData.countryCode) {
+                        const detectedCountry = getCountryByCode(geoData.countryCode);
+                        if (detectedCountry) {
+                            // Auto-select detected country
+                            setFormData((prev) => ({
+                                ...prev,
+                                country: detectedCountry.name,
+                                city: geoData.city || prev.city,
+                            }));
+                            // Store the detected country code for proper flag display (important for +1 US/Canada)
+                            setDetectedCountryCode(detectedCountry.code);
+                            // Auto-select phone country code
+                            setPhoneCountryCode(detectedCountry.phoneCode);
+                            // Also update company phone if empty
+                            if (!formData.companyTelephone) {
+                                setCompanyPhoneCountryCode(detectedCountry.phoneCode);
+                            }
+                            console.log('Auto-detected location:', detectedCountry.name, geoData.city, 'Code:', detectedCountry.code);
+                        }
+                    }
+                })
+                .catch((error) => {
+                    console.warn('Geolocation detection failed:', error);
+                })
+                .finally(() => {
+                    setGeolocationLoading(false);
+                });
+        }
+    }, [currentStep, formData.country, geolocationLoading, formData.companyTelephone]);
+
+    // Auto-detect location for company telephone when entering company step (StartUp/Company)
+    useEffect(() => {
+        if (
+            currentStep === 'company' && 
+            (formData.userType === 'StartUp' || formData.userType === 'Company') && 
+            !companyPhoneGeolocationAttempted &&
+            !formData.companyTelephone // Only auto-detect if user hasn't entered a phone number yet
+        ) {
+            setCompanyPhoneGeolocationAttempted(true);
+            
+            // Check if we already have a detected country code (from personal step)
+            if (detectedCountryCode) {
+                // Use already detected country code
+                const detectedCountry = getCountryByCode(detectedCountryCode);
+                if (detectedCountry) {
+                    setCompanyPhoneCountryCode(detectedCountry.phoneCode);
+                    console.log('Using previously detected location for company telephone:', detectedCountry.name, 'Phone:', detectedCountry.phoneCode);
+                }
+            } else if (!geolocationLoading) {
+                // Need to detect location for the first time
+                setGeolocationLoading(true);
+                getCachedGeolocation()
+                    .then((geoData) => {
+                        if (geoData && geoData.countryCode) {
+                            const detectedCountry = getCountryByCode(geoData.countryCode);
+                            if (detectedCountry) {
+                                // Store the detected country code for proper flag display (important for +1 US/Canada)
+                                setDetectedCountryCode(detectedCountry.code);
+                                // Auto-select company phone country code
+                                setCompanyPhoneCountryCode(detectedCountry.phoneCode);
+                                console.log('Auto-detected company telephone location:', detectedCountry.name, 'Code:', detectedCountry.code, 'Phone:', detectedCountry.phoneCode);
+                            }
+                        }
+                    })
+                    .catch((error) => {
+                        console.warn('Geolocation detection for company telephone failed:', error);
+                    })
+                    .finally(() => {
+                        setGeolocationLoading(false);
+                    });
+            }
+        }
+    }, [currentStep, formData.userType, formData.companyTelephone, companyPhoneGeolocationAttempted, detectedCountryCode, geolocationLoading]);
+
+    const [fileObjects, setFileObjects] = useState<{
+        coverImage?: File;
+        photo?: File;
+        pitchVideo?: File;
+        photos?: File[];
+        pitchVideos?: File[];
+    }>({});
 
     const userTypes = ['Inventor', 'StartUp', 'Company', 'Investor'];
 
@@ -103,7 +234,6 @@ export default function Register() {
 
     const currentStepIndex = steps.findIndex(s => s.id === currentStep);
     const progress = ((currentStepIndex + 1) / steps.length) * 100;
-
     // Phone number validation function
     const validatePhoneNumber = (phone: string, countryCode: string): string => {
         if (!phone.trim()) {
@@ -169,6 +299,25 @@ export default function Register() {
         }
     };
 
+    // Helper function to validate at least one sale option is filled
+    const hasAtLeastOneSaleOption = (): boolean => {
+        if (formData.userType === 'Inventor') {
+            // Inventor: Must have either Patent Exploitation Fee OR Full Patent Assignment (100%)
+            const hasInitialLicenseValue = formData.initialLicenseValue.trim();
+            const hasPatentSale = formData.patentSale.trim();
+            return !!(hasInitialLicenseValue || hasPatentSale);
+        } else if (formData.userType === 'StartUp' || formData.userType === 'Company') {
+            // StartUp/Company: Must have at least one complete commercial proposal block
+            // Patent Licensing removed - no longer required
+            const hasEquityParticipation = formData.capitalPercentage.trim() && formData.capitalTotalValue.trim();
+            const hasBrandLicensing = formData.licenseFee.trim() && formData.licensingRoyaltiesPercentage.trim();
+            const hasFranchising = formData.franchiseeInvestment.trim() && formData.monthlyRoyalties.trim();
+            const hasTotalSale = formData.totalSaleOfProject.trim();
+            return !!(hasEquityParticipation || hasBrandLicensing || hasFranchising || hasTotalSale);
+        }
+        return true; // Investor doesn't need sale options
+    };
+
     const validateStep = (): boolean => {
         setError('');
 
@@ -181,12 +330,8 @@ export default function Register() {
                 return true;
 
             case 'company':
-                if (formData.userType === 'Inventor') {
-                    // Inventor validation
-                    if (!formData.inventorName.trim()) {
-                        setError('Please enter inventor name');
-                        return false;
-                    }
+                // Common mandatory fields for all types
+                if (formData.userType === 'Inventor' || formData.userType === 'StartUp' || formData.userType === 'Company') {
                     if (!formData.projectName.trim()) {
                         setError('Please enter your project name');
                         return false;
@@ -195,92 +340,16 @@ export default function Register() {
                         setError('Please enter project category');
                         return false;
                     }
-                    if (!formData.licenseNumber.trim()) {
-                        setError('Please enter license number');
-                        return false;
-                    }
-                    if (!formData.releaseDate.trim()) {
-                        setError('Please enter release date');
-                        return false;
-                    }
-                    if (!formData.initialLicenseValue.trim()) {
-                        setError('Please enter initial license value');
-                        return false;
-                    }
-                    if (!formData.exploitationLicenseRoyalty.trim()) {
-                        setError('Please enter exploitation license patent royalty');
-                        return false;
-                    }
-                    if (!formData.patentSale.trim()) {
-                        setError('Please enter 100% patent sale value');
-                        return false;
-                    }
-                    if (!formData.investorsCount.trim()) {
-                        setError('Please enter number of investors');
-                        return false;
-                    }
-                } else if (formData.userType === 'StartUp') {
-                    // StartUp validation
-                    if (!formData.smartMoney.trim()) {
-                        setError('Please enter Smart Money');
-                        return false;
-                    }
-                    if (!formData.companyName.trim()) {
-                        setError('Please enter your company name');
-                        return false;
-                    }
-                    if (!formData.projectName.trim()) {
-                        setError('Please enter your project name');
-                        return false;
-                    }
-                    if (!formData.projectCategory.trim()) {
-                        setError('Please enter project category');
-                        return false;
-                    }
-                    if (!formData.companyNIF.trim()) {
-                        setError('Please enter your company NIF');
-                        return false;
-                    }
-                    if (!formData.companyTelephone.trim()) {
-                        setError('Please enter your company telephone');
-                        return false;
-                    }
-                    const companyPhoneError = validatePhoneNumber(formData.companyTelephone, companyPhoneCountryCode);
-                    if (companyPhoneError) {
-                        setCompanyTelephoneError(companyPhoneError);
-                        setError(companyPhoneError);
-                        return false;
-                    }
-                } else if (formData.userType === 'Company') {
-                    // Company validation
-                    if (!formData.companyName.trim()) {
-                        setError('Please enter your company name');
-                        return false;
-                    }
-                    if (!formData.projectName.trim()) {
-                        setError('Please enter your project name');
-                        return false;
-                    }
-                    if (!formData.projectCategory.trim()) {
-                        setError('Please enter project category');
-                        return false;
-                    }
-                    if (!formData.companyNIF.trim()) {
-                        setError('Please enter your company NIF');
-                        return false;
-                    }
-                    if (!formData.companyTelephone.trim()) {
-                        setError('Please enter your company telephone');
-                        return false;
-                    }
-                    const companyPhoneError = validatePhoneNumber(formData.companyTelephone, companyPhoneCountryCode);
-                    if (companyPhoneError) {
-                        setCompanyTelephoneError(companyPhoneError);
-                        setError(companyPhoneError);
-                        return false;
-                    }
-                } else if (formData.userType === 'Investor') {
-                    // Investor validation
+                }
+
+                // Company Name is mandatory for StartUp and Company (if applicable per requirements)
+                if ((formData.userType === 'StartUp' || formData.userType === 'Company') && !formData.companyName.trim()) {
+                    setError('Please enter your company name');
+                    return false;
+                }
+
+                // Investor validation
+                if (formData.userType === 'Investor') {
                     if (!formData.fullName.trim()) {
                         setError('Please enter your full name');
                         return false;
@@ -289,20 +358,35 @@ export default function Register() {
                         setError('Please enter project category interest');
                         return false;
                     }
+                    return true;
                 }
-                // Note: Commercial proposal fields are optional for all types
-                // Users can fill any combination of blocks
+
+                // Validate phone number if company telephone is provided (optional field)
+                if ((formData.userType === 'StartUp' || formData.userType === 'Company') && formData.companyTelephone.trim()) {
+                    const companyPhoneError = validatePhoneNumber(formData.companyTelephone, companyPhoneCountryCode);
+                    if (companyPhoneError) {
+                        setCompanyTelephoneError(companyPhoneError);
+                        setError(companyPhoneError);
+                        return false;
+                    }
+                }
+
+                // Validate at least one sale option is filled (for Inventor, StartUp, Company)
+                if (!hasAtLeastOneSaleOption()) {
+                    if (formData.userType === 'Inventor') {
+                        setError('Please fill at least one sale option: Patent Exploitation Fee OR Full Patent Assignment (100%)');
+                    } else {
+                        setError('Please fill at least one complete commercial proposal option (Equity Participation, Brand Licensing, Franchising, Patent Licensing, or Total Sale)');
+                    }
+                    return false;
+                }
+
                 return true;
 
             case 'personal':
-                if (!formData.coverImage) {
-                    setError('Please upload a cover image');
-                    return false;
-                }
-                if (!formData.photo) {
-                    setError('Please upload a photo');
-                    return false;
-                }
+                // Cover Image and Photo are now optional
+                // Only validate personal contact data
+                
                 if (!formData.fullName.trim()) {
                     setError('Please enter your full name');
                     return false;
@@ -314,6 +398,13 @@ export default function Register() {
                 if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.personalEmail)) {
                     setError('Please enter a valid email');
                     return false;
+                }
+                // Password validation (optional - if provided, must be valid)
+                if (formData.password && formData.password.length > 0) {
+                    if (formData.password.length < 6) {
+                        setError('Password must be at least 6 characters long');
+                        return false;
+                    }
                 }
                 if (!formData.telephone.trim()) {
                     setError('Please enter your telephone');
@@ -336,35 +427,8 @@ export default function Register() {
                 return true;
 
             case 'pitch':
-                // Investors don't need pitch materials
-                if (formData.userType === 'Investor') {
-                    if (!formData.pitchVideo && formData.videos.length === 0) {
-                        setError('Please upload at least one video');
-                        return false;
-                    }
-                    if (!formData.description.trim()) {
-                        setError('Please enter a description');
-                        return false;
-                    }
-                    return true;
-                }
-                // For Inventor, StartUp, Company
-                if (!formData.pitchVideo) {
-                    setError('Please upload PITCH Video 2minutes');
-                    return false;
-                }
-                if (formData.photos.length === 0) {
-                    setError('Please upload photos');
-                    return false;
-                }
-                if (formData.pitchVideos.filter(v => v).length === 0) {
-                    setError('Please upload at least one Video 2minutes');
-                    return false;
-                }
-                if (!formData.description.trim()) {
-                    setError('Please enter a description');
-                    return false;
-                }
+                // All pitch materials are now optional for all user types
+                // No validation needed - users can proceed even if they don't upload anything
                 return true;
 
             default:
@@ -382,46 +446,334 @@ export default function Register() {
         } else if (currentStep === 'personal') {
             setCurrentStep('pitch');
         } else if (currentStep === 'pitch') {
-            setLoading(true);
-
-            // Simulate API call
-            setTimeout(() => {
-                console.log('Registration complete:', {
-                    userType: formData.userType,
-                    companyName: formData.companyName,
-                    projectName: formData.projectName,
-                    companyNIF: formData.companyNIF,
-                    companyTelephone: formData.companyTelephone,
-                    // Commercial Proposal Options
-                    equityParticipation: {
-                        capitalPercentage: formData.capitalPercentage,
-                        capitalTotalValue: formData.capitalTotalValue,
-                    },
-                    brandLicensing: {
-                        licenseFee: formData.licenseFee,
-                        licensingRoyaltiesPercentage: formData.licensingRoyaltiesPercentage,
-                    },
-                    franchising: {
-                        franchiseeInvestment: formData.franchiseeInvestment,
-                        monthlyRoyalties: formData.monthlyRoyalties,
-                    },
-                    fullName: formData.fullName,
-                    personalEmail: formData.personalEmail,
-                    telephone: formData.telephone,
-                    country: formData.country,
-                    city: formData.city,
-                    pitchFile: formData.pitchFile,
-                    videos: formData.videos,
-                    description: formData.description,
-                });
-                setLoading(false);
-                alert('Registration successful! Your information has been submitted.');
-                // Here you would typically call an API and handle registration
-            }, 1500);
+            // Always open OTP modal for verification - OTP will be sent automatically via useEffect
+            setShowOtpModal(true);
         }
     };
 
+    // Send OTP code function
+    async function sendOtpCode() {
+        setError('');
+            setLoading(true);
+        try {
+            const { error: otpError } = await supabase.auth.signInWithOtp({
+                email: formData.personalEmail,
+                options: {
+                    shouldCreateUser: true,
+                    emailRedirectTo: `${window.location.origin}/auth/callback`,
+                },
+            });
+
+            if (otpError) throw new Error(`Failed to send verification code: ${otpError.message}`);
+
+            setOtpSent(true);
+            setOtpSecondsLeft(OTP_TTL_SECONDS);
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : 'Failed to send verification code.';
+            setError(msg);
+            toast({
+                title: 'Error',
+                description: msg,
+                variant: 'destructive',
+            });
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    // Verify OTP and proceed with registration
+    async function verifyOtpAndRegister() {
+        if (otpSecondsLeft <= 0) {
+            setError('Verification code expired. Please resend a new code.');
+            return;
+        }
+
+        const code = otpCode.trim();
+        if (!/^\d{6}$/.test(code)) {
+            setError('Please enter the 6-digit verification code.');
+            return;
+        }
+
+        // Close modal and start registration
+        setShowOtpModal(false);
+        await handleRegistration(code);
+    }
+
+    // Common registration data handling (file uploads and database inserts)
+    async function handleRegistrationData(userId: string) {
+        try {
+            // STEP 2: Upload files
+            const fileUrls: {
+                coverImage?: string;
+                photo?: string;
+                pitchVideo?: string;
+                photos?: string[];
+                pitchVideos?: string[];
+            } = {};
+
+            // Cover image (optional)
+            if (fileObjects.coverImage) {
+                const res = await uploadFile('cover-images', fileObjects.coverImage, userId);
+                if (res.url) fileUrls.coverImage = res.url;
+                else if (res.error) console.warn('Cover image upload error:', res.error);
+            } else if (formData.coverImagePreview) {
+                const file = await base64ToFile(formData.coverImagePreview, formData.coverImage || 'cover.jpg');
+                const res = await uploadFile('cover-images', file, userId);
+                if (res.url) fileUrls.coverImage = res.url;
+                else if (res.error) console.warn('Cover image upload error:', res.error);
+            }
+
+            // User photo (optional)
+            if (fileObjects.photo) {
+                const res = await uploadFile('user-photos', fileObjects.photo, userId);
+                if (res.url) fileUrls.photo = res.url;
+                else if (res.error) console.warn('User photo upload error:', res.error);
+            } else if (formData.photoPreview) {
+                const file = await base64ToFile(formData.photoPreview, formData.photo || 'photo.jpg');
+                const res = await uploadFile('user-photos', file, userId);
+                if (res.url) fileUrls.photo = res.url;
+                else if (res.error) console.warn('User photo upload error:', res.error);
+            }
+
+            // Pitch video (optional for all types)
+            if (fileObjects.pitchVideo) {
+                const res = await uploadFile('pitch-videos', fileObjects.pitchVideo, userId, 'pitch');
+                if (res.url) fileUrls.pitchVideo = res.url;
+                else if (res.error) console.warn('Pitch video upload error:', res.error);
+            }
+
+            // Photos + Pitch Videos (optional for all types)
+            if (fileObjects.photos?.length) {
+                const res = await uploadMultipleFiles('pitch-photos', fileObjects.photos, userId, 'photos');
+                fileUrls.photos = res.urls;
+                if (res.errors.length) console.warn('Some photo uploads failed:', res.errors);
+            }
+
+            if (fileObjects.pitchVideos?.length) {
+                const valid = fileObjects.pitchVideos.filter(Boolean) as File[];
+                if (valid.length) {
+                    const res = await uploadMultipleFiles('pitch-videos', valid, userId, 'videos');
+                    fileUrls.pitchVideos = res.urls;
+                    if (res.errors.length) console.warn('Some pitch video uploads failed:', res.errors);
+                }
+            }
+
+            // Update step 2 as completed, start step 3
+            setRegistrationSteps((prev) => {
+                const updated = [...prev];
+                const uploadIndex = updated.findIndex(s => s.label.includes('Uploading'));
+                const saveIndex = updated.findIndex(s => s.label.includes('Saving') || s.label.includes('Creating'));
+                if (uploadIndex >= 0) updated[uploadIndex] = { ...updated[uploadIndex], status: 'completed' };
+                if (saveIndex >= 0) updated[saveIndex] = { ...updated[saveIndex], status: 'loading' };
+                return updated;
+            });
+
+            // STEP 3: Insert or update users table (use upsert to handle retries)
+            const { error: userError } = await supabase.from('users').upsert({
+                id: userId,
+                user_type: formData.userType,
+                full_name: formData.fullName,
+                personal_email: formData.personalEmail,
+                    telephone: formData.telephone,
+                    country: formData.country,
+                    city: formData.city,
+                cover_image_url: fileUrls.coverImage || null,
+                photo_url: fileUrls.photo || null,
+            }, {
+                onConflict: 'id' // Update if user already exists
+            });
+            if (userError) throw new Error(`Failed to create user record: ${userError.message}`);
+
+            // STEP 4: Insert into profiles table (role-specific fields)
+            const profileData: Record<string, unknown> = {
+                user_id: userId,
+                project_name: formData.projectName || null,
+                project_category: formData.projectCategory || null,
+                company_name: formData.companyName || null,
+                company_nif: formData.companyNIF || null,
+                company_telephone: formData.companyTelephone || null,
+                smart_money: formData.smartMoney || null,
+                total_sale_of_project: formData.totalSaleOfProject || null,
+                investment_preferences: formData.investmentPreferences || null,
+                inventor_name: formData.inventorName || null,
+                license_number: formData.licenseNumber || null,
+                release_date: formData.releaseDate || null,
+                initial_license_value: formData.initialLicenseValue || null,
+                exploitation_license_royalty: null, // Removed for StartUp and Company
+                patent_sale: formData.patentSale || null,
+                investors_count: formData.investorsCount || null,
+            };
+
+            const { error: profileError } = await supabase.from('profiles').upsert(profileData, {
+                onConflict: 'user_id' // Update if profile already exists
+            });
+            if (profileError) throw new Error(`Failed to create profile: ${profileError.message}`);
+
+            // STEP 5: Insert commercial proposals (optional; non-investor)
+            const hasProposalData =
+                !!formData.capitalPercentage ||
+                !!formData.capitalTotalValue ||
+                !!formData.licenseFee ||
+                !!formData.licensingRoyaltiesPercentage ||
+                !!formData.franchiseeInvestment ||
+                !!formData.monthlyRoyalties ||
+                (formData.userType === 'Inventor' && !!formData.initialLicenseValue);
+
+            if (formData.userType !== 'Investor' && hasProposalData) {
+                const proposalData: Record<string, unknown> = {
+                    user_id: userId,
+                    equity_capital_percentage: formData.capitalPercentage || null,
+                    equity_total_value: formData.capitalTotalValue || null,
+                    license_fee: formData.licenseFee || null,
+                    licensing_royalties_percentage: formData.licensingRoyaltiesPercentage || null,
+                    franchisee_investment: formData.franchiseeInvestment || null,
+                    monthly_royalties: formData.monthlyRoyalties || null,
+                    patent_upfront_fee: formData.userType === 'Inventor' ? (formData.initialLicenseValue || null) : null,
+                    patent_royalties: null, // Removed for StartUp and Company
+                };
+
+                const { error: proposalError } = await supabase.from('commercial_proposals').upsert(proposalData, {
+                    onConflict: 'user_id' // Update if proposal already exists
+                });
+                if (proposalError) console.warn('Commercial proposal upsert error:', proposalError);
+            }
+
+            // STEP 6: Insert pitch materials
+            const pitchData: Record<string, unknown> = {
+                user_id: userId,
+                pitch_video_url: fileUrls.pitchVideo || null,
+                photos_urls: formData.userType === 'Investor' ? [] : (fileUrls.photos || []),
+                pitch_videos_urls: formData.userType === 'Investor' ? [] : (fileUrls.pitchVideos || []),
+                description: formData.description || null,
+                fact_sheet: formData.userType === 'Investor' ? null : (formData.factSheet || null),
+                technical_sheet: formData.userType === 'Investor' ? null : (formData.technicalSheet || null),
+            };
+
+            const { error: pitchError } = await supabase.from('pitch_materials').upsert(pitchData, {
+                onConflict: 'user_id' // Update if pitch materials already exist
+            });
+            if (pitchError) throw new Error(`Failed to create pitch materials: ${pitchError.message}`);
+
+            // Mark all steps as completed
+            setRegistrationSteps((prev) => prev.map(step => ({ ...step, status: 'completed' })));
+
+            // Small delay to show completion
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            // Hide loading overlay first
+            setLoading(false);
+            setOtpSent(false);
+            setOtpCode('');
+            setOtpSecondsLeft(0);
+
+            console.log('✅ Registration completed successfully!');
+            setError(''); // Clear any errors
+
+            // Wait a bit for overlay to disappear, then show toast
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            toast({
+                title: 'Registration successful!',
+                description: 'Your account has been created successfully.',
+                variant: 'default',
+            });
+
+            // Redirect to login after 5 seconds
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 5000);
+
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : 'Registration failed. Please try again.';
+            setError(msg);
+            toast({
+                title: 'Registration error',
+                description: msg,
+                variant: 'destructive',
+            });
+            setLoading(false);
+            setRegistrationSteps([]);
+            throw e; // Re-throw to be caught by caller
+        }
+    }
+
+    async function handleRegistration(verifiedCode: string) {
+            setLoading(true);
+        setError('');
+
+        try {
+
+            // Update step 1: Verifying email
+            setRegistrationSteps([
+                { label: 'Verifying email code', status: 'loading' },
+                { label: 'Uploading files', status: 'pending' },
+                { label: 'Creating your account', status: 'pending' },
+            ]);
+
+            const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+                email: formData.personalEmail,
+                token: verifiedCode,
+                type: 'email',
+            });
+
+            if (verifyError) throw new Error(`Invalid verification code: ${verifyError.message}`);
+            if (!verifyData.user) throw new Error('Verification succeeded but no user data returned.');
+
+            // Store metadata in auth (optional, but useful)
+            // Supabase "Display name" in the dashboard is commonly sourced from user metadata (e.g. `name`).
+            // Keep `full_name` (used throughout the app) and also set `name`/`display_name` for consistency.
+            // If password was provided, update it here
+            const updateData: { data: Record<string, unknown>; password?: string } = {
+                data: {
+                    full_name: formData.fullName,
+                    name: formData.fullName,
+                    display_name: formData.fullName,
+                    user_type: formData.userType,
+                },
+            };
+            
+            // If password was provided, add it to the update
+            if (formData.password && formData.password.length >= 6) {
+                updateData.password = formData.password;
+            }
+            
+            await supabase.auth.updateUser(updateData);
+
+            const userId = verifyData.user.id;
+
+            // Mark step 1 as completed, start step 2
+            setRegistrationSteps([
+                { label: 'Verifying email code', status: 'completed' },
+                { label: 'Uploading files', status: 'loading' },
+                { label: 'Saving your profile', status: 'pending' },
+            ]);
+
+            // Proceed with file uploads and database inserts (shared logic)
+            await handleRegistrationData(userId);
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : 'Registration failed. Please try again.';
+            console.error('❌ Registration error:', e);
+            setError(msg);
+            toast({
+                title: 'Registration error',
+                description: msg,
+                variant: 'destructive',
+            });
+            setLoading(false);
+            setRegistrationSteps([]);
+        }
+    }
+
     const handleBack = () => {
+        // Clear any errors when going back
+        setError('');
+        setTelephoneError('');
+        setCompanyTelephoneError('');
+        setOtpSent(false);
+        setOtpCode('');
+        setOtpSecondsLeft(0);
+        setShowOtpModal(false);
+        
         if (currentStep === 'company') {
             setCurrentStep('usertype');
         } else if (currentStep === 'personal') {
@@ -432,6 +784,12 @@ export default function Register() {
     };
 
     return (
+        <>
+            <LoadingOverlay
+                isOpen={loading}
+                message="Creating your account"
+                steps={registrationSteps}
+            />
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-white px-4 py-8">
             <Card className="w-full max-w-md bg-white shadow-xl rounded-lg p-8">
                 {/* Progress Bar */}
@@ -633,10 +991,10 @@ export default function Register() {
                                         />
                                     </div>
 
-                                    {/* Initial License Value */}
+                                    {/* Patent Exploitation Fee */}
                                     <div>
                                         <label htmlFor="initialLicenseValue" className="block text-sm font-medium text-gray-700 mb-1">
-                                            Initial License Value ($)
+                                            Patent Exploitation Fee
                                         </label>
                                         <input
                                             id="initialLicenseValue"
@@ -657,34 +1015,10 @@ export default function Register() {
                                         />
                                     </div>
 
-                                    {/* Exploitation License Patent Royalty */}
-                                    <div>
-                                        <label htmlFor="exploitationLicenseRoyalty" className="block text-sm font-medium text-gray-700 mb-1">
-                                            Exploitation License Patent Royalty
-                                        </label>
-                                        <input
-                                            id="exploitationLicenseRoyalty"
-                                            name="exploitationLicenseRoyalty"
-                                            type="text"
-                                            value={formData.exploitationLicenseRoyalty}
-                                            onChange={handleChange}
-                                            placeholder="Ex: 6%"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
-                                            onFocus={(e) => {
-                                                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                                e.currentTarget.style.borderColor = '#0a3d5c';
-                                            }}
-                                            onBlur={(e) => {
-                                                e.currentTarget.style.boxShadow = 'none';
-                                                e.currentTarget.style.borderColor = '#d1d5db';
-                                            }}
-                                        />
-                                    </div>
-
-                                    {/* 100% Patent Sale */}
+                                    {/* Full Patent Assignment (100%) */}
                                     <div>
                                         <label htmlFor="patentSale" className="block text-sm font-medium text-gray-700 mb-1">
-                                            100% Patent Sale
+                                            Full Patent Assignment (100%)
                                         </label>
                                         <input
                                             id="patentSale"
@@ -727,216 +1061,6 @@ export default function Register() {
                                                 e.currentTarget.style.borderColor = '#d1d5db';
                                             }}
                                         />
-                                    </div>
-
-                                    {/* Commercial Proposal Options - All 4 blocks for Inventor */}
-                                    <div className="space-y-6 mt-6">
-                                        {/* Block 1: Equity Participation */}
-                                        <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
-                                            <h3 className="text-base font-semibold text-gray-800 mb-4">Equity Participation</h3>
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <label htmlFor="capitalPercentage" className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Capital Percentage
-                                                    </label>
-                                                    <input
-                                                        id="capitalPercentage"
-                                                        name="capitalPercentage"
-                                                        type="text"
-                                                        value={formData.capitalPercentage}
-                                                        onChange={handleChange}
-                                                        placeholder="e.g., 20%"
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
-                                                        onFocus={(e) => {
-                                                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                                            e.currentTarget.style.borderColor = '#0a3d5c';
-                                                        }}
-                                                        onBlur={(e) => {
-                                                            e.currentTarget.style.boxShadow = 'none';
-                                                            e.currentTarget.style.borderColor = '#d1d5db';
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label htmlFor="capitalTotalValue" className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Total Value
-                                                    </label>
-                                                    <input
-                                                        id="capitalTotalValue"
-                                                        name="capitalTotalValue"
-                                                        type="text"
-                                                        value={formData.capitalTotalValue}
-                                                        onChange={handleChange}
-                                                        placeholder="e.g., $250,000"
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
-                                                        onFocus={(e) => {
-                                                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                                            e.currentTarget.style.borderColor = '#0a3d5c';
-                                                        }}
-                                                        onBlur={(e) => {
-                                                            e.currentTarget.style.boxShadow = 'none';
-                                                            e.currentTarget.style.borderColor = '#d1d5db';
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Block 2: Brand Licensing */}
-                                        <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
-                                            <h3 className="text-base font-semibold text-gray-800 mb-4">Brand Licensing (Exploitation)</h3>
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <label htmlFor="licenseFee" className="block text-sm font-medium text-gray-700 mb-1">
-                                                        License Fee
-                                                    </label>
-                                                    <input
-                                                        id="licenseFee"
-                                                        name="licenseFee"
-                                                        type="text"
-                                                        value={formData.licenseFee}
-                                                        onChange={handleChange}
-                                                        placeholder="e.g., $15,000"
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
-                                                        onFocus={(e) => {
-                                                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                                            e.currentTarget.style.borderColor = '#0a3d5c';
-                                                        }}
-                                                        onBlur={(e) => {
-                                                            e.currentTarget.style.boxShadow = 'none';
-                                                            e.currentTarget.style.borderColor = '#d1d5db';
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label htmlFor="licensingRoyaltiesPercentage" className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Royalties Percentage
-                                                    </label>
-                                                    <input
-                                                        id="licensingRoyaltiesPercentage"
-                                                        name="licensingRoyaltiesPercentage"
-                                                        type="text"
-                                                        value={formData.licensingRoyaltiesPercentage}
-                                                        onChange={handleChange}
-                                                        placeholder="e.g., 6%"
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
-                                                        onFocus={(e) => {
-                                                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                                            e.currentTarget.style.borderColor = '#0a3d5c';
-                                                        }}
-                                                        onBlur={(e) => {
-                                                            e.currentTarget.style.boxShadow = 'none';
-                                                            e.currentTarget.style.borderColor = '#d1d5db';
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Block 3: Franchising */}
-                                        <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
-                                            <h3 className="text-base font-semibold text-gray-800 mb-4">Franchising</h3>
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <label htmlFor="franchiseeInvestment" className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Franchisee Investment
-                                                    </label>
-                                                    <input
-                                                        id="franchiseeInvestment"
-                                                        name="franchiseeInvestment"
-                                                        type="text"
-                                                        value={formData.franchiseeInvestment}
-                                                        onChange={handleChange}
-                                                        placeholder="e.g., $15,000"
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
-                                                        onFocus={(e) => {
-                                                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                                            e.currentTarget.style.borderColor = '#0a3d5c';
-                                                        }}
-                                                        onBlur={(e) => {
-                                                            e.currentTarget.style.boxShadow = 'none';
-                                                            e.currentTarget.style.borderColor = '#d1d5db';
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label htmlFor="monthlyRoyalties" className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Monthly Royalties
-                                                    </label>
-                                                    <input
-                                                        id="monthlyRoyalties"
-                                                        name="monthlyRoyalties"
-                                                        type="text"
-                                                        value={formData.monthlyRoyalties}
-                                                        onChange={handleChange}
-                                                        placeholder="e.g., 6%"
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
-                                                        onFocus={(e) => {
-                                                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                                            e.currentTarget.style.borderColor = '#0a3d5c';
-                                                        }}
-                                                        onBlur={(e) => {
-                                                            e.currentTarget.style.boxShadow = 'none';
-                                                            e.currentTarget.style.borderColor = '#d1d5db';
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Block 4: Patent Licensing - Highlighted for Inventor */}
-                                        <div className="border border-[#0a3d5c] rounded-lg p-5 bg-blue-50/30">
-                                            <h3 className="text-base font-semibold text-gray-800 mb-4">
-                                                Patent Licensing
-                                                <span className="ml-2 text-xs text-[#0a3d5c]">(Primary)</span>
-                                            </h3>
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <label htmlFor="initialLicenseValue" className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Upfront Fee
-                                                    </label>
-                                                    <input
-                                                        id="initialLicenseValue"
-                                                        name="initialLicenseValue"
-                                                        type="text"
-                                                        value={formData.initialLicenseValue}
-                                                        onChange={handleChange}
-                                                        placeholder="e.g., $10,000"
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
-                                                        onFocus={(e) => {
-                                                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                                            e.currentTarget.style.borderColor = '#0a3d5c';
-                                                        }}
-                                                        onBlur={(e) => {
-                                                            e.currentTarget.style.boxShadow = 'none';
-                                                            e.currentTarget.style.borderColor = '#d1d5db';
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label htmlFor="exploitationLicenseRoyalty" className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Royalties (%)
-                                                    </label>
-                                                    <input
-                                                        id="exploitationLicenseRoyalty"
-                                                        name="exploitationLicenseRoyalty"
-                                                        type="text"
-                                                        value={formData.exploitationLicenseRoyalty}
-                                                        onChange={handleChange}
-                                                        placeholder="e.g., 6%"
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
-                                                        onFocus={(e) => {
-                                                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                                            e.currentTarget.style.borderColor = '#0a3d5c';
-                                                        }}
-                                                        onBlur={(e) => {
-                                                            e.currentTarget.style.boxShadow = 'none';
-                                                            e.currentTarget.style.borderColor = '#d1d5db';
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
                                     </div>
                                 </>
                             ) : formData.userType === 'StartUp' ? (
@@ -1072,7 +1196,8 @@ export default function Register() {
                                         : 'border-gray-300 focus-within:ring-[#0a3d5c]/20 focus-within:border-[#0a3d5c]'
                                 }`}>
                                     {/* Country Code Selector */}
-                                    <Select
+                                    <SearchableCountrySelect
+                                        countries={countries}
                                         value={companyPhoneCountryCode}
                                         onValueChange={(value) => {
                                             setCompanyPhoneCountryCode(value);
@@ -1082,42 +1207,15 @@ export default function Register() {
                                                 setCompanyTelephoneError(phoneError);
                                             }
                                         }}
-                                    >
-                                        <SelectTrigger className="w-auto min-w-[100px] border-0 rounded-none border-r border-gray-300 rounded-l-lg focus:ring-0 focus:ring-offset-0 h-auto py-2 px-3">
-                                            {(() => {
-                                                const selectedCountry = countries.find(c => c.phoneCode === companyPhoneCountryCode);
-                                                if (selectedCountry && selectedCountry.flag) {
-                                                    return (
-                                                        <div className="flex items-center gap-3">
-                                                            <img 
-                                                                src={selectedCountry.flag} 
-                                                                alt={selectedCountry.name}
-                                                                className="w-5 h-4 object-cover flex-shrink-0"
-                                                            />
-                                                            <span className="text-sm text-gray-900">{selectedCountry.phoneCode}</span>
-                                                        </div>
-                                                    );
-                                                }
-                                                return <SelectValue>{companyPhoneCountryCode}</SelectValue>;
-                                            })()}
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {countries.filter(country => country.name !== 'Other').map((country) => (
-                                                <SelectItem key={country.phoneCode} value={country.phoneCode}>
-                                                    <div className="flex items-center gap-3">
-                                                        {country.flag && (
-                                                            <img 
-                                                                src={country.flag} 
-                                                                alt={country.name}
-                                                                className="w-5 h-4 object-cover flex-shrink-0"
-                                                            />
-                                                        )}
-                                                        <span>{country.phoneCode} {country.name}</span>
-                                                    </div>
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                        type="phone"
+                                        placeholder="+1"
+                                        preferredCountryCode={
+                                            formData.country 
+                                                ? countries.find(c => c.name === formData.country)?.code 
+                                                : detectedCountryCode || undefined
+                                        }
+                                        triggerClassName="w-auto min-w-[100px] border-0 rounded-none border-r border-gray-300 rounded-l-lg focus:ring-0 focus:ring-offset-0 h-auto py-2 px-3"
+                                    />
                                     
                                     {/* Phone Number Input */}
                                     <input
@@ -1305,57 +1403,6 @@ export default function Register() {
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* Block 4: Patent Licensing */}
-                                <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
-                                    <h3 className="text-base font-semibold text-gray-800 mb-4">Patent Licensing</h3>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label htmlFor="initialLicenseValue" className="block text-sm font-medium text-gray-700 mb-1">
-                                                Upfront Fee
-                                            </label>
-                                            <input
-                                                id="initialLicenseValue"
-                                                name="initialLicenseValue"
-                                                type="text"
-                                                value={formData.initialLicenseValue}
-                                                onChange={handleChange}
-                                                placeholder="e.g., $10,000"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
-                                                onFocus={(e) => {
-                                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                                    e.currentTarget.style.borderColor = '#0a3d5c';
-                                                }}
-                                                onBlur={(e) => {
-                                                    e.currentTarget.style.boxShadow = 'none';
-                                                    e.currentTarget.style.borderColor = '#d1d5db';
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label htmlFor="exploitationLicenseRoyalty" className="block text-sm font-medium text-gray-700 mb-1">
-                                                Royalties (%)
-                                            </label>
-                                            <input
-                                                id="exploitationLicenseRoyalty"
-                                                name="exploitationLicenseRoyalty"
-                                                type="text"
-                                                value={formData.exploitationLicenseRoyalty}
-                                                onChange={handleChange}
-                                                placeholder="e.g., 6%"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
-                                                onFocus={(e) => {
-                                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                                    e.currentTarget.style.borderColor = '#0a3d5c';
-                                                }}
-                                                onBlur={(e) => {
-                                                    e.currentTarget.style.boxShadow = 'none';
-                                                    e.currentTarget.style.borderColor = '#d1d5db';
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
 
                             {/* Total Sale of Project - for StartUp */}
@@ -1491,7 +1538,8 @@ export default function Register() {
                                                 ? 'border-red-500 focus-within:ring-red-500/20 focus-within:border-red-500' 
                                                 : 'border-gray-300 focus-within:ring-[#0a3d5c]/20 focus-within:border-[#0a3d5c]'
                                         }`}>
-                                            <Select
+                                            <SearchableCountrySelect
+                                                countries={countries}
                                                 value={companyPhoneCountryCode}
                                                 onValueChange={(value) => {
                                                     setCompanyPhoneCountryCode(value);
@@ -1500,42 +1548,15 @@ export default function Register() {
                                                         setCompanyTelephoneError(phoneError);
                                                     }
                                                 }}
-                                            >
-                                                <SelectTrigger className="w-auto min-w-[100px] border-0 rounded-none border-r border-gray-300 rounded-l-lg focus:ring-0 focus:ring-offset-0 h-auto py-2 px-3">
-                                                    {(() => {
-                                                        const selectedCountry = countries.find(c => c.phoneCode === companyPhoneCountryCode);
-                                                        if (selectedCountry && selectedCountry.flag) {
-                                                            return (
-                                                                <div className="flex items-center gap-3">
-                                                                    <img 
-                                                                        src={selectedCountry.flag} 
-                                                                        alt={selectedCountry.name}
-                                                                        className="w-5 h-4 object-cover flex-shrink-0"
-                                                                    />
-                                                                    <span className="text-sm text-gray-900">{selectedCountry.phoneCode}</span>
-                                                                </div>
-                                                            );
-                                                        }
-                                                        return <SelectValue>{companyPhoneCountryCode}</SelectValue>;
-                                                    })()}
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {countries.filter(country => country.name !== 'Other').map((country) => (
-                                                        <SelectItem key={country.phoneCode} value={country.phoneCode}>
-                                                            <div className="flex items-center gap-3">
-                                                                {country.flag && (
-                                                                    <img 
-                                                                        src={country.flag} 
-                                                                        alt={country.name}
-                                                                        className="w-5 h-4 object-cover flex-shrink-0"
-                                                                    />
-                                                                )}
-                                                                <span>{country.phoneCode} {country.name}</span>
-                        </div>
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                                type="phone"
+                                                placeholder="+1"
+                                                preferredCountryCode={
+                                                    formData.country 
+                                                        ? countries.find(c => c.name === formData.country)?.code 
+                                                        : detectedCountryCode || undefined
+                                                }
+                                                triggerClassName="w-auto min-w-[100px] border-0 rounded-none border-r border-gray-300 rounded-l-lg focus:ring-0 focus:ring-offset-0 h-auto py-2 px-3"
+                                            />
                                             <input
                                                 id="companyTelephone"
                                                 name="companyTelephone"
@@ -1720,57 +1741,6 @@ export default function Register() {
                                                 </div>
                                             </div>
                                         </div>
-
-                                        {/* Block 4: Patent Licensing */}
-                                        <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
-                                            <h3 className="text-base font-semibold text-gray-800 mb-4">Patent Licensing</h3>
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <label htmlFor="initialLicenseValue" className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Upfront Fee
-                                                    </label>
-                                                    <input
-                                                        id="initialLicenseValue"
-                                                        name="initialLicenseValue"
-                                                        type="text"
-                                                        value={formData.initialLicenseValue}
-                                                        onChange={handleChange}
-                                                        placeholder="e.g., $10,000"
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
-                                                        onFocus={(e) => {
-                                                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                                            e.currentTarget.style.borderColor = '#0a3d5c';
-                                                        }}
-                                                        onBlur={(e) => {
-                                                            e.currentTarget.style.boxShadow = 'none';
-                                                            e.currentTarget.style.borderColor = '#d1d5db';
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label htmlFor="exploitationLicenseRoyalty" className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Royalties (%)
-                                                    </label>
-                                                    <input
-                                                        id="exploitationLicenseRoyalty"
-                                                        name="exploitationLicenseRoyalty"
-                                                        type="text"
-                                                        value={formData.exploitationLicenseRoyalty}
-                                                        onChange={handleChange}
-                                                        placeholder="e.g., 6%"
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
-                                                        onFocus={(e) => {
-                                                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                                            e.currentTarget.style.borderColor = '#0a3d5c';
-                                                        }}
-                                                        onBlur={(e) => {
-                                                            e.currentTarget.style.boxShadow = 'none';
-                                                            e.currentTarget.style.borderColor = '#d1d5db';
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
                                     </div>
 
                                     {/* Total Sale of Project - for Company */}
@@ -1913,6 +1883,7 @@ export default function Register() {
                                                     coverImage: file.name,
                                                     coverImagePreview: event.target?.result as string,
                                                 }));
+                                                setFileObjects((prev) => ({ ...prev, coverImage: file }));
                                                 setError('');
                                             };
                                             reader.readAsDataURL(file);
@@ -1948,6 +1919,7 @@ export default function Register() {
                                                         coverImage: file.name,
                                                         coverImagePreview: event.target?.result as string,
                                                     }));
+                                                    setFileObjects((prev) => ({ ...prev, coverImage: file }));
                                                     setError('');
                                                 };
                                                 reader.readAsDataURL(file);
@@ -1989,6 +1961,7 @@ export default function Register() {
                                                     photo: file.name,
                                                     photoPreview: event.target?.result as string,
                                                 }));
+                                                setFileObjects((prev) => ({ ...prev, photo: file }));
                                                 setError('');
                                             };
                                             reader.readAsDataURL(file);
@@ -2026,6 +1999,7 @@ export default function Register() {
                                                         photo: file.name,
                                                         photoPreview: event.target?.result as string,
                                                     }));
+                                                    setFileObjects((prev) => ({ ...prev, photo: file }));
                                                     setError('');
                                                 };
                                                 reader.readAsDataURL(file);
@@ -2083,6 +2057,31 @@ export default function Register() {
                                 />
                             </div>
 
+                            {/* Password Field (Optional) */}
+                            <div>
+                                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Password <span className="text-gray-500 text-xs">(Optional)</span>
+                                </label>
+                                <input
+                                    id="password"
+                                    name="password"
+                                    type="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    placeholder="Enter your password (optional)"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
+                                />
+                                <p className="mt-1 text-xs text-gray-500">Minimum 6 characters if provided. Account verification will be done via email OTP code.</p>
+                            </div>
+
                             <div>
                                 <label htmlFor="telephone" className="block text-sm font-medium text-gray-700 mb-1">
                                     Telephone
@@ -2093,7 +2092,8 @@ export default function Register() {
                                         : 'border-gray-300 focus-within:ring-[#0a3d5c]/20 focus-within:border-[#0a3d5c]'
                                 }`}>
                                     {/* Country Code Selector */}
-                                    <Select
+                                    <SearchableCountrySelect
+                                        countries={countries}
                                         value={phoneCountryCode}
                                         onValueChange={(value) => {
                                             setPhoneCountryCode(value);
@@ -2103,42 +2103,15 @@ export default function Register() {
                                                 setTelephoneError(phoneError);
                                             }
                                         }}
-                                    >
-                                        <SelectTrigger className="w-auto min-w-[100px] border-0 rounded-none border-r border-gray-300 rounded-l-lg focus:ring-0 focus:ring-offset-0 h-auto py-2 px-3">
-                                            {(() => {
-                                                const selectedCountry = countries.find(c => c.phoneCode === phoneCountryCode);
-                                                if (selectedCountry && selectedCountry.flag) {
-                                                    return (
-                                                        <div className="flex items-center gap-3">
-                                                            <img 
-                                                                src={selectedCountry.flag} 
-                                                                alt={selectedCountry.name}
-                                                                className="w-5 h-4 object-cover flex-shrink-0"
-                                                            />
-                                                            <span className="text-sm text-gray-900">{selectedCountry.phoneCode}</span>
-                                                        </div>
-                                                    );
-                                                }
-                                                return <SelectValue>{phoneCountryCode}</SelectValue>;
-                                            })()}
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {countries.filter(country => country.name !== 'Other').map((country) => (
-                                                <SelectItem key={country.phoneCode} value={country.phoneCode}>
-                                                    <div className="flex items-center gap-3">
-                                                        {country.flag && (
-                                                            <img 
-                                                                src={country.flag} 
-                                                                alt={country.name}
-                                                                className="w-5 h-4 object-cover flex-shrink-0"
-                                                            />
-                                                        )}
-                                                        <span>{country.phoneCode} {country.name}</span>
-                                                    </div>
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                        type="phone"
+                                        placeholder="+1"
+                                        preferredCountryCode={
+                                            formData.country 
+                                                ? countries.find(c => c.name === formData.country)?.code 
+                                                : detectedCountryCode || undefined
+                                        }
+                                        triggerClassName="w-auto min-w-[100px] border-0 rounded-none border-r border-gray-300 rounded-l-lg focus:ring-0 focus:ring-offset-0 h-auto py-2 px-3"
+                                    />
                                     
                                     {/* Phone Number Input */}
                                     <input
@@ -2172,67 +2145,24 @@ export default function Register() {
                                 <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
                                     Country
                                 </label>
-                                <Select
+                                <SearchableCountrySelect
+                                    countries={countries}
                                     value={formData.country}
                                     onValueChange={(value) => {
                                         setFormData((prev) => ({ ...prev, country: value }));
                                         setError('');
+                                        // Update phone country code when country changes
+                                        const countryMatch = countries.find(c => c.name === value);
+                                        if (countryMatch) {
+                                            setPhoneCountryCode(countryMatch.phoneCode);
+                                            // Store the country code for proper flag display in phone selector
+                                            setDetectedCountryCode(countryMatch.code);
+                                        }
                                     }}
-                                >
-                                    <SelectTrigger
-                                        id="country"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition h-auto min-h-[42px]"
-                                        onFocus={(e) => {
-                                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                            e.currentTarget.style.borderColor = '#0a3d5c';
-                                        }}
-                                        onBlur={(e) => {
-                                            e.currentTarget.style.boxShadow = 'none';
-                                            e.currentTarget.style.borderColor = '#d1d5db';
-                                        }}
-                                    >
-                                        {formData.country ? (() => {
-                                            const selectedCountry = countries.find(c => c.name === formData.country);
-                                            if (selectedCountry) {
-                                                return (
-                                                    <div className="flex items-center gap-3 flex-1 min-w-0 mr-2">
-                                                        {selectedCountry.flag && (
-                                                            <img 
-                                                                src={selectedCountry.flag} 
-                                                                alt={selectedCountry.name}
-                                                                className="w-5 h-4 object-cover flex-shrink-0"
-                                                            />
-                                                        )}
-                                                        <span className="text-sm text-gray-900 truncate">{selectedCountry.name}</span>
-                                                    </div>
-                                                );
-                                            }
-                                            return (
-                                                <div className="flex items-center gap-3 flex-1 min-w-0 mr-2">
-                                                    <span className="text-sm text-gray-900 truncate">{formData.country}</span>
-                                                </div>
-                                            );
-                                        })() : (
-                                            <SelectValue placeholder="Select a country" className="flex-1 text-left mr-2" />
-                                        )}
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {countries.map((country) => (
-                                            <SelectItem key={country.name} value={country.name}>
-                                                <div className="flex items-center gap-3">
-                                                    {country.flag && (
-                                                        <img 
-                                                            src={country.flag} 
-                                                            alt={country.name}
-                                                            className="w-5 h-4 object-cover flex-shrink-0"
-                                                        />
-                                                    )}
-                                                    <span>{country.name}</span>
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                    type="country"
+                                    placeholder="Select a country"
+                                    triggerClassName="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition h-auto min-h-[42px]"
+                                />
                             </div>
 
                             <div>
@@ -2266,41 +2196,43 @@ export default function Register() {
                             {formData.userType === 'Investor' ? (
                                 <>
                                     {/* Upload Video 2minutes for Investor */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
                                             Upload Video 2minutes
-                                        </label>
-                                        <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:bg-gray-50 transition">
-                                            <div className="text-center pointer-events-none">
-                                                <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                </label>
+                                <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:bg-gray-50 transition">
+                                    <div className="text-center pointer-events-none">
+                                        <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
+                                        </svg>
                                                 <p className="text-sm text-gray-600">{formData.pitchVideo || formData.videos[0] || 'Click to upload video (MP4, MOV, AVI)'}</p>
-                                            </div>
-                                            <input
+                                    </div>
+                                    <input
                                                 id="pitchVideo"
                                                 name="pitchVideo"
-                                                type="file"
+                                        type="file"
                                                 accept="video/*"
-                                                onChange={(e) => {
-                                                    if (e.target.files?.[0]) {
-                                                        const fileName = e.target.files[0].name;
+                                        onChange={(e) => {
+                                            if (e.target.files?.[0]) {
+                                                        const file = e.target.files[0];
+                                                        const fileName = file.name;
                                                         setFormData((prev) => ({ 
                                                             ...prev, 
                                                             pitchVideo: fileName,
                                                             videos: prev.videos.length === 0 ? [fileName] : prev.videos
                                                         }));
-                                                        setError('');
-                                                    }
-                                                }}
-                                                className="hidden"
-                                            />
-                                        </label>
+                                                        setFileObjects((prev) => ({ ...prev, pitchVideo: file }));
+                                                setError('');
+                                            }
+                                        }}
+                                        className="hidden"
+                                    />
+                                </label>
                                         {(formData.pitchVideo || formData.videos[0]) && (
                                             <p className="text-sm text-green-600 mt-2">✓ {formData.pitchVideo || formData.videos[0]}</p>
                                         )}
-                                    </div>
+                            </div>
 
                                     {/* Description for Investor */}
                                     <div>
@@ -2332,40 +2264,42 @@ export default function Register() {
                             ) : (
                                 <>
                                     {/* Upload PITCH Video 2minutes */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
                                             Upload PITCH Video 2minutes
-                                        </label>
-                                        <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:bg-gray-50 transition">
-                                            <div className="text-center pointer-events-none">
-                                                <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
+                                </label>
+                                <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:bg-gray-50 transition">
+                                    <div className="text-center pointer-events-none">
+                                        <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
                                                 <p className="text-sm text-gray-600">{formData.pitchVideo || 'Click to upload video (MP4, MOV, AVI)'}</p>
-                                            </div>
-                                            <input
+                                    </div>
+                                    <input
                                                 id="pitchVideo"
                                                 name="pitchVideo"
-                                                type="file"
-                                                accept="video/*"
-                                                onChange={(e) => {
+                                        type="file"
+                                        accept="video/*"
+                                        onChange={(e) => {
                                                     if (e.target.files?.[0]) {
-                                                        setFormData((prev) => ({ ...prev, pitchVideo: e.target.files![0].name }));
-                                                        setError('');
-                                                    }
-                                                }}
-                                                className="hidden"
-                                            />
-                                        </label>
+                                                        const file = e.target.files[0];
+                                                        setFormData((prev) => ({ ...prev, pitchVideo: file.name }));
+                                                        setFileObjects((prev) => ({ ...prev, pitchVideo: file }));
+                                                setError('');
+                                            }
+                                        }}
+                                        className="hidden"
+                                    />
+                                </label>
                                         {formData.pitchVideo && <p className="text-sm text-green-600 mt-2">✓ {formData.pitchVideo}</p>}
-                                    </div>
+                            </div>
 
                                     {/* Upload 9 Photos */}
-                                    <div>
+                            <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                             Upload 9 Photos
-                                        </label>
+                                </label>
                                         <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:bg-gray-50 transition">
                                             <div className="text-center pointer-events-none">
                                                 <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2373,7 +2307,7 @@ export default function Register() {
                                                 </svg>
                                                 <p className="text-sm text-gray-600">{formData.photos.length > 0 ? `${formData.photos.length}/9 photos uploaded` : 'Click to upload photos (up to 9)'}</p>
                                             </div>
-                                            <input
+                                <input
                                                 id="photos"
                                                 name="photos"
                                                 type="file"
@@ -2381,8 +2315,10 @@ export default function Register() {
                                                 multiple
                                                 onChange={(e) => {
                                                     if (e.target.files) {
-                                                        const fileNames = Array.from(e.target.files).slice(0, 9).map(f => f.name);
+                                                        const files = Array.from(e.target.files).slice(0, 9);
+                                                        const fileNames = files.map(f => f.name);
                                                         setFormData((prev) => ({ ...prev, photos: fileNames }));
+                                                        setFileObjects((prev) => ({ ...prev, photos: files }));
                                                         setError('');
                                                     }
                                                 }}
@@ -2394,14 +2330,14 @@ export default function Register() {
                                                 <p className="text-sm text-green-600">✓ {formData.photos.length} photo(s) uploaded</p>
                                             </div>
                                         )}
-                                    </div>
+                            </div>
 
                                     {/* Upload Video 2minutes - Multiple instances */}
                                     {[1, 2].map((index) => (
                                         <div key={index}>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                 Upload Video 2minutes
-                                            </label>
+                                </label>
                                             <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:bg-gray-50 transition">
                                                 <div className="text-center pointer-events-none">
                                                     <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2412,17 +2348,23 @@ export default function Register() {
                                                         {formData.pitchVideos[index - 1] || 'Click to upload video (MP4, MOV, AVI)'}
                                                     </p>
                                                 </div>
-                                                <input
+                                <input
                                                     id={`pitchVideo${index}`}
                                                     name={`pitchVideo${index}`}
                                                     type="file"
                                                     accept="video/*"
                                                     onChange={(e) => {
                                                         if (e.target.files?.[0]) {
-                                                            const fileName = e.target.files[0].name;
+                                                            const file = e.target.files[0];
+                                                            const fileName = file.name;
                                                             const newVideos = [...formData.pitchVideos];
                                                             newVideos[index - 1] = fileName;
                                                             setFormData((prev) => ({ ...prev, pitchVideos: newVideos }));
+                                                            setFileObjects((prev) => {
+                                                                const existing = prev.pitchVideos ? [...prev.pitchVideos] : [];
+                                                                existing[index - 1] = file;
+                                                                return { ...prev, pitchVideos: existing };
+                                                            });
                                                             setError('');
                                                         }
                                                     }}
@@ -2432,35 +2374,35 @@ export default function Register() {
                                             {formData.pitchVideos[index - 1] && (
                                                 <p className="text-sm text-green-600 mt-2">✓ {formData.pitchVideos[index - 1]}</p>
                                             )}
-                                        </div>
+                            </div>
                                     ))}
 
-                                    {/* Description */}
-                                    <div>
-                                        <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                                            Description
-                                        </label>
-                                        <textarea
-                                            id="description"
-                                            name="description"
-                                            value={formData.description}
-                                            onChange={(e) => {
-                                                setFormData((prev) => ({ ...prev, description: e.target.value }));
-                                                setError('');
-                                            }}
-                                            placeholder="Describe your pitch and project"
-                                            rows={4}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
-                                            onFocus={(e) => {
-                                                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                                e.currentTarget.style.borderColor = '#0a3d5c';
-                                            }}
-                                            onBlur={(e) => {
-                                                e.currentTarget.style.boxShadow = 'none';
-                                                e.currentTarget.style.borderColor = '#d1d5db';
-                                            }}
-                                        />
-                                    </div>
+                            {/* Description */}
+                            <div>
+                                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Description
+                                </label>
+                                <textarea
+                                    id="description"
+                                    name="description"
+                                    value={formData.description}
+                                    onChange={(e) => {
+                                        setFormData((prev) => ({ ...prev, description: e.target.value }));
+                                        setError('');
+                                    }}
+                                    placeholder="Describe your pitch and project"
+                                    rows={4}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
+                                />
+                            </div>
                                 </>
                             )}
                         </div>
@@ -2489,7 +2431,10 @@ export default function Register() {
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a3d5c'}
                     >
                         {loading ? (
-                            'Submitting...'
+                            <span className="flex items-center gap-2">
+                                <Spinner size="sm" variant="white" />
+                                Submitting...
+                            </span>
                         ) : currentStep === 'pitch' ? (
                             <>
                                 Complete
@@ -2523,6 +2468,115 @@ export default function Register() {
                     </button>
                 </div>
             </Card>
+
+            {/* OTP Verification Modal */}
+            <Dialog 
+                open={showOtpModal} 
+                onOpenChange={(open) => {
+                    // Prevent closing during loading or when OTP is being verified
+                    if (!open && !loading && !otpSent) {
+                        setShowOtpModal(false);
+                        setOtpCode('');
+                        setOtpSent(false);
+                        setOtpSecondsLeft(0);
+                    }
+                }}
+            >
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Verify Your Email</DialogTitle>
+                        <DialogDescription>
+                            We sent a 6-digit verification code to{' '}
+                            <span className="font-semibold text-gray-900">{formData.personalEmail}</span>
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                        {error && (
+                            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                                <p className="text-sm text-red-700">{error}</p>
         </div>
+                        )}
+
+                        {otpSent ? (
+                            <>
+                                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <p className="text-sm text-blue-800 mb-2">
+                                        Code expires in <span className="font-semibold">{Math.max(0, otpSecondsLeft)}s</span>
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        6-digit verification code
+                                    </label>
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={otpCode}
+                                        onChange={(e) => {
+                                            const v = e.target.value.replace(/\D/g, '').slice(0, 6);
+                                            setOtpCode(v);
+                                            setError('');
+                                        }}
+                                        placeholder="123456"
+                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg outline-none transition text-center text-2xl tracking-widest font-semibold"
+                                        style={{
+                                            letterSpacing: '0.5em',
+                                        }}
+                                        onFocus={(e) => {
+                                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                            e.currentTarget.style.borderColor = '#0a3d5c';
+                                        }}
+                                        onBlur={(e) => {
+                                            e.currentTarget.style.boxShadow = 'none';
+                                            e.currentTarget.style.borderColor = '#d1d5db';
+                                        }}
+                                        autoFocus
+                                    />
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={verifyOtpAndRegister}
+                                        disabled={loading || otpCode.length !== 6 || otpSecondsLeft <= 0}
+                                        className="flex-1 px-4 py-2 text-white font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        style={{ backgroundColor: '#0a3d5c' }}
+                                    >
+                                        {loading ? (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <Spinner size="sm" variant="white" />
+                                                Verifying...
+                                            </span>
+                                        ) : (
+                                            'Verify & Complete Registration'
+                                        )}
+                                    </button>
+                                </div>
+
+                                <div className="text-center">
+                                    <button
+                                        type="button"
+                                        disabled={loading || otpSecondsLeft > 0}
+                                        className="text-sm font-medium underline disabled:opacity-50 disabled:cursor-not-allowed"
+                                        style={{ color: '#0a3d5c' }}
+                                        onClick={sendOtpCode}
+                                    >
+                                        {otpSecondsLeft > 0 ? `Resend code in ${Math.max(0, otpSecondsLeft)}s` : 'Resend code'}
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="text-center py-4">
+                                <Spinner size="lg" variant="primary" className="mx-auto mb-4" />
+                                <p className="text-sm text-gray-600">Sending verification code...</p>
+                            </div>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </div>
+        </>
     );
 }
