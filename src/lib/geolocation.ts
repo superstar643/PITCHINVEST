@@ -14,14 +14,17 @@ export interface GeolocationData {
 const fetchFromIpApi = async (): Promise<GeolocationData | null> => {
   try {
     const response = await fetch('https://ipapi.co/json/');
-    if (!response.ok) throw new Error('ipapi.co request failed');
+    if (!response.ok) throw new Error(`ipapi.co request failed: ${response.status} ${response.statusText}`);
     
     const data = await response.json();
     if (data.error) throw new Error(data.reason || 'ipapi.co error');
     
+    // Normalize country code to uppercase for consistency
+    const countryCode = data.country_code ? data.country_code.toUpperCase() : '';
+    
     return {
       country: data.country_name || '',
-      countryCode: data.country_code || '',
+      countryCode: countryCode,
       city: data.city || '',
       region: data.region || '',
       timezone: data.timezone || '',
@@ -36,15 +39,19 @@ const fetchFromIpApi = async (): Promise<GeolocationData | null> => {
 // Fallback service: ip-api.com (free tier: 45 requests/minute)
 const fetchFromIpApiCom = async (): Promise<GeolocationData | null> => {
   try {
-    const response = await fetch('http://ip-api.com/json/?fields=status,message,country,countryCode,city,regionName,timezone,query');
-    if (!response.ok) throw new Error('ip-api.com request failed');
+    // Use HTTPS instead of HTTP for better security and CORS support
+    const response = await fetch('https://ip-api.com/json/?fields=status,message,country,countryCode,city,regionName,timezone,query');
+    if (!response.ok) throw new Error(`ip-api.com request failed: ${response.status} ${response.statusText}`);
     
     const data = await response.json();
     if (data.status === 'fail') throw new Error(data.message || 'ip-api.com error');
     
+    // Normalize country code to uppercase for consistency
+    const countryCode = data.countryCode ? data.countryCode.toUpperCase() : '';
+    
     return {
       country: data.country || '',
-      countryCode: data.countryCode || '',
+      countryCode: countryCode,
       city: data.city || '',
       region: data.regionName || '',
       timezone: data.timezone || '',
@@ -87,12 +94,15 @@ const fetchFromIpWhoIs = async (): Promise<GeolocationData | null> => {
     const data = await response.json();
     if (!data.success) throw new Error(data.message || 'ipwho.is error');
     
+    // ipwho.is returns country_code in uppercase, but normalize to uppercase just in case
+    const countryCode = data.country_code ? data.country_code.toUpperCase() : '';
+    
     return {
       country: data.country || '',
-      countryCode: data.country_code || '',
+      countryCode: countryCode,
       city: data.city || '',
       region: data.region || '',
-      timezone: data.timezone?.id || '',
+      timezone: data.timezone?.id || data.timezone || '',
       ip: data.ip || '',
     };
   } catch (error) {
@@ -109,26 +119,29 @@ const fetchFromIpWhoIs = async (): Promise<GeolocationData | null> => {
 export const getGeolocationData = async (): Promise<GeolocationData | null> => {
   // Try services in order of preference
   const services = [
-    fetchFromIpApi,
-    fetchFromIpWhoIs,
-    fetchFromIpApiCom,
+    { name: 'ipapi.co', fn: fetchFromIpApi },
+    { name: 'ipwho.is', fn: fetchFromIpWhoIs },
+    { name: 'ip-api.com', fn: fetchFromIpApiCom },
     // fetchFromIpGeolocation, // Requires API key
   ];
 
   for (const service of services) {
     try {
-      const data = await service();
+      console.log(`🌐 Trying geolocation service: ${service.name}`);
+      const data = await service.fn();
       if (data && data.country && data.countryCode) {
-        console.log('Geolocation data retrieved successfully:', data);
+        console.log(`✅ Geolocation data retrieved successfully from ${service.name}:`, data);
         return data;
+      } else {
+        console.warn(`⚠️ ${service.name} returned incomplete data:`, data);
       }
     } catch (error) {
-      console.warn('Geolocation service failed:', error);
+      console.warn(`❌ ${service.name} geolocation service failed:`, error);
       continue;
     }
   }
 
-  console.warn('All geolocation services failed');
+  console.error('❌ All geolocation services failed');
   return null;
 };
 
@@ -138,21 +151,31 @@ export const getGeolocationData = async (): Promise<GeolocationData | null> => {
 let cachedGeolocation: GeolocationData | null = null;
 let geolocationPromise: Promise<GeolocationData | null> | null = null;
 
-export const getCachedGeolocation = async (): Promise<GeolocationData | null> => {
-  // Return cached data if available
-  if (cachedGeolocation) {
+export const getCachedGeolocation = async (forceRefresh: boolean = false): Promise<GeolocationData | null> => {
+  // Clear cache if force refresh is requested
+  if (forceRefresh) {
+    cachedGeolocation = null;
+    geolocationPromise = null;
+  }
+
+  // Return cached data if available (and not forcing refresh)
+  if (cachedGeolocation && !forceRefresh) {
+    console.log('📍 Using cached geolocation data:', cachedGeolocation);
     return cachedGeolocation;
   }
 
-  // Return existing promise if request is in progress
-  if (geolocationPromise) {
+  // Return existing promise if request is in progress (and not forcing refresh)
+  if (geolocationPromise && !forceRefresh) {
+    console.log('⏳ Geolocation request in progress, waiting...');
     return geolocationPromise;
   }
 
   // Create new request
+
   geolocationPromise = getGeolocationData().then(data => {
     if (data) {
       cachedGeolocation = data;
+      console.log('💾 Cached geolocation data:', data);
     }
     return data;
   }).finally(() => {
@@ -160,4 +183,13 @@ export const getCachedGeolocation = async (): Promise<GeolocationData | null> =>
   });
 
   return geolocationPromise;
+};
+
+/**
+ * Clear cached geolocation data (useful for testing or when user location changes)
+ */
+export const clearGeolocationCache = (): void => {
+  cachedGeolocation = null;
+  geolocationPromise = null;
+  console.log('🗑️ Geolocation cache cleared');
 };

@@ -14,6 +14,7 @@ import { base64ToFile, uploadFile, uploadMultipleFiles } from '@/lib/storage';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingOverlay } from '@/components/ui/loading-overlay';
 import { Spinner } from '@/components/ui/spinner';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import {
     Dialog,
     DialogContent,
@@ -206,8 +207,140 @@ export default function Register() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showOtpModal]);
 
-    // Auto-detect location for company telephone when entering company step (StartUp/Company)
-    // Note: Personal Info step no longer requires country/city, so geolocation is only for company phone
+    // Auto-detect location when entering personal info step (for non-OAuth users)
+    useEffect(() => {
+        // Only run if we're on personal step, no country is set, not loading, and not OAuth user
+        const hasCountry = formData.country && formData.country.trim().length > 0;
+        const shouldDetect = currentStep === 'personal' && 
+                            !hasCountry && 
+                            !geolocationLoading && 
+                            !isOAuthUser;
+        
+        if (shouldDetect) {
+            console.log('🔍 Starting IP-based geolocation detection...', {
+                currentStep,
+                hasCountry,
+                countryValue: formData.country,
+                geolocationLoading,
+                isOAuthUser
+            });
+                setGeolocationLoading(true);
+            
+            // Use a small timeout to ensure form is ready
+            const timeoutId = setTimeout(() => {
+                getCachedGeolocation()
+                    .then((geoData) => {
+                        console.log('📍 Geolocation API response:', geoData);
+                        if (geoData && geoData.countryCode) {
+                            // Normalize country code to uppercase for matching
+                            const normalizedCode = geoData.countryCode.trim().toUpperCase();
+                            console.log('🔎 Normalized country code:', normalizedCode);
+                            
+                            // Try to find country by code (case-insensitive)
+                            const detectedCountry = getCountryByCode(normalizedCode);
+                            console.log('🔎 Searching for country with code:', normalizedCode, 'Found:', detectedCountry ? { name: detectedCountry.name, code: detectedCountry.code } : 'NOT FOUND');
+                            
+                            if (detectedCountry) {
+                                // Auto-select detected country (check again to prevent race conditions)
+                                setFormData((prev) => {
+                                    const prevHasCountry = prev.country && prev.country.trim().length > 0;
+                                    if (!prevHasCountry) {
+                                        console.log('✅ Setting detected country:', detectedCountry.name);
+                                        return {
+                                            ...prev,
+                                            country: detectedCountry.name,
+                                            city: geoData.city || prev.city || '',
+                                        };
+                                    } else {
+                                        console.log('⚠️ Country already set, skipping update. Current value:', prev.country);
+                                    }
+                                    return prev;
+                                });
+                                // Store the detected country code for proper flag display (important for +1 US/Canada)
+                                setDetectedCountryCode(detectedCountry.code);
+                                // Auto-select phone country code
+                                setPhoneCountryCode(detectedCountry.phoneCode);
+                                // Also update company phone if empty
+                                if (!formData.companyTelephone) {
+                                    setCompanyPhoneCountryCode(detectedCountry.phoneCode);
+                                }
+                                console.log('✅ Auto-detected location successfully:', {
+                                    country: detectedCountry.name,
+                                    city: geoData.city,
+                                    countryCode: detectedCountry.code,
+                                    phoneCode: detectedCountry.phoneCode,
+                                    originalApiResponse: geoData
+                        });
+                    } else {
+                                console.warn('⚠️ Country not found in countries list for code:', normalizedCode);
+                                console.warn('Available country codes sample:', countries.slice(0, 10).map(c => `${c.code}: ${c.name}`));
+                                
+                                // Try to find by country name as fallback
+                                if (geoData.country && geoData.country.trim()) {
+                                    const countryByName = countries.find(c => 
+                                        c.name.toLowerCase() === geoData.country.trim().toLowerCase()
+                                    );
+                                    if (countryByName) {
+                                        setFormData((prev) => {
+                                            const prevHasCountry = prev.country && prev.country.trim().length > 0;
+                                            if (!prevHasCountry) {
+                                                console.log('✅ Setting country by name fallback:', countryByName.name);
+                                                return {
+                                                    ...prev,
+                                                    country: countryByName.name,
+                                                    city: geoData.city || prev.city || '',
+                                                };
+                                            }
+                                            return prev;
+                                        });
+                                        setDetectedCountryCode(countryByName.code);
+                                        setPhoneCountryCode(countryByName.phoneCode);
+                                        console.log('✅ Found country by name fallback:', countryByName.name);
+                                    } else {
+                                        console.error('❌ Country not found even by name:', geoData.country);
+                                        console.error('Available countries sample:', countries.slice(0, 10).map(c => c.name));
+                                    }
+                                } else {
+                                    console.error('❌ No country name provided in geolocation data');
+                                }
+                            }
+                        } else {
+                            console.warn('⚠️ Geolocation data incomplete or missing countryCode:', geoData);
+                            if (geoData) {
+                                console.warn('GeoData keys:', Object.keys(geoData));
+                                console.warn('GeoData values:', geoData);
+                            }
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('❌ Geolocation detection failed with error:', error);
+                        if (error instanceof TypeError) {
+                            if (error.message.includes('fetch') || error.message.includes('network')) {
+                                console.error('❌ Network error - check CORS or internet connection');
+                                console.error('This could be due to:');
+                                console.error('  1. CORS policy blocking the request');
+                                console.error('  2. No internet connection');
+                                console.error('  3. Firewall/VPN blocking the geolocation API');
+                            }
+                        }
+                    })
+                    .finally(() => {
+                    setGeolocationLoading(false);
+                    });
+            }, 100); // Small delay to ensure form is ready
+            
+            return () => clearTimeout(timeoutId);
+        } else {
+            if (currentStep === 'personal') {
+                console.log('⏭️ Skipping geolocation detection:', {
+                    hasCountry,
+                    geolocationLoading,
+                    isOAuthUser,
+                    reason: hasCountry ? 'Country already set' : geolocationLoading ? 'Already loading' : isOAuthUser ? 'OAuth user' : 'Unknown'
+                });
+        }
+        }
+    }, [currentStep, formData.country, geolocationLoading, formData.companyTelephone, isOAuthUser]);
 
     // Auto-detect location for company telephone when entering company step (StartUp/Company)
     useEffect(() => {
@@ -266,19 +399,19 @@ export default function Register() {
     const steps: { id: Step; title: string; description: string }[] = useMemo(() => {
         const all = [
             { id: 'usertype' as Step, title: 'User Role', description: 'Select your role' },
-            { 
+        { 
                 id: 'company' as Step, 
-                title: formData.userType === 'Inventor' ? 'Inventor Information' 
-                    : formData.userType === 'StartUp' ? 'Startup Information'
-                    : formData.userType === 'Company' ? 'Company Information'
-                    : formData.userType === 'Investor' ? 'Investor Information'
-                    : 'Business Info', 
-                description: formData.userType === 'Inventor' ? 'Tell us about your invention'
-                    : formData.userType === 'StartUp' ? 'Tell us about your startup'
-                    : formData.userType === 'Company' ? 'Tell us about your company'
-                    : formData.userType === 'Investor' ? 'Tell us about your investment interests'
-                    : 'Tell us about your business'
-            },
+            title: formData.userType === 'Inventor' ? 'Inventor Information' 
+                : formData.userType === 'StartUp' ? 'Startup Information'
+                : formData.userType === 'Company' ? 'Company Information'
+                : formData.userType === 'Investor' ? 'Investor Information'
+                : 'Business Info', 
+            description: formData.userType === 'Inventor' ? 'Tell us about your invention'
+                : formData.userType === 'StartUp' ? 'Tell us about your startup'
+                : formData.userType === 'Company' ? 'Tell us about your company'
+                : formData.userType === 'Investor' ? 'Tell us about your investment interests'
+                : 'Tell us about your business'
+        },
             { id: 'personal' as Step, title: 'Personal Info', description: 'Tell us about yourself' },
             { id: 'pitch' as Step, title: 'Pitch Info', description: formData.userType === 'Investor' ? 'Complete your profile' : 'Upload your pitch materials' },
         ];
@@ -442,8 +575,47 @@ export default function Register() {
                 if (isOAuthUser) {
                     return true;
                 }
-                // For Investor: Personal Info step is skipped (Full Name is in step 2)
+                // For Investor: Full Name is already in step 2, but still need email, password, telephone, country, city
                 if (formData.userType === 'Investor') {
+                if (!formData.fullName.trim()) {
+                    setError('Please enter your full name');
+                    return false;
+                }
+                    if (!formData.personalEmail.trim()) {
+                    setError('Please enter your email');
+                    return false;
+                }
+                    // Email validation
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(formData.personalEmail)) {
+                        setError('Please enter a valid email address');
+                    return false;
+                }
+                // Password validation (optional - if provided, must be valid)
+                if (formData.password && formData.password.length > 0) {
+                    if (formData.password.length < 6) {
+                        setError('Password must be at least 6 characters long');
+                        return false;
+                    }
+                }
+                if (!formData.telephone.trim()) {
+                    setError('Please enter your telephone');
+                    return false;
+                }
+                const phoneError = validatePhoneNumber(formData.telephone, phoneCountryCode);
+                if (phoneError) {
+                    setTelephoneError(phoneError);
+                    setError(phoneError);
+                    return false;
+                }
+                if (!formData.country.trim()) {
+                    setError('Please select your country');
+                    return false;
+                }
+                if (!formData.city.trim()) {
+                    setError('Please enter your city');
+                        return false;
+                    }
                     return true;
                 }
                 // For Inventor/StartUp/Company: Only Full Name is required
@@ -476,8 +648,8 @@ export default function Register() {
             if (isOAuthUser) {
                 await handleOAuthRegistration();
             } else {
-                // Always open OTP modal for verification - OTP will be sent automatically via useEffect
-                setShowOtpModal(true);
+            // Always open OTP modal for verification - OTP will be sent automatically via useEffect
+            setShowOtpModal(true);
             }
         }
     };
@@ -638,7 +810,7 @@ export default function Register() {
             const { data: userRecord, error: userError } = await supabase
                 .from('users')
                 .upsert(userData, {
-                    onConflict: 'id' // Update if user already exists
+                onConflict: 'id' // Update if user already exists
                 })
                 .select()
                 .single();
@@ -873,10 +1045,10 @@ export default function Register() {
                 variant: 'default',
             });
 
-            // Redirect to login after 5 seconds
+            // Redirect to subscription page to complete payment
             setTimeout(() => {
-                window.location.href = '/login';
-            }, 5000);
+                window.location.href = '/subscription';
+            }, 2000);
 
         } catch (e) {
             const msg = e instanceof Error ? e.message : 'Registration failed. Please try again.';
@@ -2169,10 +2341,10 @@ export default function Register() {
                         <div className="space-y-4 overflow-y-auto px-2">
                             {/* For Inventor/StartUp/Company: Show only Full Name */}
                             {formData.userType !== 'Investor' && (
-                                <div>
+                            <div>
                                     <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
                                         Full Name <span className="text-red-500">*</span>
-                                    </label>
+                                </label>
                                     <input
                                         id="fullName"
                                         name="fullName"
@@ -2184,20 +2356,203 @@ export default function Register() {
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
                                         onFocus={(e) => {
                                             e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
-                                            e.currentTarget.style.borderColor = '#0a3d5c';
-                                        }}
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
                                         onBlur={(e) => {
                                             e.currentTarget.style.boxShadow = 'none';
                                             e.currentTarget.style.borderColor = '#d1d5db';
                                         }}
                                     />
-                                </div>
+                            </div>
                             )}
 
-                            {/* For Investor: Personal Info step is skipped (Full Name is in step 2) */}
-                            {formData.userType === 'Investor' && (
+                            {/* For Investor (non-OAuth): Show full Personal Info form */}
+                            {formData.userType === 'Investor' && !isOAuthUser && (
+                                <>
+                            <div>
+                                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
+                                            Full Name <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    id="fullName"
+                                    name="fullName"
+                                    type="text"
+                                    value={formData.fullName}
+                                    onChange={handleChange}
+                                    placeholder="John Doe"
+                                    autoFocus
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="personalEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                                            Email <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    id="personalEmail"
+                                    name="personalEmail"
+                                    type="email"
+                                    value={formData.personalEmail}
+                                    onChange={handleChange}
+                                    placeholder="you@example.com"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
+                                />
+                            </div>
+
+                            {/* Password Field (Optional) */}
+                            <div>
+                                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Password <span className="text-gray-500 text-xs">(Optional)</span>
+                                </label>
+                                <input
+                                    id="password"
+                                    name="password"
+                                    type="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    placeholder="Enter your password (optional)"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
+                                />
+                                <p className="mt-1 text-xs text-gray-500">Minimum 6 characters if provided. Account verification will be done via email OTP code.</p>
+                            </div>
+
+                            <div>
+                                <label htmlFor="telephone" className="block text-sm font-medium text-gray-700 mb-1">
+                                            Telephone <span className="text-red-500">*</span>
+                                </label>
+                                <div className={`flex items-center gap-0 border rounded-lg overflow-hidden focus-within:ring-2 transition ${
+                                    telephoneError 
+                                        ? 'border-red-500 focus-within:ring-red-500/20 focus-within:border-red-500' 
+                                        : 'border-gray-300 focus-within:ring-[#0a3d5c]/20 focus-within:border-[#0a3d5c]'
+                                }`}>
+                                    {/* Country Code Selector */}
+                                            <SearchableCountrySelect
+                                                countries={countries}
+                                        value={phoneCountryCode}
+                                        onValueChange={(value) => {
+                                            setPhoneCountryCode(value);
+                                            // Re-validate when country code changes
+                                            if (formData.telephone) {
+                                                const phoneError = validatePhoneNumber(formData.telephone, value);
+                                                setTelephoneError(phoneError);
+                                            }
+                                        }}
+                                                type="phone"
+                                                placeholder="+1"
+                                                preferredCountryCode={
+                                                    formData.country 
+                                                        ? countries.find(c => c.name === formData.country)?.code 
+                                                        : detectedCountryCode || undefined
+                                                }
+                                                triggerClassName="w-auto min-w-[100px] border-0 rounded-none border-r border-gray-300 rounded-l-lg focus:ring-0 focus:ring-offset-0 h-auto py-2 px-3"
+                                            />
+                                    
+                                    {/* Phone Number Input */}
+                                    <input
+                                        id="telephone"
+                                        name="telephone"
+                                        type="tel"
+                                        value={formData.telephone}
+                                        onChange={handleChange}
+                                        placeholder="(555) 000-0000"
+                                        className="flex-1 px-4 py-2 border-0 outline-none transition"
+                                        onFocus={(e) => {
+                                            e.currentTarget.parentElement?.style.setProperty('box-shadow', '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c');
+                                            e.currentTarget.parentElement?.style.setProperty('border-color', '#0a3d5c');
+                                        }}
+                                        onBlur={(e) => {
+                                            const phoneError = validatePhoneNumber(formData.telephone, phoneCountryCode);
+                                            setTelephoneError(phoneError);
+                                            if (!phoneError) {
+                                                e.currentTarget.parentElement?.style.setProperty('box-shadow', 'none');
+                                                e.currentTarget.parentElement?.style.setProperty('border-color', '#d1d5db');
+                                            }
+                                        }}
+                                    />
+                                </div>
+                                {telephoneError && (
+                                    <p className="mt-1 text-sm text-red-600">{telephoneError}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                                            Country <span className="text-red-500">*</span>
+                                </label>
+                                        <SearchableCountrySelect
+                                            countries={countries}
+                                    value={formData.country}
+                                    onValueChange={(value) => {
+                                            setFormData((prev) => ({ ...prev, country: value }));
+                                            setError('');
+                                            // Update phone country code when country changes
+                                            const countryMatch = countries.find(c => c.name === value);
+                                            if (countryMatch) {
+                                                setPhoneCountryCode(countryMatch.phoneCode);
+                                                    // Store the country code for proper flag display in phone selector
+                                                    setDetectedCountryCode(countryMatch.code);
+                                                }
+                                            }}
+                                            type="country"
+                                            placeholder="Select a country"
+                                            triggerClassName="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition h-auto min-h-[42px]"
+                                                        />
+                            </div>
+
+                            <div>
+                                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                                            City <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    id="city"
+                                    name="city"
+                                    type="text"
+                                    value={formData.city}
+                                    onChange={handleChange}
+                                    placeholder="Lisbon"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none transition mb-1"
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 61, 92, 0.1), 0 0 0 2px #0a3d5c';
+                                        e.currentTarget.style.borderColor = '#0a3d5c';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
+                                />
+                            </div>
+                                </>
+                            )}
+
+                            {/* For OAuth Investor users: Show message that Personal Info is skipped */}
+                            {formData.userType === 'Investor' && isOAuthUser && (
                                 <div className="text-center py-8 text-gray-500">
-                                    <p>Personal information is not required for Investors.</p>
+                                    <p>Personal information is not required for OAuth users.</p>
                                     <p className="text-sm mt-2">Click "Next" to continue to Pitch Info.</p>
                                 </div>
                             )}
@@ -2583,8 +2938,7 @@ export default function Register() {
                             </>
                         ) : (
                             <div className="text-center py-4">
-                                <Spinner size="lg" variant="primary" className="mx-auto mb-4" />
-                                <p className="text-sm text-gray-600">Sending verification code...</p>
+                                <LoadingSpinner message="Sending verification code..." />
                             </div>
                         )}
                     </div>

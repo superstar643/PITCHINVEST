@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 function GoogleIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
@@ -747,8 +748,7 @@ export default function Login() {
               </>
             ) : (
               <div className="text-center py-4">
-                <Spinner size="lg" variant="primary" className="mx-auto mb-4" />
-                <p className="text-sm text-gray-600">Sending verification code...</p>
+                <LoadingSpinner message="Sending verification code..." />
               </div>
             )}
           </div>

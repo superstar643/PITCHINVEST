@@ -1,12 +1,34 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import investers from '@/lib/investersData';
+import { supabase } from '@/lib/supabase';
 import InvestorCard from '@/components/landing/InvestorCard';
 import FilterBar from '@/components/FilterBar';
 import { getSortedCountries } from '@/lib/countries';
+import { useToast } from '@/hooks/use-toast';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const ITEMS_PER_PAGE = 12;
 
+interface InvestorData {
+  id: string;
+  name: string;
+  startup: string;
+  avatar?: string;
+  companyLogo?: string;
+  companyName?: string;
+  city?: string;
+  country?: string;
+  countryFlag?: string;
+  partners?: string[];
+  coverImage?: string;
+  category?: string;
+  stage?: string;
+  role?: string;
+}
+
 const Investors: React.FC = () => {
+  const { toast } = useToast();
+  const [investors, setInvestors] = useState<InvestorData[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchValue, setSearchValue] = useState('');
   const [countryValue, setCountryValue] = useState('all');
@@ -15,13 +37,162 @@ const Investors: React.FC = () => {
   const [cityValue, setCityValue] = useState('all');
   const [roleValue, setRoleValue] = useState('all');
 
-  // Stats for the hero section
-  const stats = [
-    { value: '1,200+', label: 'INVESTORS' },
-    { value: '$2.5B+', label: 'TOTAL INVESTED' },
-    { value: '500+', label: 'ACTIVE DEALS' },
-    { value: '95%', label: 'SUCCESS RATE' },
-  ];
+  // Fetch investors from Supabase
+  useEffect(() => {
+    const loadInvestors = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch users with user_type = 'Investor' - explicitly request all rows
+        let users = null;
+        let count = null;
+        let usersError = null;
+
+        // First try exact match (most common case)
+        const { data: usersExact, error: errorExact, count: countExact } = await supabase
+          .from('users')
+          .select('id, full_name, personal_email, photo_url, cover_image_url, country, city, user_type, created_at', { count: 'exact' })
+          .eq('user_type', 'Investor')
+          .order('created_at', { ascending: false });
+
+        if (errorExact) {
+          console.error('Error fetching investors with exact match:', errorExact);
+          usersError = errorExact;
+        } else {
+          users = usersExact;
+          count = countExact;
+        }
+
+        // If no results with exact match or there was an error, try case-insensitive match as fallback
+        if ((!users || users.length === 0) || errorExact) {
+          console.log('🔄 No investors found with exact match or error occurred, trying case-insensitive match...');
+          const { data: usersIlike, error: errorIlike, count: countIlike } = await supabase
+            .from('users')
+            .select('id, full_name, personal_email, photo_url, cover_image_url, country, city, user_type, created_at', { count: 'exact' })
+            .ilike('user_type', 'Investor')
+            .order('created_at', { ascending: false });
+          
+          if (errorIlike) {
+            console.error('Error fetching investors with case-insensitive match:', errorIlike);
+            if (!usersError) {
+              usersError = errorIlike;
+            }
+          } else if (usersIlike && usersIlike.length > 0) {
+            users = usersIlike;
+            count = countIlike;
+            usersError = null; // Clear error if second query succeeded
+            console.log('✅ Found investors with case-insensitive match:', users.length);
+          }
+        }
+
+        // If we still have an error and no users, show error and return
+        if (usersError && (!users || users.length === 0)) {
+          console.error('Error fetching investors after all attempts:', usersError);
+          toast({
+            title: 'Error',
+            description: 'Failed to load investors',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        console.log('📊 Total investors count from database:', count || 0);
+        console.log('📊 Fetched investors from database:', users?.length || 0, 'investors');
+        
+        // Check if there's a mismatch between count and fetched rows
+        if (count && count > (users?.length || 0)) {
+          console.warn(`⚠️ Mismatch: Database has ${count} investors but only ${users?.length || 0} were fetched. This might be due to RLS policies or missing data.`);
+        }
+
+        if (!users || users.length === 0) {
+          console.log('⚠️ No investors found in database');
+          setInvestors([]);
+          return;
+        }
+
+        // Log each investor for debugging
+        users.forEach((user, index) => {
+          console.log(`Investor ${index + 1}:`, {
+            id: user.id,
+            name: user.full_name,
+            email: user.personal_email || 'N/A',
+            country: user.country || 'N/A',
+            city: user.city || 'N/A',
+          });
+        });
+
+        // Fetch profiles for all investors (using LEFT JOIN approach with batch fetch)
+        const userIds = users.map(u => u.id);
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, project_name, project_category, company_name, investment_preferences')
+          .in('user_id', userIds);
+
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          // Don't return - continue without profiles
+        }
+
+        console.log('📊 Fetched profiles:', profiles?.length || 0, 'profiles');
+
+        // Create profile map for quick lookup
+        const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+
+        // Map users to investor data format - include ALL users regardless of profile
+        const investorData: InvestorData[] = users.map(user => {
+          const profile = profileMap.get(user.id);
+          
+          const investor: InvestorData = {
+            id: user.id,
+            name: user.full_name || 'Unknown Investor',
+            startup: profile?.project_name || profile?.investment_preferences || 'Investment Portfolio',
+            avatar: user.photo_url || undefined,
+            companyLogo: user.photo_url || undefined,
+            companyName: profile?.company_name || undefined,
+            city: user.city || undefined,
+            country: user.country || undefined,
+            countryFlag: user.country || undefined,
+            partners: [], // Partners not in database, using empty array
+            coverImage: user.cover_image_url || undefined,
+            category: profile?.project_category || undefined,
+            stage: undefined, // Stage not in database for investors
+            role: 'Investor', // All users here are investors
+          };
+
+          return investor;
+        });
+
+        console.log('✅ Mapped investors data:', investorData.length, 'investors');
+        console.log('Investor IDs:', investorData.map(i => i.id));
+
+        setInvestors(investorData);
+      } catch (error) {
+        console.error('Error loading investors:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load investors. Please refresh the page.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInvestors();
+  }, []);
+
+  // Calculate real stats from investors
+  const stats = useMemo(() => {
+    const totalInvestors = investors.length;
+    // These stats would need additional queries to calculate accurately
+    // For now, using placeholder calculations
+    return [
+      { value: `${totalInvestors}+`, label: 'INVESTORS' },
+      { value: '$2.5B+', label: 'TOTAL INVESTED' },
+      { value: '500+', label: 'ACTIVE DEALS' },
+      { value: '95%', label: 'SUCCESS RATE' },
+    ];
+  }, [investors]);
 
   // Use comprehensive countries list from countries.ts (all countries worldwide)
   const allCountries = useMemo(() => {
@@ -31,57 +202,54 @@ const Investors: React.FC = () => {
   // Extract unique categories from investors
   const categories = useMemo(() => {
     const categorySet = new Set<string>();
-    investers.forEach(investor => {
-      if (investor.projectInfo?.category) categorySet.add(investor.projectInfo.category);
+    investors.forEach(investor => {
+      if (investor.category) categorySet.add(investor.category);
     });
     return Array.from(categorySet).sort();
-  }, []);
+  }, [investors]);
 
-  // Extract unique stages from investors
+  // Extract unique stages from investors (empty for now as stage is not in database)
   const stages = useMemo(() => {
-    const stageSet = new Set<string>();
-    investers.forEach(investor => {
-      if (investor.projectInfo?.stage) stageSet.add(investor.projectInfo.stage);
-    });
-    return Array.from(stageSet).sort();
+    // Stage filter can be kept for future use but will be empty for now
+    return [] as string[];
   }, []);
 
   // Extract unique cities from investors
   const cities = useMemo(() => {
     const citySet = new Set<string>();
-    investers.forEach(investor => {
+    investors.forEach(investor => {
       if (investor.city) citySet.add(investor.city);
     });
     return Array.from(citySet).sort();
-  }, []);
+  }, [investors]);
 
-  // Extract unique roles from investors
+  // Extract unique roles from investors (all are "Investor")
   const roles = useMemo(() => {
     const roleSet = new Set<string>();
-    investers.forEach(investor => {
+    investors.forEach(investor => {
       if (investor.role) roleSet.add(investor.role);
     });
     return Array.from(roleSet).sort();
-  }, []);
+  }, [investors]);
 
   // Filter investors based on all filters
   const filteredInvestors = useMemo(() => {
-    return investers.filter(investor => {
+    return investors.filter(investor => {
       // Search filter
       const matchesSearch = searchValue === '' || 
         investor.name.toLowerCase().includes(searchValue.toLowerCase()) ||
         investor.city?.toLowerCase().includes(searchValue.toLowerCase()) ||
         investor.companyName?.toLowerCase().includes(searchValue.toLowerCase()) ||
-        investor.projectInfo?.title?.toLowerCase().includes(searchValue.toLowerCase());
+        investor.startup?.toLowerCase().includes(searchValue.toLowerCase());
       
       // Country filter
       const matchesCountry = countryValue === 'all' || investor.country === countryValue;
       
       // Category filter
-      const matchesCategory = categoryValue === 'all' || investor.projectInfo?.category === categoryValue;
+      const matchesCategory = categoryValue === 'all' || investor.category === categoryValue;
       
-      // Stage filter
-      const matchesStage = stageValue === 'all' || investor.projectInfo?.stage === stageValue;
+      // Stage filter (always true for now as stage is not in database)
+      const matchesStage = stageValue === 'all' || investor.stage === stageValue;
       
       // City filter
       const matchesCity = cityValue === 'all' || investor.city === cityValue;
@@ -91,7 +259,7 @@ const Investors: React.FC = () => {
 
       return matchesSearch && matchesCountry && matchesCategory && matchesStage && matchesCity && matchesRole;
     });
-  }, [searchValue, countryValue, categoryValue, stageValue, cityValue, roleValue]);
+  }, [investors, searchValue, countryValue, categoryValue, stageValue, cityValue, roleValue]);
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredInvestors.length / ITEMS_PER_PAGE);
@@ -220,29 +388,39 @@ const Investors: React.FC = () => {
           searchPlaceholder="Search investors, companies..."
         />
 
-        <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
-          {currentItems.map((u: any) => (
-            <InvestorCard
-              key={u.id}
-              id={u.id}
-              name={u.name}
-              startup={u.projectInfo?.title || ''}
-              avatar={u.avatar}
-              companyLogo={u.companyLogo}
-              companyName={u.companyName}
-              city={u.city}
-              country={u.country}
-              countryFlag={u.countryFlag}
-              partners={u.partners}
-              coverImage={u.coverImage}
-            />
-          ))}
-        </div>
-
-        {currentItems.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
-            No results found. Try adjusting your filters.
+        {loading ? (
+          <div className="py-12">
+            <LoadingSpinner message="Loading investors..." />
           </div>
+        ) : (
+          <>
+            <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
+              {currentItems.map((investor) => (
+                <InvestorCard
+                  key={investor.id}
+                  id={investor.id}
+                  name={investor.name}
+                  startup={investor.startup}
+                  avatar={investor.avatar}
+                  companyLogo={investor.companyLogo}
+                  companyName={investor.companyName}
+                  city={investor.city}
+                  country={investor.country}
+                  countryFlag={investor.countryFlag}
+                  partners={investor.partners}
+                  coverImage={investor.coverImage}
+                />
+              ))}
+            </div>
+
+            {currentItems.length === 0 && !loading && (
+              <div className="text-center py-12 text-gray-500">
+                {investors.length === 0 
+                  ? 'No investors available yet. Check back soon!'
+                  : 'No results found. Try adjusting your filters.'}
+              </div>
+            )}
+          </>
         )}
 
         {/* Pagination */}

@@ -24,6 +24,14 @@ import Blog from "./pages/Blog";
 import Contact from "./pages/Contact";
 import About from "./pages/About";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Subscription from "./pages/Subscription";
+import SubscriptionSuccess from "./pages/SubscriptionSuccess";
+import SubscriptionCancel from "./pages/SubscriptionCancel";
+import AdminPricing from "./pages/Admin/Pricing";
+import AdminDashboard from "./pages/Admin/Dashboard";
+import AdminProjects from "./pages/Admin/Projects";
+import AdminInvoices from "./pages/Admin/Invoices";
+import AdminUsers from "./pages/Admin/Users";
 import AppLayout from "./components/AppLayout";
 
 const queryClient = new QueryClient();
@@ -58,6 +66,15 @@ const App = () => (
             <Route path="/privacy-policy" element={<AppLayout><PrivacyPolicy /></AppLayout>} />
             <Route path="/user/:id" element={<AppLayout><UserDetail /></AppLayout>} />
             <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
+            <Route path="/subscription" element={<Subscription />} />
+            <Route path="/subscription/success" element={<SubscriptionSuccess />} />
+            <Route path="/subscription/cancel" element={<SubscriptionCancel />} />
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AppLayout><AdminDashboard /></AppLayout>} />
+            <Route path="/admin/projects" element={<AppLayout><AdminProjects /></AppLayout>} />
+            <Route path="/admin/invoices" element={<AppLayout><AdminInvoices /></AppLayout>} />
+            <Route path="/admin/users" element={<AppLayout><AdminUsers /></AppLayout>} />
+            <Route path="/admin/pricing" element={<AppLayout><AdminPricing /></AppLayout>} />
             <Route path="/investor/:id" element={<AppLayout><InvestorDetail /></AppLayout>} />
             <Route path="/auction/:id" element={<AppLayout><Auction /></AppLayout>} />
             <Route path="/messages" element={<AppLayout><Message /></AppLayout>} />

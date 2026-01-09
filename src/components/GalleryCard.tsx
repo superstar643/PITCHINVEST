@@ -10,12 +10,12 @@ interface Author {
 }
 
 interface GalleryCardProps {
-  id: number;
+  id: number | string;
   title: string;
   artist: string;
   subtitle?: string;
   imageUrl: string;
-  category: string;
+  category?: string;
   views?: number;
   availableStatus: boolean;
   availableLabel?: string;
@@ -100,12 +100,14 @@ export const GalleryCard: React.FC<GalleryCardProps> = ({
             <Tag size={12} />
             <span>{artist}</span>
           </div>
-          <div className="flex items-center gap-1">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3a1 1 0 00.293.707l2 2a1 1 0 001.414-1.414L11 9.586V7z" clipRule="evenodd" />
-            </svg>
-            <span className="capitalize">{/* category placeholder */}</span>
-          </div>
+          {category && (
+            <div className="flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3a1 1 0 00.293.707l2 2a1 1 0 001.414-1.414L11 9.586V7z" clipRule="evenodd" />
+              </svg>
+              <span className="capitalize">{category}</span>
+            </div>
+          )}
         </div>
 
         {/* Author row */}

@@ -4,6 +4,7 @@ import { ThumbsUp, Eye, MoveLeft, Share2, Lock } from 'lucide-react';
 import { fetchUserProfile, getAvailableOptions, type ProfileData } from '@/lib/profile';
 import { supabase } from '@/lib/supabase';
 import investers from '@/lib/investersData';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import {
   Dialog,
   DialogContent,
@@ -116,12 +117,7 @@ const InvestorDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#0a3d5c]/20 border-t-[#0a3d5c] mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
+      <LoadingSpinner fullScreen />
     );
   }
 

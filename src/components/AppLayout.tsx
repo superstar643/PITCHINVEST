@@ -19,7 +19,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen flex flex-col custom-scrollbar overflow-x-hidden w-full max-w-full">
       <Header />
-      <main className="flex-1 w-full overflow-x-hidden max-w-full">
+      <main className="flex-1 w-full overflow-x-hidden max-w-full pt-16">
         <div className="w-full max-w-full overflow-x-hidden">
           {children ? children : <><HeroSection /><CarouselSection /><UsersSection /></>}
         </div>

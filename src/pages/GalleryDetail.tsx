@@ -145,18 +145,12 @@ const GalleryDetail: React.FC = () => {
                                     <div className="text-xl font-bold">45</div>
                                 </div>
                             </div>
-                            <div className="mt-6 flex gap-3">
+                            <div className="mt-6">
                                 <button 
                                     onClick={() => navigate(`/auction/${item.id}`)} 
-                                    className="flex-1 px-4 py-2 rounded-full bg-[#0a3d5c] text-white font-medium hover:bg-[#062a3d] transition-all"
+                                    className="w-full px-4 py-2 rounded-full bg-[#0a3d5c] text-white font-medium hover:bg-[#062a3d] transition-all"
                                 >
                                     View Auction
-                                </button>
-                                <button 
-                                    onClick={() => navigate(`/auction/${item.id}`)} 
-                                    className="px-4 py-2 rounded-full bg-[#0a3d5c] text-white font-medium hover:bg-[#062a3d] transition-all"
-                                >
-                                    Place a bid
                                 </button>
                             </div>
                         </div>

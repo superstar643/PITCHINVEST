@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { fetchUserProfile, type ProfileData } from '@/lib/profile';
 import { supabase } from '@/lib/supabase';
@@ -28,12 +28,14 @@ import {
   Upload,
   X,
   Camera,
-  Shield
+  Shield,
+  CreditCard
 } from 'lucide-react';
 import ReactCountryFlag from 'react-country-flag';
 import { getSortedCountries, getCountryByCode } from '@/lib/countries';
 import { getCachedGeolocation } from '@/lib/geolocation';
 import { SearchableCountrySelect } from '@/components/ui/searchable-country-select';
+import SubscriptionManagement from '@/components/SubscriptionManagement';
 
 // Use comprehensive countries list
 const countries = getSortedCountries();
@@ -43,11 +45,20 @@ const USE_STATIC_PREVIEW = false; // set true only for local UI preview
 const Settings: React.FC = () => {
   const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('account');
+  
+  // Check URL for tab parameter
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['account', 'profile', 'media', 'security', 'subscription'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
   const [phoneCountryCode, setPhoneCountryCode] = useState('+1'); // Default to US
   const [telephoneError, setTelephoneError] = useState('');
   const [isSelectOpen, setIsSelectOpen] = useState(false);
@@ -308,7 +319,7 @@ const Settings: React.FC = () => {
     // In preview mode, skip auth and load static data
     if (USE_STATIC_PREVIEW) {
       if (!profileDataLoadedRef.current) {
-        loadProfileData();
+      loadProfileData();
         profileDataLoadedRef.current = true;
       }
       return;
@@ -328,7 +339,7 @@ const Settings: React.FC = () => {
     // Only load profile data once when user is available and data hasn't been loaded yet
     // This prevents form data from being reset when component re-renders (e.g., on window focus)
     if (!profileDataLoadedRef.current) {
-      loadProfileData();
+    loadProfileData();
       profileDataLoadedRef.current = true;
     }
   }, [user, authLoading, navigate, loadProfileData]);
@@ -703,8 +714,8 @@ const Settings: React.FC = () => {
       if (userError) throw userError;
 
       // Update or insert profiles table (upsert)
-      const { error: profileError } = await supabase
-        .from('profiles')
+        const { error: profileError } = await supabase
+          .from('profiles')
         .upsert({
           user_id: user.id,
           project_name: formData.projectName || null,
@@ -726,7 +737,7 @@ const Settings: React.FC = () => {
           onConflict: 'user_id'
         });
 
-      if (profileError) throw profileError;
+        if (profileError) throw profileError;
 
       // Update or insert commercial_proposals table (upsert)
       // Only upsert if there's at least one field with data
@@ -757,8 +768,8 @@ const Settings: React.FC = () => {
       }
 
       // Update or insert pitch_materials table (upsert)
-      const { error: materialsError } = await supabase
-        .from('pitch_materials')
+        const { error: materialsError } = await supabase
+          .from('pitch_materials')
         .upsert({
           user_id: user.id,
           description: formData.description || null,
@@ -768,7 +779,7 @@ const Settings: React.FC = () => {
           onConflict: 'user_id'
         });
 
-      if (materialsError) throw materialsError;
+        if (materialsError) throw materialsError;
 
       toast({
         title: 'Success',
@@ -821,7 +832,7 @@ const Settings: React.FC = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8 bg-white rounded-full shadow-sm border border-gray-200 p-1 h-auto">
+          <TabsList className="grid w-full grid-cols-5 mb-8 bg-white rounded-full shadow-sm border border-gray-200 p-1 h-auto">
             <TabsTrigger 
               value="account" 
               className="flex items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-medium transition-all data-[state=active]:bg-[#0a3d5c] data-[state=active]:text-white data-[state=active]:shadow-md hover:text-[#0a3d5c]"
@@ -849,6 +860,13 @@ const Settings: React.FC = () => {
             >
               <Shield className="h-4 w-4" />
               <span>Security</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="subscription" 
+              className="flex items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-medium transition-all data-[state=active]:bg-[#0a3d5c] data-[state=active]:text-white data-[state=active]:shadow-md hover:text-[#0a3d5c]"
+            >
+              <CreditCard className="h-4 w-4" />
+              <span>Subscription</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1257,6 +1275,16 @@ const Settings: React.FC = () => {
                 {userType === 'Investor' && (
                   <>
                     <div className="space-y-2">
+                      <Label htmlFor="projectCategory" className="text-sm font-semibold text-gray-700">Project Category Interest</Label>
+                      <Input
+                        id="projectCategory"
+                        value={formData.projectCategory}
+                        onChange={(e) => handleInputChange('projectCategory', e.target.value)}
+                        placeholder="e.g., SaaS, E-commerce, FinTech"
+                        className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                      />
+                    </div>
+                    <div className="space-y-2">
                       <Label htmlFor="investmentPreferences" className="text-sm font-semibold text-gray-700">Investment Preferences</Label>
                       <Textarea
                         id="investmentPreferences"
@@ -1353,70 +1381,70 @@ const Settings: React.FC = () => {
                 {/* Commercial Proposals - Hidden for Inventor user type */}
                 {userType !== 'Inventor' && (
                   <>
-                    <Separator className="my-6" />
-                    <h3 className="font-semibold text-lg text-[#0a3d5c] mb-4">Commercial Proposals</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
+                <Separator className="my-6" />
+                <h3 className="font-semibold text-lg text-[#0a3d5c] mb-4">Commercial Proposals</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
                         <Label htmlFor="equityCapitalPercentage" className="text-sm font-semibold text-gray-700">Equity</Label>
-                        <Input
-                          id="equityCapitalPercentage"
-                          value={formData.equityCapitalPercentage}
-                          onChange={(e) => handleInputChange('equityCapitalPercentage', e.target.value)}
-                          placeholder="Enter percentage"
-                          className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                        />
-                      </div>
-                      <div className="space-y-2">
+                    <Input
+                      id="equityCapitalPercentage"
+                      value={formData.equityCapitalPercentage}
+                      onChange={(e) => handleInputChange('equityCapitalPercentage', e.target.value)}
+                      placeholder="Enter percentage"
+                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
                         <Label htmlFor="equityTotalValue" className="text-sm font-semibold text-gray-700">Investment Amount</Label>
-                        <Input
-                          id="equityTotalValue"
-                          value={formData.equityTotalValue}
-                          onChange={(e) => handleInputChange('equityTotalValue', e.target.value)}
+                    <Input
+                      id="equityTotalValue"
+                      value={formData.equityTotalValue}
+                      onChange={(e) => handleInputChange('equityTotalValue', e.target.value)}
                           placeholder="Enter investment amount"
-                          className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                        />
-                      </div>
-                      <div className="space-y-2">
+                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
                         <Label htmlFor="licenseFee" className="text-sm font-semibold text-gray-700">Initial Licensing Fee</Label>
-                        <Input
-                          id="licenseFee"
-                          value={formData.licenseFee}
-                          onChange={(e) => handleInputChange('licenseFee', e.target.value)}
+                    <Input
+                      id="licenseFee"
+                      value={formData.licenseFee}
+                      onChange={(e) => handleInputChange('licenseFee', e.target.value)}
                           placeholder="Enter initial licensing fee"
-                          className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                        />
-                      </div>
-                      <div className="space-y-2">
+                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
                         <Label htmlFor="licensingRoyaltiesPercentage" className="text-sm font-semibold text-gray-700">Royalties (%)</Label>
-                        <Input
-                          id="licensingRoyaltiesPercentage"
-                          value={formData.licensingRoyaltiesPercentage}
-                          onChange={(e) => handleInputChange('licensingRoyaltiesPercentage', e.target.value)}
+                    <Input
+                      id="licensingRoyaltiesPercentage"
+                      value={formData.licensingRoyaltiesPercentage}
+                      onChange={(e) => handleInputChange('licensingRoyaltiesPercentage', e.target.value)}
                           placeholder="Enter royalties percentage"
-                          className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                        />
-                      </div>
-                      <div className="space-y-2">
+                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
                         <Label htmlFor="franchiseeInvestment" className="text-sm font-semibold text-gray-700">Franchise Fee</Label>
-                        <Input
-                          id="franchiseeInvestment"
-                          value={formData.franchiseeInvestment}
-                          onChange={(e) => handleInputChange('franchiseeInvestment', e.target.value)}
+                    <Input
+                      id="franchiseeInvestment"
+                      value={formData.franchiseeInvestment}
+                      onChange={(e) => handleInputChange('franchiseeInvestment', e.target.value)}
                           placeholder="Enter franchise fee"
-                          className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                        />
-                      </div>
-                      <div className="space-y-2">
+                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
                         <Label htmlFor="monthlyRoyalties" className="text-sm font-semibold text-gray-700">Royalties (%)</Label>
-                        <Input
-                          id="monthlyRoyalties"
-                          value={formData.monthlyRoyalties}
-                          onChange={(e) => handleInputChange('monthlyRoyalties', e.target.value)}
+                    <Input
+                      id="monthlyRoyalties"
+                      value={formData.monthlyRoyalties}
+                      onChange={(e) => handleInputChange('monthlyRoyalties', e.target.value)}
                           placeholder="Enter royalties percentage"
-                          className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                        />
-                      </div>
-                    </div>
+                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                    />
+                  </div>
+                  </div>
                   </>
                 )}
 
@@ -1549,20 +1577,20 @@ const Settings: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-6 pt-6">
                 {!isOAuthUser && (
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword" className="text-sm font-semibold text-gray-700">Current Password</Label>
-                    <Input
-                      id="currentPassword"
-                      type="password"
+                <div className="space-y-2">
+                  <Label htmlFor="currentPassword" className="text-sm font-semibold text-gray-700">Current Password</Label>
+                  <Input
+                    id="currentPassword"
+                    type="password"
                       value={passwordData.currentPassword}
                       onChange={(e) => {
                         setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }));
                         setPasswordError('');
                       }}
-                      placeholder="Enter current password"
-                      className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
-                    />
-                  </div>
+                    placeholder="Enter current password"
+                    className="border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-white"
+                  />
+                </div>
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="newPassword" className="text-sm font-semibold text-gray-700">New Password</Label>
@@ -1615,7 +1643,7 @@ const Settings: React.FC = () => {
                       </>
                     ) : (
                       <>
-                        <Lock className="h-4 w-4 mr-2" />
+                    <Lock className="h-4 w-4 mr-2" />
                         {isOAuthUser ? 'Create Password' : 'Update Password'}
                       </>
                     )}
@@ -1637,6 +1665,11 @@ const Settings: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Subscription Tab */}
+          <TabsContent value="subscription" className="space-y-6">
+            <SubscriptionManagement />
           </TabsContent>
         </Tabs>
       </div>

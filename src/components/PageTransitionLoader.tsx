@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Spinner } from '@/components/ui/spinner';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 export function PageTransitionLoader() {
   const location = useLocation();
@@ -25,12 +25,7 @@ export function PageTransitionLoader() {
   if (!isLoading) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/80 backdrop-blur-sm">
-      <div className="flex flex-col items-center gap-4">
-        <Spinner size="xl" variant="primary" />
-        <p className="text-sm text-gray-600 font-medium">Loading...</p>
-      </div>
-    </div>
+    <LoadingSpinner fullScreen />
   );
 }
 

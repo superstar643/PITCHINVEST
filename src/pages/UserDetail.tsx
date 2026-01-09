@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ThumbsUp, Eye, MoveLeft, Share2, Lock, Edit } from 'lucide-react';
-import { fetchUserProfile, getAvailableOptions, type ProfileData } from '@/lib/profile';
+import { fetchUserProfile, fetchUserProfileAsAdmin, getAvailableOptions, type ProfileData } from '@/lib/profile';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdmin } from '@/hooks/useAdmin';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +22,7 @@ const UserDetail: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user: currentUser, loading: authLoading } = useAuth();
+  const { isAdmin } = useAdmin();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -100,7 +103,27 @@ const UserDetail: React.FC = () => {
 
         // Fetch profile data
         if (id) {
-          const data = await fetchUserProfile(id);
+          let data: ProfileData;
+          
+          // If admin, use admin function
+          if (isAdmin) {
+            try {
+              data = await fetchUserProfileAsAdmin(id);
+            } catch (adminError: any) {
+              console.error('Admin fetch failed:', adminError);
+              // Show error but still try regular fetch as fallback
+              try {
+                data = await fetchUserProfile(id);
+              } catch (fallbackError) {
+                console.error('Fallback fetch also failed:', fallbackError);
+                throw adminError; // Throw original admin error
+              }
+            }
+          } else {
+            // Regular user fetch
+            data = await fetchUserProfile(id);
+          }
+          
           setProfileData(data);
         }
       } catch (error) {
@@ -111,17 +134,12 @@ const UserDetail: React.FC = () => {
     }
 
     if (id || USE_STATIC_PREVIEW) loadProfile();
-  }, [id]);
+  }, [id, isAdmin]);
 
   // Skip loading check in static preview mode
   if (!USE_STATIC_PREVIEW && loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#0a3d5c]/20 border-t-[#0a3d5c] mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
+      <LoadingSpinner fullScreen />
     );
   }
 
@@ -200,7 +218,7 @@ const UserDetail: React.FC = () => {
                     {isOwnProfile && (
                       <button 
                         onClick={() => navigate('/settings')} 
-                        className="flex items-center gap-2 px-3 py-2 rounded-full bg-[#0a3d5c] text-white shadow-sm text-sm hover:bg-[#0a3d5c]/90 transition"
+                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#0a3d5c] text-white shadow-sm text-sm hover:bg-[#0a3d5c]/90 transition whitespace-nowrap"
                       >
                         <Edit size={14} /> Edit Profile
                       </button>

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Link } from 'react-router-dom';
-import { X } from 'lucide-react';
+import { X, Shield } from 'lucide-react';
 import LanguageSelector from './LanguageSelector';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdmin } from '@/hooks/useAdmin';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { user, loading } = useAuth();
+  const { isAdmin } = useAdmin();
   const [showAuthButtons, setShowAuthButtons] = useState(false);
 
   // Check if window width is between 500px and 639px
@@ -78,6 +80,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             )}
 
             <nav className="flex flex-col gap-2">
+              {isAdmin && (
+                <Link to="/admin" onClick={onClose}>
+                  <Button 
+                    variant="ghost"
+                    className="w-full justify-start text-[#0a3d5c] hover:bg-[#0a3d5c]/10 font-medium text-base py-6"
+                  >
+                  
+                    Admin Panel
+                  </Button>
+                </Link>
+              )}
               <Link to="/gallery" onClick={onClose}>
                 <Button 
                   variant="ghost"

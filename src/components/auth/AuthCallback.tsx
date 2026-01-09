@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
-import { Spinner } from '@/components/ui/spinner';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 export default function AuthCallback() {
   const [message, setMessage] = useState('Finishing sign in...');
@@ -155,10 +155,7 @@ export default function AuthCallback() {
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
-            <Spinner size="lg" variant="primary" className="mx-auto" />
-            <p className="text-gray-600">{message}</p>
-          </div>
+          <LoadingSpinner message={message} />
         )}
       </Card>
     </div>

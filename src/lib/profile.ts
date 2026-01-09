@@ -82,9 +82,6 @@ export async function fetchUserProfile(userId: string): Promise<ProfileData> {
       .eq('id', userId)
       .maybeSingle();
 
-    console.log('[fetchUserProfile] userId:', userId);
-    console.log('[fetchUserProfile] data:', data);
-    console.log('[fetchUserProfile] error:', error);
 
     if (error) {
       throw error;
@@ -137,6 +134,31 @@ export async function fetchUserProfile(userId: string): Promise<ProfileData> {
     };
   } catch (error) {
     console.error('Error fetching profile (joined query):', error);
+    throw error;
+  }
+}
+
+// Admin function to fetch user profile - uses direct query with admin session
+// This function assumes RLS policies allow authenticated users to read profiles
+// If RLS blocks, you'll need to create policies or use an edge function with service role
+export async function fetchUserProfileAsAdmin(userId: string): Promise<ProfileData> {
+  try {
+    // For now, use the same function but ensure we're authenticated
+    // In production, you should create RLS policies that allow admins to read all profiles
+    // OR use an edge function with service role key
+    
+    // Try regular fetch first (will work if RLS allows)
+    try {
+      return await fetchUserProfile(userId);
+    } catch (error: any) {
+      console.error('Regular fetch failed for admin:', error);
+      
+      // If RLS blocks, we need to handle it
+      // For now, re-throw the error so the UI can show it
+      throw new Error(`Failed to fetch user profile. RLS policy may be blocking admin access. Error: ${error.message}`);
+    }
+  } catch (error) {
+    console.error('Error fetching profile as admin:', error);
     throw error;
   }
 }

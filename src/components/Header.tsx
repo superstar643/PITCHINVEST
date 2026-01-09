@@ -80,18 +80,6 @@ const Header: React.FC = () => {
   const displayUser = user || lastKnownUser;
   const displayProfileData = userProfileData || lastKnownProfileData;
 
-  // React to auth state changes - track state transitions
-  React.useEffect(() => {
-    console.log('🔍 Header Auth State:', { 
-      hasUser: !!user,
-      userId: user?.id,
-      email: user?.email, 
-      hasProfile: !!profile,
-      loading,
-      willShowProfile: !!user,
-      willShowLogin: !user && !loading
-    });
-  }, [user, profile, loading]);
 
   // Ensure body scrollbar remains visible when dropdown is open
   React.useEffect(() => {
