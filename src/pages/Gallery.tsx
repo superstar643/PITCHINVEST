@@ -2,8 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { GalleryCard } from '@/components/GalleryCard';
 import FilterBar from '@/components/FilterBar';
 import { getSortedCountries } from '@/lib/countries';
-import { fetchProjects, type Project } from '@/lib/projects';
-import { formatDistanceToNow } from 'date-fns';
+import { fetchGalleryItems, type GalleryItem as DBGalleryItem } from '@/lib/projects';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface GalleryItem {
@@ -31,7 +30,7 @@ interface GalleryItem {
 }
 
 const Gallery: React.FC = () => {
-    const [projects, setProjects] = useState<Project[]>([]);
+    const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchValue, setSearchValue] = useState('');
     const [statusValue, setStatusValue] = useState('all');
@@ -39,88 +38,63 @@ const Gallery: React.FC = () => {
     const [tagValue, setTagValue] = useState('all');
     const [popularityValue, setPopularityValue] = useState('all');
 
-    // Fetch projects from Supabase
+    // Fetch gallery items from Supabase
     useEffect(() => {
-        const loadProjects = async () => {
+        const loadGalleryItems = async () => {
             try {
                 setLoading(true);
-                // Only fetch approved/active projects for gallery
-                const data = await fetchProjects({
-                    status: ['approved', 'active'],
-                    limit: 1000, // Fetch all approved projects
+                const data = await fetchGalleryItems({
+                    limit: 1000, // Fetch all gallery items
                 });
-                setProjects(data);
+                
+                // Convert DB gallery items to UI gallery items format
+                const convertedItems: GalleryItem[] = data.map((item) => {
+                    // Determine badges
+                    const badges: string[] = [];
+                    if (item.featured) badges.push('FEATURED');
+                    if (item.author_verified) badges.push('VALIDATED');
+                    if ((item.likes || 0) > 100 || (item.views || 0) > 10000) {
+                        badges.push('TRENDING');
+                    }
+                    if (item.badges && item.badges.length > 0) {
+                        badges.push(...item.badges);
+                    }
+
+                    return {
+                        id: item.id,
+                        title: item.title,
+                        artist: item.artist || item.author_name || 'Unknown',
+                        subtitle: item.subtitle,
+                        imageUrl: item.image_url || item.images?.[0] || '/placeholder.svg',
+                        category: item.category,
+                        views: item.views || 0,
+                        availableStatus: item.available_status ?? true,
+                        availableLabel: item.available_label || (item.available_status ? 'Available' : 'Unavailable'),
+                        badges: badges.length > 0 ? badges : undefined,
+                        likes: item.likes || 0,
+                        author: item.author_name ? {
+                            name: item.author_name,
+                            avatarUrl: item.author_avatar_url || undefined,
+                            country: item.author_country || undefined,
+                            verified: item.author_verified || false,
+                        } : undefined,
+                        actions: item.actions && item.actions.length > 0 ? item.actions : undefined,
+                        date: item.date,
+                        description: item.description,
+                        location: item.location || item.author_country,
+                    };
+                });
+                
+                setGalleryItems(convertedItems);
             } catch (error) {
-                console.error('Error loading projects:', error);
+                console.error('Error loading gallery items:', error);
             } finally {
                 setLoading(false);
             }
         };
 
-        loadProjects();
+        loadGalleryItems();
     }, []);
-
-    // Convert projects to gallery items format
-    const galleryItems: GalleryItem[] = useMemo(() => {
-        return projects.map((project) => {
-            // Determine author name from user or profile
-            const authorName = project.user?.full_name || 
-                             project.profile?.inventor_name || 
-                             project.profile?.company_name || 
-                             project.profile?.project_name || 
-                             'Unknown';
-
-            // Determine actions based on project status and investment info
-            const actions: string[] = [];
-            if (project.investment_percent) {
-                actions.push('EQUITY');
-            }
-            if (project.investment_amount) {
-                actions.push('INVESTMENT');
-            }
-            // Add more actions based on commercial proposals if needed
-
-            // Format date
-            const date = project.created_at 
-                ? formatDistanceToNow(new Date(project.created_at), { addSuffix: true })
-                : undefined;
-
-            // Determine badges
-            const badges: string[] = [];
-            if (project.featured) badges.push('FEATURED');
-            if (project.verified) badges.push('VALIDATED');
-            if ((project.likes || 0) > 100 || (project.views || 0) > 10000) {
-                badges.push('TRENDING');
-            }
-            if (project.badges && project.badges.length > 0) {
-                badges.push(...project.badges);
-            }
-
-            return {
-                id: project.id,
-                title: project.title,
-                artist: authorName,
-                subtitle: project.subtitle,
-                imageUrl: project.cover_image_url || project.image_urls?.[0] || '/placeholder.svg',
-                category: project.category,
-                views: project.views || 0,
-                availableStatus: project.available_status ?? true,
-                availableLabel: project.available_label || (project.available_status ? 'Available' : 'Unavailable'),
-                badges: badges.length > 0 ? badges : undefined,
-                likes: project.likes || 0,
-                author: project.user ? {
-                    name: project.user.full_name,
-                    avatarUrl: project.user.photo_url || undefined,
-                    country: project.user.country || undefined,
-                    verified: project.verified,
-                } : undefined,
-                actions: actions.length > 0 ? actions : undefined,
-                date,
-                description: project.description,
-                location: project.location || project.user?.country,
-            };
-        });
-    }, [projects]);
 
     // Extract unique statuses from gallery items
     const statuses = useMemo(() => {
@@ -214,12 +188,12 @@ const Gallery: React.FC = () => {
         setPopularityValue('all');
     };
 
-    // Calculate real stats from projects
+    // Calculate real stats from gallery items
     const stats = useMemo(() => {
-        const activeProjects = projects.filter(p => p.status === 'active' || p.status === 'approved').length;
-        const totalProjects = projects.length;
-        const totalViews = projects.reduce((sum, p) => sum + (p.views || 0), 0);
-        const totalLikes = projects.reduce((sum, p) => sum + (p.likes || 0), 0);
+        const activeProjects = galleryItems.filter(item => item.availableStatus).length;
+        const totalProjects = galleryItems.length;
+        const totalViews = galleryItems.reduce((sum, item) => sum + (item.views || 0), 0);
+        const totalLikes = galleryItems.reduce((sum, item) => sum + (item.likes || 0), 0);
         
         // Format numbers nicely
         const formatNumber = (num: number): string => {
@@ -234,7 +208,7 @@ const Gallery: React.FC = () => {
             { value: totalProjects > 0 ? `${totalProjects}+` : '0', label: 'TOTAL PROJECTS' },
             { value: totalLikes > 0 ? formatNumber(totalLikes) : '0', label: 'TOTAL LIKES' },
         ];
-    }, [projects]);
+    }, [galleryItems]);
 
     return (
         <div className="min-h-screen bg-white pt-24 flex flex-col items-center mb-12">
@@ -305,7 +279,7 @@ const Gallery: React.FC = () => {
 
                         {filteredItems.length === 0 && !loading && (
                             <div className="text-center py-12 text-gray-500">
-                                {projects.length === 0 
+                                {galleryItems.length === 0 
                                     ? 'No projects available yet. Check back soon!'
                                     : 'No results found. Try adjusting your filters.'}
                             </div>

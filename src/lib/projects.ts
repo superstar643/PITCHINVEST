@@ -290,3 +290,171 @@ export const toggleProjectLike = async (
     return 0;
   }
 };
+
+/**
+ * Gallery Item interface matching the gallery_items table
+ */
+export interface GalleryItem {
+  id: string;
+  project_id?: string;
+  title: string;
+  artist?: string;
+  subtitle?: string;
+  description?: string;
+  category?: string;
+  image_url: string;
+  images?: string[];
+  available_status?: boolean;
+  available_label?: string;
+  location?: string;
+  badges?: string[];
+  actions?: string[];
+  views: number;
+  likes: number;
+  author_name?: string;
+  author_avatar_url?: string;
+  author_country?: string;
+  author_verified?: boolean;
+  date?: string;
+  featured?: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Fetch gallery items from gallery_items table
+ * Only returns items where the matching project status is NOT 'pending'
+ * (i.e., only approved/active projects are shown in the gallery)
+ * @param options - Filtering and pagination options
+ * @returns Array of gallery items
+ */
+export const fetchGalleryItems = async (options?: {
+  category?: string;
+  location?: string;
+  featured?: boolean;
+  available_status?: boolean;
+  limit?: number;
+  offset?: number;
+  search?: string;
+}): Promise<GalleryItem[]> => {
+  try {
+    // First, fetch all approved/active projects (not pending)
+    // This gives us the list of project IDs that should be visible
+    const { data: approvedProjects, error: projectsError } = await supabase
+      .from('projects')
+      .select('id')
+      .neq('status', 'pending')
+      .in('status', ['approved', 'active', 'completed']);
+
+    if (projectsError) {
+      console.error('Error fetching approved projects:', projectsError);
+      // If we can't fetch projects, return empty array for safety
+      return [];
+    }
+
+    // If no approved projects, return empty array
+    if (!approvedProjects || approvedProjects.length === 0) {
+      return [];
+    }
+
+    // Get list of approved project IDs
+    const approvedProjectIds = approvedProjects.map(p => p.id);
+
+    // Now fetch gallery items that match approved projects
+    let query = supabase
+      .from('gallery_items')
+      .select('*')
+      .in('project_id', approvedProjectIds)
+      .order('created_at', { ascending: false });
+
+    // Apply filters
+    if (options?.category) {
+      query = query.eq('category', options.category);
+    }
+
+    if (options?.location) {
+      query = query.ilike('location', `%${options.location}%`);
+    }
+
+    if (options?.featured !== undefined) {
+      query = query.eq('featured', options.featured);
+    }
+
+    if (options?.available_status !== undefined) {
+      query = query.eq('available_status', options.available_status);
+    }
+
+    // Search filter
+    if (options?.search) {
+      query = query.or(`title.ilike.%${options.search}%,artist.ilike.%${options.search}%,description.ilike.%${options.search}%`);
+    }
+
+    // Apply pagination
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    }
+
+    if (options?.offset !== undefined && options?.limit) {
+      query = query.range(options.offset, options.offset + options.limit - 1);
+    }
+
+    const { data: galleryItems, error } = await query;
+
+    if (error) {
+      console.error('Error fetching gallery items:', error);
+      throw error;
+    }
+
+    return (galleryItems || []) as GalleryItem[];
+  } catch (error) {
+    console.error('Error in fetchGalleryItems:', error);
+    return [];
+  }
+};
+
+/**
+ * Fetch a single gallery item by ID
+ * Only returns if the matching project status is NOT 'pending'
+ * @param itemId - Gallery item ID
+ * @returns Gallery item or null
+ */
+export const fetchGalleryItemById = async (itemId: string): Promise<GalleryItem | null> => {
+  try {
+    // Fetch the gallery item with its project status
+    const { data: galleryItem, error } = await supabase
+      .from('gallery_items')
+      .select(`
+        *,
+        projects!gallery_items_project_id_fkey (
+          id,
+          status
+        )
+      `)
+      .eq('id', itemId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching gallery item:', error);
+      return null;
+    }
+
+    if (!galleryItem) {
+      return null;
+    }
+
+    // Check if project is approved (not pending)
+    const project = Array.isArray(galleryItem.projects) 
+      ? galleryItem.projects[0] 
+      : galleryItem.projects;
+
+    if (!project || project.status === 'pending') {
+      // Project is pending, don't show the gallery item
+      return null;
+    }
+
+    return galleryItem as GalleryItem;
+  } catch (error) {
+    console.error('Error in fetchGalleryItemById:', error);
+    return null;
+  }
+};

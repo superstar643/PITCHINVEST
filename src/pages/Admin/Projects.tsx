@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle2, XCircle, Eye, Search, Filter, MoveLeft } from 'lucide-react';
+import { CheckCircle2, XCircle, Eye, Search, Filter, MoveLeft, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -39,6 +39,7 @@ const AdminProjects: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [updatingProjectId, setUpdatingProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!adminLoading && !isAdmin) {
@@ -127,27 +128,54 @@ const AdminProjects: React.FC = () => {
   };
 
   const handleStatusChange = async (projectId: string, newStatus: string) => {
+    // Prevent multiple simultaneous updates
+    if (updatingProjectId === projectId) {
+      return;
+    }
+
     try {
-      const { error } = await supabase
+      setUpdatingProjectId(projectId);
+
+      // Update project status
+      const { data, error } = await supabase
         .from('projects')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq('id', projectId);
+        .update({ 
+          status: newStatus, 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', projectId)
+        .select()
+        .single();
 
       if (error) throw error;
 
+      if (!data) {
+        throw new Error('Project not found');
+      }
+
+      // Show success message
+      const statusMessage = newStatus === 'approved' 
+        ? 'approved' 
+        : newStatus === 'rejected' 
+        ? 'rejected' 
+        : 'updated';
+      
       toast({
         title: 'Success',
-        description: `Project ${newStatus === 'approved' ? 'approved' : 'rejected'} successfully`,
+        description: `Project ${statusMessage} successfully. ${newStatus === 'approved' ? 'It will now be visible in the gallery.' : ''}`,
       });
 
-      loadProjects();
+      // Reload projects to reflect the change
+      await loadProjects();
     } catch (error: any) {
       console.error('Error updating project status:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to update project status',
+        description: error.message || 'Failed to update project status. Please try again.',
         variant: 'destructive',
       });
+    } finally {
+      setUpdatingProjectId(null);
     }
   };
 
@@ -261,31 +289,66 @@ const AdminProjects: React.FC = () => {
                           <p><span className="font-medium">Created:</span> {formatDistanceToNow(new Date(project.created_at), { addSuffix: true })}</p>
                         </div>
                       </div>
-                      <div className="flex gap-2 ml-4">
+                      <div className="flex gap-2 ml-4 flex-shrink-0">
                         {project.status === 'pending' && (
                           <>
                             <Button
                               size="sm"
                               onClick={() => handleStatusChange(project.id, 'approved')}
-                              className="bg-green-600 hover:bg-green-700"
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                              disabled={updatingProjectId === project.id}
                             >
-                              <CheckCircle2 className="h-4 w-4 mr-1" />
-                              Approve
+                              {updatingProjectId === project.id ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                  Processing...
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                                  Approve
+                                </>
+                              )}
                             </Button>
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => handleStatusChange(project.id, 'rejected')}
+                              onClick={() => {
+                                if (window.confirm(`Are you sure you want to reject "${project.title}"? This action cannot be undone.`)) {
+                                  handleStatusChange(project.id, 'rejected');
+                                }
+                              }}
+                              disabled={updatingProjectId === project.id}
                             >
-                              <XCircle className="h-4 w-4 mr-1" />
-                              Reject
+                              {updatingProjectId === project.id ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                  Processing...
+                                </>
+                              ) : (
+                                <>
+                                  <XCircle className="h-4 w-4 mr-1" />
+                                  Reject
+                                </>
+                              )}
                             </Button>
                           </>
+                        )}
+                        {project.status === 'approved' && (
+                          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
+                            ✓ Approved
+                          </Badge>
+                        )}
+                        {project.status === 'rejected' && (
+                          <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">
+                            ✗ Rejected
+                          </Badge>
                         )}
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => navigate(`/gallery/${project.id}`)}
+                          disabled={updatingProjectId === project.id}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View
