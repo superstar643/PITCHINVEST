@@ -335,7 +335,7 @@ const Investors: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white pt-24 flex flex-col items-center pb-12">
+    <div className="min-h-screen bg-white  flex flex-col items-center pb-12">
       {/* Hero Stats Section */}
       <div className="w-full bg-gradient-to-b from-gray-50 to-white py-16 px-4">
         <div className="max-w-4xl mx-auto text-center mb-12">

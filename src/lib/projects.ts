@@ -204,10 +204,37 @@ export const fetchProjectById = async (projectId: string): Promise<Project | nul
 
 /**
  * Increment project views
+ * Also tracks views in gallery_engagement table if gallery_item_id is provided
  * @param projectId - Project ID
+ * @param galleryItemId - Optional Gallery Item ID for gallery_engagement tracking
+ * @param userId - Optional User ID for per-user view tracking
  */
-export const incrementProjectViews = async (projectId: string): Promise<void> => {
+export const incrementProjectViews = async (
+  projectId: string,
+  galleryItemId?: string,
+  userId?: string
+): Promise<void> => {
   try {
+    // Track view in gallery_engagement if gallery item ID is provided
+    if (galleryItemId && userId) {
+      try {
+        await supabase
+          .from('gallery_engagement')
+          .upsert({
+            gallery_item_id: galleryItemId,
+            user_id: userId,
+            viewed: true,
+            viewed_at: new Date().toISOString(),
+          }, {
+            onConflict: 'gallery_item_id,user_id',
+          });
+      } catch (error) {
+        console.error('Error tracking view in gallery_engagement:', error);
+        // Continue even if gallery_engagement fails
+      }
+    }
+
+    // Increment views in projects table
     const { error } = await supabase.rpc('increment_project_views', {
       project_id: projectId,
     });
@@ -235,13 +262,16 @@ export const incrementProjectViews = async (projectId: string): Promise<void> =>
 
 /**
  * Toggle project like
+ * Also tracks likes in gallery_engagement table if gallery_item_id is provided
  * @param projectId - Project ID
  * @param userId - User ID
+ * @param galleryItemId - Optional Gallery Item ID for gallery_engagement tracking
  * @returns Updated like count
  */
 export const toggleProjectLike = async (
   projectId: string,
-  userId: string
+  userId: string,
+  galleryItemId?: string
 ): Promise<number> => {
   try {
     // Check if user already liked this project
@@ -254,16 +284,36 @@ export const toggleProjectLike = async (
 
     const newLikedStatus = !engagement?.liked;
 
-    // Update or insert engagement
+    // Update or insert engagement in project_engagement
     await supabase
       .from('project_engagement')
       .upsert({
         project_id: projectId,
         user_id: userId,
         liked: newLikedStatus,
+        liked_at: newLikedStatus ? new Date().toISOString() : null,
       }, {
         onConflict: 'project_id,user_id',
       });
+
+    // Also track in gallery_engagement if gallery item ID is provided
+    if (galleryItemId) {
+      try {
+        await supabase
+          .from('gallery_engagement')
+          .upsert({
+            gallery_item_id: galleryItemId,
+            user_id: userId,
+            liked: newLikedStatus,
+            liked_at: newLikedStatus ? new Date().toISOString() : null,
+          }, {
+            onConflict: 'gallery_item_id,user_id',
+          });
+      } catch (error) {
+        console.error('Error tracking like in gallery_engagement:', error);
+        // Continue even if gallery_engagement fails
+      }
+    }
 
     // Update project like count
     const { data: project } = await supabase

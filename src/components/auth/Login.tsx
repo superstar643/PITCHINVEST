@@ -606,13 +606,15 @@ export default function Login() {
       <Dialog 
         open={showOtpModal} 
         onOpenChange={(open) => {
-          // Prevent closing during loading or when OTP is being verified
-          if (!open && !loading && !otpSent) {
+          // Always allow closing when X button is clicked
+          if (!open) {
             setShowOtpModal(false);
             setOtpCode('');
             setOtpSent(false);
             setOtpSecondsLeft(0);
             setMode('password');
+            setError('');
+            setInfo('');
           }
         }}
       >

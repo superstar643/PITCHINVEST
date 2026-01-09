@@ -12,6 +12,7 @@ export interface ProfileData {
     cover_image_url: string | null;
     photo_url: string | null;
     created_at: string;
+    profile_status?: 'pending' | 'approved' | 'rejected';
   } | null;
   profile: {
     id: string;
@@ -75,6 +76,7 @@ export async function fetchUserProfile(userId: string): Promise<ProfileData> {
         cover_image_url,
         photo_url,
         created_at,
+        profile_status,
         profiles:profiles (*),
         commercial_proposals:commercial_proposals (*),
         pitch_materials:pitch_materials (*)
@@ -127,6 +129,7 @@ export async function fetchUserProfile(userId: string): Promise<ProfileData> {
         cover_image_url: data.cover_image_url ?? null,
         photo_url: data.photo_url ?? null,
         created_at: data.created_at,
+        profile_status: (data.profile_status as 'pending' | 'approved' | 'rejected') || 'pending',
       },
       profile: profileRow ?? null,
       proposals: proposalsRow ?? null,

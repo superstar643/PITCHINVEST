@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, CreditCard, CheckCircle2, XCircle, Calendar, DollarSign } from 'lucide-react';
@@ -17,10 +17,11 @@ interface PricingPlan {
   description?: string;
 }
 
-function CheckoutForm({ pricingPlan, onSuccess, onCancel }: { 
+function CheckoutForm({ pricingPlan, onSuccess, onCancel, mandatory = false }: { 
   pricingPlan: PricingPlan; 
   onSuccess: () => void;
   onCancel: () => void;
+  mandatory?: boolean;
 }) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -111,23 +112,27 @@ function CheckoutForm({ pricingPlan, onSuccess, onCancel }: {
     <div className="space-y-6">
       <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <p className="text-blue-800 text-sm">
-          You will be redirected to Stripe's secure checkout page to complete your subscription.
+          {mandatory 
+            ? "Payment is required to complete your registration. You will be redirected to Stripe's secure checkout page."
+            : "You will be redirected to Stripe's secure checkout page to complete your subscription."}
         </p>
       </div>
       <div className="flex gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          className="flex-1"
-        >
-          Cancel
-        </Button>
+        {!mandatory && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+        )}
         <Button
           type="button"
           onClick={handleSubscribe}
           disabled={loading}
-          className="flex-1 bg-[#0a3d5c] hover:bg-[#0a3d5c]/90"
+          className={mandatory ? "w-full bg-[#0a3d5c] hover:bg-[#0a3d5c]/90" : "flex-1 bg-[#0a3d5c] hover:bg-[#0a3d5c]/90"}
         >
           {loading ? (
             <>
@@ -137,7 +142,7 @@ function CheckoutForm({ pricingPlan, onSuccess, onCancel }: {
           ) : (
             <>
               <CreditCard className="mr-2 h-4 w-4" />
-              Subscribe
+              {mandatory ? 'Complete Registration & Subscribe' : 'Subscribe'}
             </>
           )}
         </Button>
@@ -148,6 +153,8 @@ function CheckoutForm({ pricingPlan, onSuccess, onCancel }: {
 
 const Subscription: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const mandatory = searchParams.get('mandatory') === 'true';
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [pricingPlan, setPricingPlan] = useState<PricingPlan | null>(null);
@@ -398,6 +405,7 @@ const Subscription: React.FC = () => {
                 }} 
                 onSuccess={handleSuccess}
                 onCancel={handleCancel}
+                mandatory={mandatory}
               />
             ) : isFreePlan ? (
               <div className="space-y-4">

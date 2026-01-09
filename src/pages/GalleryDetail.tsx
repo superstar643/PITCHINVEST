@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { GalleryCard } from '@/components/GalleryCard';
 import { MoveLeft, ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { fetchGalleryItems, fetchGalleryItemById, type GalleryItem as DBGalleryItem } from '@/lib/projects';
+import { fetchGalleryItems, fetchGalleryItemById, type GalleryItem as DBGalleryItem, incrementProjectViews, toggleProjectLike } from '@/lib/projects';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -54,12 +54,50 @@ const GalleryDetail: React.FC = () => {
     const [bidData, setBidData] = useState<BidData>({ currentBid: 0, totalBids: 0, hasBids: false });
     const [projectData, setProjectData] = useState<any>(null);
     const [startingAuction, setStartingAuction] = useState(false);
+    const [isLiking, setIsLiking] = useState(false);
+    const [hasLiked, setHasLiked] = useState(false);
 
     useEffect(() => {
         if (id) {
             loadGalleryItem();
         }
     }, [id]);
+
+    // Check like status when user changes
+    useEffect(() => {
+        if (user && item?.project_id && item?.id) {
+            const checkLikeStatus = async () => {
+                try {
+                    // First check gallery_engagement (preferred for gallery items)
+                    const { data: galleryEngagement } = await supabase
+                        .from('gallery_engagement')
+                        .select('liked')
+                        .eq('gallery_item_id', item.id.toString())
+                        .eq('user_id', user.id)
+                        .single();
+                    
+                    if (galleryEngagement) {
+                        setHasLiked(galleryEngagement.liked || false);
+                    } else {
+                        // Fallback to project_engagement
+                        const { data: projectEngagement } = await supabase
+                            .from('project_engagement')
+                            .select('liked')
+                            .eq('project_id', item.project_id)
+                            .eq('user_id', user.id)
+                            .single();
+                        
+                        setHasLiked(projectEngagement?.liked || false);
+                    }
+                } catch (error) {
+                    setHasLiked(false);
+                }
+            };
+            checkLikeStatus();
+        } else {
+            setHasLiked(false);
+        }
+    }, [user, item?.project_id, item?.id]);
     const loadGalleryItem = async () => {
         try {
             setLoading(true);
@@ -97,6 +135,47 @@ const GalleryDetail: React.FC = () => {
 
             // Fetch bid data (check if bids table exists, otherwise use project data)
             await loadBidData(galleryItem.project_id);
+
+            // Increment views when page loads (only if project_id exists)
+            if (galleryItem.project_id) {
+                try {
+                    await incrementProjectViews(galleryItem.project_id);
+                } catch (error) {
+                    console.error('Error incrementing views:', error);
+                    // Don't show error to user, just log it
+                }
+            }
+
+            // Check if current user has liked this project
+            // Check both project_engagement and gallery_engagement
+            if (user && galleryItem.project_id) {
+                try {
+                    // First check gallery_engagement (preferred for gallery items)
+                    const { data: galleryEngagement } = await supabase
+                        .from('gallery_engagement')
+                        .select('liked')
+                        .eq('gallery_item_id', galleryItem.id)
+                        .eq('user_id', user.id)
+                        .single();
+                    
+                    if (galleryEngagement) {
+                        setHasLiked(galleryEngagement.liked || false);
+                    } else {
+                        // Fallback to project_engagement
+                        const { data: projectEngagement } = await supabase
+                            .from('project_engagement')
+                            .select('liked')
+                            .eq('project_id', galleryItem.project_id)
+                            .eq('user_id', user.id)
+                            .single();
+                        
+                        setHasLiked(projectEngagement?.liked || false);
+                    }
+                } catch (error) {
+                    // User hasn't liked yet or table doesn't exist
+                    setHasLiked(false);
+                }
+            }
 
             // Convert DB gallery item to UI format
             const badges: string[] = [];
@@ -138,6 +217,17 @@ const GalleryDetail: React.FC = () => {
             };
 
             setItem(convertedItem);
+
+            // Reload item to get updated views count
+            const updatedItem = await fetchGalleryItemById(id);
+            if (updatedItem) {
+                const updatedConvertedItem: GalleryItem = {
+                    ...convertedItem,
+                    views: updatedItem.views || convertedItem.views,
+                    likes: updatedItem.likes || convertedItem.likes,
+                };
+                setItem(updatedConvertedItem);
+            }
 
             // Load related items (same category, excluding current)
             await loadRelatedItems(galleryItem.category, galleryItem.id);
@@ -271,23 +361,26 @@ const GalleryDetail: React.FC = () => {
     };
 
     const handleAuctionClick = async () => {
-        // Check if user is authenticated
+        // If auction has started, anyone can view it (no login required)
+        if (bidData.hasBids) {
+            navigate(`/auction/${item?.id}`);
+            return;
+        }
+
+        // If auction hasn't started, check if user is authenticated (only Investors can start)
         if (!user) {
             toast({
                 title: 'Login Required',
-                description: 'Please sign in to start or view auctions',
+                description: 'Please sign in to start auctions',
                 variant: 'destructive',
             });
             navigate('/login', { state: { returnTo: `/gallery/${id}` } });
             return;
         }
 
-        // If no bids exist, start the auction
-        if (!bidData.hasBids && item?.project_id) {
+        // Start the auction (only for authenticated users)
+        if (item?.project_id) {
             await startAuction();
-        } else {
-            // Auction already started, just navigate to auction page
-            navigate(`/auction/${item?.id}`);
         }
     };
 
@@ -368,6 +461,49 @@ const GalleryDetail: React.FC = () => {
 
         // User is authenticated, proceed to auction page
         navigate(`/auction/${item?.id}`);
+    };
+
+    const handleLikeClick = async () => {
+        if (!user) {
+            toast({
+                title: 'Login Required',
+                description: 'Please sign in to like projects',
+                variant: 'destructive',
+            });
+            navigate('/login', { state: { returnTo: `/gallery/${id}` } });
+            return;
+        }
+
+        if (!item?.project_id || isLiking) {
+            return;
+        }
+
+        setIsLiking(true);
+        try {
+            const newLikes = await toggleProjectLike(
+                item.project_id,
+                user.id,
+                item.id.toString()
+            );
+            
+            // Update local state
+            setItem(prev => prev ? { ...prev, likes: newLikes } : null);
+            setHasLiked(!hasLiked);
+            
+            toast({
+                title: hasLiked ? 'Unliked' : 'Liked',
+                description: hasLiked ? 'You unliked this project' : 'You liked this project',
+            });
+        } catch (error: any) {
+            console.error('Error toggling like:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to update like. Please try again.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsLiking(false);
+        }
     };
 
     if (loading) {
@@ -470,12 +606,25 @@ const GalleryDetail: React.FC = () => {
                                 </span>
                             ))}
                             <div className="ml-auto">
-                                <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1 shadow-sm">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                                <button
+                                    onClick={handleLikeClick}
+                                    disabled={isLiking}
+                                    className={`flex items-center gap-2 bg-white rounded-full px-3 py-1 shadow-sm transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${
+                                        hasLiked ? 'text-red-500' : 'text-gray-600'
+                                    }`}
+                                    title={hasLiked ? 'Unlike this project' : 'Like this project'}
+                                >
+                                    <svg 
+                                        xmlns="http://www.w3.org/2000/svg" 
+                                        className={`h-5 w-5 ${hasLiked ? 'fill-current' : ''}`} 
+                                        viewBox="0 0 20 20" 
+                                        fill={hasLiked ? 'currentColor' : 'none'}
+                                        stroke="currentColor"
+                                    >
                                         <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
                                     </svg>
-                                    <span className="text-sm">{item.likes ?? 0}</span>
-                                </div>
+                                    <span className="text-sm font-medium">{item.likes ?? 0}</span>
+                                </button>
                             </div>
                         </div>
 
@@ -538,8 +687,9 @@ const GalleryDetail: React.FC = () => {
                             )}
                         </div>
 
-                        {/* Auction/Bidding Section - Only visible to Investor users */}
-                        {user?.user_metadata?.user_type === 'Investor' && (
+                        {/* Auction/Bidding Section */}
+                        {/* Show to all users when auction has started, or to Investors when auction hasn't started */}
+                        {(bidData.hasBids || user?.user_metadata?.user_type === 'Investor') && (
                             <div className="mt-6 bg-white rounded-xl p-6 shadow-sm border">
                                 <div className="flex items-center justify-between mb-4">
                                     <div>
@@ -555,6 +705,7 @@ const GalleryDetail: React.FC = () => {
                                 </div>
                                 <div className="mt-6 flex gap-2">
                                     {bidData.hasBids ? (
+                                        // Auction has started - show "View Auction" to all users
                                         <button 
                                             onClick={handleAuctionClick}
                                             disabled={startingAuction}
@@ -563,28 +714,24 @@ const GalleryDetail: React.FC = () => {
                                             View Auction
                                         </button>
                                     ) : (
-                                        <button 
-                                            onClick={handleAuctionClick}
-                                            disabled={startingAuction}
-                                            className="flex-1 px-4 py-2 rounded-full bg-[#0a3d5c] text-white font-medium hover:bg-[#062a3d] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                        >
-                                            {startingAuction ? (
-                                                <>
-                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                                    Starting...
-                                                </>
-                                            ) : (
-                                                'Start Auction'
-                                            )}
-                                        </button>
+                                        // Auction hasn't started - only Investors can start it
+                                        user?.user_metadata?.user_type === 'Investor' && (
+                                            <button 
+                                                onClick={handleAuctionClick}
+                                                disabled={startingAuction}
+                                                className="flex-1 px-4 py-2 rounded-full bg-[#0a3d5c] text-white font-medium hover:bg-[#062a3d] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                            >
+                                                {startingAuction ? (
+                                                    <>
+                                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                        Starting...
+                                                    </>
+                                                ) : (
+                                                    'Start Auction'
+                                                )}
+                                            </button>
+                                        )
                                     )}
-                                    <button 
-                                        onClick={handlePlaceBidClick}
-                                        disabled={startingAuction}
-                                        className="px-4 py-2 rounded-full border border-[#0a3d5c] text-[#0a3d5c] font-medium hover:bg-[#0a3d5c] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        Place a bid
-                                    </button>
                                 </div>
                             </div>
                         )}
@@ -692,8 +839,8 @@ const GalleryDetail: React.FC = () => {
                                     <span className="font-semibold">{item.date}</span>
                                 </div>
                             )}
-                            {/* Auction link - Only visible to Investor users */}
-                            {user?.user_metadata?.user_type === 'Investor' && (
+                            {/* Auction link - Visible to all users when auction has started */}
+                            {bidData.hasBids && (
                                 <div className="flex justify-between items-center py-2">
                                     <span className="text-gray-500">Auction</span>
                                     <button 

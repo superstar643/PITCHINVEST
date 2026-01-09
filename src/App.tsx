@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -32,7 +31,11 @@ import AdminDashboard from "./pages/Admin/Dashboard";
 import AdminProjects from "./pages/Admin/Projects";
 import AdminInvoices from "./pages/Admin/Invoices";
 import AdminUsers from "./pages/Admin/Users";
+import AdminAnalytics from "./pages/Admin/Analytics";
+import AdminProfileApproval from "./pages/Admin/ProfileApproval";
+import AdminAdvertising from "./pages/Admin/Advertising";
 import AppLayout from "./components/AppLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -50,35 +53,114 @@ const App = () => (
         >
           <PageTransitionLoader />
           <Routes>
+            {/* Auth Routes - Public Access */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/reset-password" element={<ResetPassword />} />
 
-            {/* Routes wrapped with AppLayout to include Header/Footer */}
+            {/* Public Routes - Accessible to Everyone */}
             <Route path="/" element={<Index />} />
-            <Route path="/gallery" element={<AppLayout><Gallery /></AppLayout>} />
-            <Route path="/gallery/:id" element={<AppLayout><GalleryDetail /></AppLayout>} />
-            <Route path="/investors" element={<AppLayout><Investors /></AppLayout>} />
             <Route path="/blog" element={<AppLayout><Blog /></AppLayout>} />
             <Route path="/contact" element={<AppLayout><Contact /></AppLayout>} />
             <Route path="/about" element={<AppLayout><About /></AppLayout>} />
             <Route path="/privacy-policy" element={<AppLayout><PrivacyPolicy /></AppLayout>} />
-            <Route path="/user/:id" element={<AppLayout><UserDetail /></AppLayout>} />
-            <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
+
+            {/* Subscription Routes - Accessible to authenticated users (needed to complete payment) */}
             <Route path="/subscription" element={<Subscription />} />
             <Route path="/subscription/success" element={<SubscriptionSuccess />} />
             <Route path="/subscription/cancel" element={<SubscriptionCancel />} />
-            {/* Admin Routes */}
-            <Route path="/admin" element={<AppLayout><AdminDashboard /></AppLayout>} />
-            <Route path="/admin/projects" element={<AppLayout><AdminProjects /></AppLayout>} />
-            <Route path="/admin/invoices" element={<AppLayout><AdminInvoices /></AppLayout>} />
-            <Route path="/admin/users" element={<AppLayout><AdminUsers /></AppLayout>} />
-            <Route path="/admin/pricing" element={<AppLayout><AdminPricing /></AppLayout>} />
-            <Route path="/investor/:id" element={<AppLayout><InvestorDetail /></AppLayout>} />
-            <Route path="/auction/:id" element={<AppLayout><Auction /></AppLayout>} />
-            <Route path="/messages" element={<AppLayout><Message /></AppLayout>} />
-            <Route path="/messages/:id" element={<AppLayout><Message /></AppLayout>} />
+
+            {/* Protected Routes - Require Active Subscription + Approved Status */}
+            <Route path="/gallery" element={
+              <ProtectedRoute>
+                <AppLayout><Gallery /></AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/gallery/:id" element={
+              <ProtectedRoute>
+                <AppLayout><GalleryDetail /></AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/investors" element={
+              <ProtectedRoute>
+                <AppLayout><Investors /></AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/user/:id" element={
+              <ProtectedRoute>
+                <AppLayout><UserDetail /></AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <AppLayout><Settings /></AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/investor/:id" element={
+              <ProtectedRoute>
+                <AppLayout><InvestorDetail /></AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/auction/:id" element={
+              <ProtectedRoute>
+                <AppLayout><Auction /></AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/messages" element={
+              <ProtectedRoute>
+                <AppLayout><Message /></AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/messages/:id" element={
+              <ProtectedRoute>
+                <AppLayout><Message /></AppLayout>
+              </ProtectedRoute>
+            } />
+
+            {/* Admin Routes - Protected (Admins bypass membership check) */}
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AppLayout><AdminDashboard /></AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/projects" element={
+              <ProtectedRoute>
+                <AppLayout><AdminProjects /></AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/invoices" element={
+              <ProtectedRoute>
+                <AppLayout><AdminInvoices /></AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/users" element={
+              <ProtectedRoute>
+                <AppLayout><AdminUsers /></AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/pricing" element={
+              <ProtectedRoute>
+                <AppLayout><AdminPricing /></AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/analytics" element={
+              <ProtectedRoute>
+                <AppLayout><AdminAnalytics /></AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/profile-approval" element={
+              <ProtectedRoute>
+                <AppLayout><AdminProfileApproval /></AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/advertising" element={
+              <ProtectedRoute>
+                <AppLayout><AdminAdvertising /></AppLayout>
+              </ProtectedRoute>
+            } />
+
+            {/* 404 */}
             <Route path="*" element={<AppLayout><NotFound /></AppLayout>} />
           </Routes>
         </BrowserRouter>

@@ -805,6 +805,7 @@ export default function Register() {
                 city: formData.city?.trim() || null,
                 cover_image_url: fileUrls.coverImage || null,
                 photo_url: fileUrls.photo || oauthUserData?.photo || null,
+                profile_status: 'pending', // Set to pending - requires admin approval after payment
             };
 
             const { data: userRecord, error: userError } = await supabase
@@ -1045,9 +1046,9 @@ export default function Register() {
                 variant: 'default',
             });
 
-            // Redirect to subscription page to complete payment
+            // Redirect to subscription page to complete payment (mandatory - no skip option)
             setTimeout(() => {
-                window.location.href = '/subscription';
+                window.location.href = '/subscription?mandatory=true';
             }, 2000);
 
         } catch (e) {
@@ -1198,11 +1199,11 @@ export default function Register() {
 
             toast({
                 title: 'Registration complete!',
-                description: 'Your account has been created successfully.',
+                description: 'Your account has been created successfully. Please complete payment to activate your account.',
             });
 
             setTimeout(() => {
-                window.location.replace('/');
+                window.location.replace('/subscription?mandatory=true');
             }, 1000);
         } catch (e) {
             const msg = e instanceof Error ? e.message : 'Registration failed. Please try again.';
@@ -2842,12 +2843,13 @@ export default function Register() {
             <Dialog 
                 open={showOtpModal} 
                 onOpenChange={(open) => {
-                    // Prevent closing during loading or when OTP is being verified
-                    if (!open && !loading && !otpSent) {
+                    // Always allow closing when X button is clicked
+                    if (!open) {
                         setShowOtpModal(false);
                         setOtpCode('');
                         setOtpSent(false);
                         setOtpSecondsLeft(0);
+                        setError('');
                     }
                 }}
             >

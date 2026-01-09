@@ -4,13 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Download, Eye, DollarSign, Filter, MoveLeft } from 'lucide-react';
+import { Search, Download, Eye, DollarSign, Filter } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useAdmin } from '@/hooks/useAdmin';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import AdminLayout from '@/components/AdminLayout';
 
 interface Invoice {
   id: string;
@@ -187,14 +188,9 @@ const AdminInvoices: React.FC = () => {
   const color = '#0a3d5c';
 
   return (
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <AdminLayout>
+      <div className="py-8 px-4">
         <div className="max-w-7xl mx-auto">
-          {/* Back to Admin Link */}
-          <div className="mb-6 border-b border-[#0a3d5c] px-4 py-2">
-            <Link to="/admin" className="text-sm flex gap-2 items-center" style={{ color }}>
-              <MoveLeft size={16} /> Back to Admin
-            </Link>
-          </div>
 
           {/* Header */}
           <div className="mb-8">
@@ -328,6 +324,7 @@ const AdminInvoices: React.FC = () => {
           </div>
         </div>
       </div>
+    </AdminLayout>
   );
 };
 

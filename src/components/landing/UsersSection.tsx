@@ -1,10 +1,34 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import UserCard from './UserCard';
-import users from '@/lib/usersData';
 import FilterBar from '@/components/FilterBar';
-import { getSortedCountries } from '@/lib/countries';
+import { getSortedCountries, countries } from '@/lib/countries';
+import { supabase } from '@/lib/supabase';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const ITEMS_PER_PAGE = 12;
+
+interface UserData {
+  id: string;
+  fullName: string;
+  projectName: string;
+  city: string;
+  country: string;
+  countryFlag: string;
+  photo: string;
+  companyLogo: string;
+  companyName: string;
+  coverImage: string;
+  capitalPercentage: number;
+  capitalTotalValue: string;
+  commission: number;
+  photos: string[];
+  description?: string;
+  approvalRate: number;
+  likes: number;
+  views: number;
+  availableStatus: boolean;
+  projectCategory?: string;
+}
 
 const UsersSection: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -15,7 +39,244 @@ const UsersSection: React.FC = () => {
   const [investmentRangeValue, setInvestmentRangeValue] = useState('all');
   const [equityRangeValue, setEquityRangeValue] = useState('all');
   const [availabilityValue, setAvailabilityValue] = useState('all');
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  // Fetch users from database
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        setLoading(true);
+        
+        // First, get all users with user_type in ['Inventor', 'StartUp', 'Company'] and approved status
+        const { data: usersData, error: usersError } = await supabase
+          .from('users')
+          .select('id, full_name, photo_url, cover_image_url, country, city, user_type, profile_status, created_at')
+          .in('user_type', ['Inventor', 'StartUp', 'Company'])
+          .eq('profile_status', 'approved')
+          .order('created_at', { ascending: false });
+
+        console.log('📊 Fetched users:', usersData?.length || 0, 'approved non-investor users');
+
+        if (usersError) {
+          console.error('❌ Error fetching users:', usersError);
+          setUsers([]);
+          return;
+        }
+
+        if (!usersData || usersData.length === 0) {
+          console.log('⚠️ No approved non-investor users found');
+          setUsers([]);
+          return;
+        }
+
+        // Get user IDs for subscription check
+        const allUserIds = usersData.map(u => u.id);
+        console.log('👥 User IDs to check subscriptions:', allUserIds.length);
+
+        // Fetch active subscriptions for these users
+        // Supabase .in() has a limit of ~100 items, so we need to batch if needed
+        const now = new Date().toISOString();
+        let subscriptions: any[] = [];
+        const BATCH_SIZE = 100;
+
+        if (allUserIds.length === 0) {
+          console.log('⚠️ No user IDs to check subscriptions');
+        } else {
+          // First, let's check what subscriptions exist (without date filter to see all)
+          const { data: allSubs, error: allSubsError } = await supabase
+            .from('subscriptions')
+            .select('user_id, status, current_period_start, current_period_end, created_at')
+            .in('user_id', allUserIds);
+          
+          console.log('🔍 All subscriptions for these users (before filtering):', allSubs?.length || 0);
+          if (allSubs && allSubs.length > 0) {
+            console.log('📋 Subscription details:', allSubs);
+          }
+          if (allSubsError) {
+            console.error('❌ Error fetching all subscriptions:', allSubsError);
+          }
+
+          // Batch the subscription query if we have more than 100 users
+          for (let i = 0; i < allUserIds.length; i += BATCH_SIZE) {
+            const batch = allUserIds.slice(i, i + BATCH_SIZE);
+            const { data: batchSubs, error: subsError } = await supabase
+              .from('subscriptions')
+              .select('user_id, status, current_period_end')
+              .in('user_id', batch)
+              .eq('status', 'active')
+              .gt('current_period_end', now);
+
+            if (subsError) {
+              console.error(`❌ Error fetching active subscriptions for batch ${i / BATCH_SIZE + 1}:`, subsError);
+              // If subscription table doesn't exist or query fails, show all approved users
+              if (subsError.code === '42P01' || subsError.message?.includes('does not exist')) {
+                console.log('⚠️ Subscriptions table may not exist, showing all approved users');
+                break;
+              }
+            } else if (batchSubs) {
+              subscriptions = [...subscriptions, ...batchSubs];
+              console.log(`✅ Batch ${i / BATCH_SIZE + 1}: Found ${batchSubs.length} active subscriptions`);
+            }
+          }
+        }
+
+        console.log('💳 Total active subscriptions found:', subscriptions.length);
+        console.log('📅 Current time:', now);
+        if (subscriptions.length > 0) {
+          console.log('📋 Active subscription details:', subscriptions);
+        }
+
+        // Filter users to only include those with active subscriptions
+        const subscribedUserIds = new Set((subscriptions || []).map(s => s.user_id));
+        const subscribedUsers = usersData.filter(user => subscribedUserIds.has(user.id));
+
+        console.log('✅ Subscribed users:', subscribedUsers.length, 'out of', usersData.length);
+        console.log('👤 Subscribed user IDs:', Array.from(subscribedUserIds));
+
+        // If no active subscriptions found, show all approved users as fallback
+        // (This allows the page to work even if subscription system isn't fully set up)
+        let finalUsers = subscribedUsers;
+        if (subscribedUsers.length === 0) {
+          console.log('⚠️ No users with active subscriptions found');
+          console.log('💡 Showing all approved users as fallback (subscription requirement may not be enforced yet)');
+          // Use all approved users if no subscriptions found
+          // In production, you may want to enforce subscription requirement strictly
+          finalUsers = usersData;
+          console.log('🔄 Using fallback: showing all', finalUsers.length, 'approved users');
+        }
+
+        // Fetch related data in batches
+        const userIds = finalUsers.map(u => u.id);
+        
+        // Fetch profiles
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, project_name, project_category, company_name, inventor_name')
+          .in('user_id', userIds);
+
+        // Fetch commercial proposals
+        const { data: proposals } = await supabase
+          .from('commercial_proposals')
+          .select('user_id, equity_capital_percentage, equity_total_value')
+          .in('user_id', userIds);
+
+        // Fetch pitch materials for photos
+        const { data: materials } = await supabase
+          .from('pitch_materials')
+          .select('user_id, photos_urls, description')
+          .in('user_id', userIds);
+
+        // Fetch projects for likes/views
+        const { data: projects } = await supabase
+          .from('projects')
+          .select('user_id, likes, views, available_status')
+          .in('user_id', userIds)
+          .eq('status', 'approved');
+
+        console.log('📦 Related data fetched:', {
+          profiles: profiles?.length || 0,
+          proposals: proposals?.length || 0,
+          materials: materials?.length || 0,
+          projects: projects?.length || 0
+        });
+        // Create maps for quick lookup
+        const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+        const proposalMap = new Map((proposals || []).map(p => [p.user_id, p]));
+        const materialMap = new Map((materials || []).map(m => [m.user_id, m]));
+        const projectMap = new Map((projects || []).map(p => [p.user_id, p]));
+
+        // Helper to get country flag emoji
+        const getCountryFlag = (countryName: string | null): string => {
+          if (!countryName) return '🌍';
+          const country = countries.find(c => c.name === countryName);
+          return country?.flag || '🌍';
+        };
+
+        // Map database data to UserCard format
+        const mappedUsers: UserData[] = finalUsers.map(user => {
+          const profile = profileMap.get(user.id);
+          const proposal = proposalMap.get(user.id);
+          const material = materialMap.get(user.id);
+          const project = projectMap.get(user.id);
+
+          // Determine project name
+          const projectName = profile?.project_name || 
+                             profile?.company_name || 
+                             profile?.inventor_name || 
+                             'Project';
+
+          // Determine company name
+          const companyName = profile?.company_name || 
+                            profile?.project_name || 
+                            user.full_name;
+
+          // Get investment data
+          const equityPercentage = proposal?.equity_capital_percentage 
+            ? parseFloat(proposal.equity_capital_percentage) 
+            : 15;
+          
+          // Format equity value to match expected format (e.g., "1.800000€")
+          const formatEquityValue = (value: string | null): string => {
+            if (!value) return '1.800000€';
+            const numValue = parseFloat(value);
+            if (isNaN(numValue)) return '1.800000€';
+            // Format as "X.XXXXXX€" (e.g., 1800000 -> "1.800000€")
+            const millions = numValue / 1000000;
+            return `${millions.toFixed(6)}€`;
+          };
+          
+          const equityValue = formatEquityValue(proposal?.equity_total_value);
+
+          // Get photos
+          const photos = material?.photos_urls && Array.isArray(material.photos_urls) && material.photos_urls.length > 0
+            ? material.photos_urls.slice(0, 2)
+            : ['/placeholder.svg', '/placeholder.svg'];
+
+          // Get likes and views from project
+          const likes = project?.likes || 0;
+          const views = project?.views || 0;
+          const availableStatus = project?.available_status ?? true;
+
+          // Calculate approval rate (mock for now, can be calculated from actual data)
+          const approvalRate = Math.floor(Math.random() * 20) + 80; // 80-100%
+
+          return {
+            id: user.id,
+            fullName: user.full_name,
+            projectName,
+            city: user.city || 'Unknown',
+            country: user.country || 'Unknown',
+            countryFlag: getCountryFlag(user.country),
+            photo: user.photo_url || '/placeholder.svg',
+            companyLogo: user.photo_url || '/placeholder.svg',
+            companyName,
+            coverImage: user.cover_image_url || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&h=400&fit=crop',
+            capitalPercentage: equityPercentage,
+            capitalTotalValue: equityValue,
+            commission: 0,
+            photos,
+            description: material?.description || 'Innovative project seeking investment',
+            approvalRate,
+            likes,
+            views,
+            availableStatus,
+            projectCategory: profile?.project_category || undefined,
+          };
+        });
+
+        console.log('✅ Mapped users:', mappedUsers.length);
+        setUsers(mappedUsers);
+      } catch (error) {
+        console.error('❌ Error loading users:', error);
+        setUsers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUsers();
+  }, []);
   // Use comprehensive countries list from countries.ts (all countries worldwide)
   const allCountries = useMemo(() => {
     return getSortedCountries().map(country => country.name);
@@ -28,7 +289,7 @@ const UsersSection: React.FC = () => {
       if (user.projectCategory) categorySet.add(user.projectCategory);
     });
     return Array.from(categorySet).sort();
-  }, []);
+  }, [users]);
 
   // Extract unique cities from users
   const cities = useMemo(() => {
@@ -37,7 +298,7 @@ const UsersSection: React.FC = () => {
       if (user.city) citySet.add(user.city);
     });
     return Array.from(citySet).sort();
-  }, []);
+  }, [users]);
 
   // Helper function to parse investment amount from string like '1.800000€'
   const parseInvestmentAmount = (value: string): number => {
@@ -118,7 +379,7 @@ const UsersSection: React.FC = () => {
       return matchesSearch && matchesCountry && matchesCategory && matchesCity && 
              matchesInvestmentRange && matchesEquityRange && matchesAvailability;
     });
-  }, [searchValue, countryValue, categoryValue, cityValue, investmentRangeValue, equityRangeValue, availabilityValue]);
+  }, [users, searchValue, countryValue, categoryValue, cityValue, investmentRangeValue, equityRangeValue, availabilityValue]);
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
@@ -127,7 +388,9 @@ const UsersSection: React.FC = () => {
   const currentItems = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
-    return filteredUsers.slice(startIndex, endIndex);
+    const items = filteredUsers.slice(startIndex, endIndex);
+    console.log('📄 Current items:', items.length, 'out of', filteredUsers.length, 'filtered users');
+    return items;
   }, [filteredUsers, currentPage]);
 
   // Investment ranges for filter
@@ -209,6 +472,24 @@ const UsersSection: React.FC = () => {
     
     return pages;
   };
+
+  if (loading) {
+    return (
+      <section id="users-section" className="py-20 bg-gradient-to-b from-gray-50 to-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <h2 className="text-5xl font-bold text-center text-gray-900 mb-4">
+            Investment Opportunities
+          </h2>
+          <p className="text-xl text-center text-gray-600 mb-8 max-w-2xl mx-auto">
+            Discover innovative startups and invest in the future
+          </p>
+          <div className="flex justify-center items-center py-20">
+            <LoadingSpinner message="Loading investment opportunities..." />
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="users-section" className="py-20 bg-gradient-to-b from-gray-50 to-white">

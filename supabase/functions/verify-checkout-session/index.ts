@@ -196,6 +196,19 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Set profile_status to 'pending' after payment - requires admin approval
+    const { error: profileStatusError } = await supabase
+      .from("users")
+      .update({ profile_status: 'pending' })
+      .eq("id", user_id);
+
+    if (profileStatusError) {
+      console.warn("Failed to set profile_status to pending:", profileStatusError);
+      // Don't fail the whole operation if this fails, but log it
+    } else {
+      console.log("Profile status set to 'pending' for user:", user_id);
+    }
+
     // Generate invoice
     try {
       const { data: invoice, error: invoiceError } = await supabase

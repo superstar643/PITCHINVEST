@@ -62,7 +62,7 @@ export const GalleryCard: React.FC<GalleryCardProps> = ({
   return (
     <div
       onClick={handleClick}
-      className="group cursor-pointer mx-1 bg-white rounded-lg overflow-hidden border-2 border-[#0a3d5c] hover:shadow-lg transition-all duration-300 w-full h-full flex flex-col"
+      className="group cursor-pointer mx-1 bg-white rounded-lg overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1 w-full h-full flex flex-col"
     >
       <div className="relative overflow-hidden aspect-[16/12] bg-gray-100">
         {!imageError && imageUrl ? (

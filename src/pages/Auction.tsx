@@ -597,10 +597,13 @@ const Auction: React.FC = () => {
     const topBidder = competingBids.length > 0 ? competingBids[0] : null;
 
     return (
-        <div className="relative min-h-screen pt-20 pb-16">
+        <div className="relative min-h-screen pt-4 pb-16">
             {/* Back to gallery link */}
-            <div className="relative z-20 px-4 pt-4">
-                <Link to="/gallery" className="text-white hover:text-yellow-300 flex items-center gap-2 text-sm">
+            <div className="relative z-20 px-4 pt-2">
+                <Link 
+                    to="/gallery" 
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-[#0a3d5c] hover:text-[#083146] bg-white/90 hover:bg-white px-4 py-2 rounded-lg shadow-md transition-all border border-[#0a3d5c]/20"
+                >
                     <MoveLeft size={16} /> Back to gallery
                 </Link>
             </div>
@@ -770,7 +773,7 @@ const Auction: React.FC = () => {
                                         )}
                                     </div>
                                 </div>
-                                {bidData.hasBids && (
+                                {(bidData.hasBids && user?.user_metadata?.user_type === 'Investor') && (
                                     <button 
                                         onClick={() => {
                                             if (!user) {
@@ -787,7 +790,7 @@ const Auction: React.FC = () => {
                                         className="px-4 py-2 md:px-6 md:py-3 rounded-full text-white font-semibold max-[1221px]:py-2 max-[1221px]:text-sm" 
                                         style={{ background: color }}
                                     >
-                                        Place Bid
+                                        Place a Bid
                                     </button>
                                 )}
                             </div>

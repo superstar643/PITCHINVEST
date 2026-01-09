@@ -16,13 +16,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Save, Plus, Trash2, DollarSign, Loader2, MoveLeft, Edit } from 'lucide-react';
+import { Save, Plus, Trash2, DollarSign, Loader2, Edit } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Link } from 'react-router-dom';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useNavigate } from 'react-router-dom';
+import AdminLayout from '@/components/AdminLayout';
 
 interface PricingPlan {
   id: string;
@@ -407,30 +407,25 @@ const AdminPricing: React.FC = () => {
   const color = '#0a3d5c';
 
   return (
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <AdminLayout>
+      <div className="py-6 px-4">
         <div className="max-w-7xl mx-auto">
-          {/* Back to Admin Link */}
-          <div className="mb-6 border-b border-[#0a3d5c] px-4 py-2">
-            <Link to="/admin" className="text-sm flex gap-2 items-center" style={{ color }}>
-              <MoveLeft size={16} /> Back to Admin
-            </Link>
-          </div>
 
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-2">
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h1 className="text-3xl font-bold text-[#0a3d5c] mb-2">Pricing Management</h1>
-                <p className="text-gray-600">
+                <h1 className="text-4xl font-bold text-[#0a3d5c] mb-2">Pricing Management</h1>
+                <p className="text-lg font-medium text-gray-700">
                   Manage subscription and advertising pricing plans for different user types and countries.
                 </p>
               </div>
               <Button
                 onClick={handleNewClick}
-                className="bg-[#0a3d5c] hover:bg-[#0a3d5c]/90"
+                className="bg-[#0a3d5c] hover:bg-[#083146] text-white font-semibold border border-[#0a3d5c] hover:border-[#083146]"
                 disabled={saving || deleting}
               >
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="mr-2 h-5 w-5" />
                 New Pricing Plan
               </Button>
             </div>
@@ -438,10 +433,10 @@ const AdminPricing: React.FC = () => {
 
           {/* New/Edit Form */}
           {(showNewForm || editingPlan) && (
-            <Card className="mb-6" ref={formRef}>
+            <Card className="mb-6 border border-[#0a3d5c]" ref={formRef}>
               <CardHeader>
-                <CardTitle>{editingPlan ? 'Edit Pricing Plan' : 'New Pricing Plan'}</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-xl font-bold text-[#0a3d5c]">{editingPlan ? 'Edit Pricing Plan' : 'New Pricing Plan'}</CardTitle>
+                <CardDescription className="text-base font-medium">
                   {editingPlan ? 'Update the pricing plan details below' : 'Fill in the details to create a new pricing plan'}
                 </CardDescription>
               </CardHeader>
@@ -458,48 +453,55 @@ const AdminPricing: React.FC = () => {
 
           {/* Pricing Plans List */}
           {pricingPlans.length === 0 ? (
-            <Card>
+            <Card className="border border-[#0a3d5c]">
               <CardContent className="py-12 text-center">
-                <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 text-lg mb-2">No pricing plans found</p>
-                <p className="text-gray-400 text-sm mb-4">Create your first pricing plan to get started</p>
+                <DollarSign className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-lg text-gray-700 mb-2 font-medium">No pricing plans found</p>
+                <p className="text-base text-gray-600 mb-4">Create your first pricing plan to get started</p>
                 <Button
                   onClick={() => {
                     setShowNewForm(true);
                     setEditingPlan(null);
                   }}
-                  className="bg-[#0a3d5c] hover:bg-[#0a3d5c]/90"
+                  className="bg-[#0a3d5c] hover:bg-[#083146] text-white font-semibold border border-[#0a3d5c] hover:border-[#083146]"
                 >
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className="mr-2 h-5 w-5" />
                   Create Pricing Plan
                 </Button>
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-4">
-              {pricingPlans.map((plan) => (
-                <Card key={plan.id} className="hover:shadow-lg transition-shadow">
+              {pricingPlans.map((plan) => {
+                const planTypeColors: Record<string, string> = {
+                  'subscription': 'border-blue-600 hover:border-blue-700',
+                  'advertising': 'border-purple-600 hover:border-purple-700',
+                  'logo': 'border-indigo-600 hover:border-indigo-700',
+                  'banner': 'border-teal-600 hover:border-teal-700',
+                };
+                const borderColor = planTypeColors[plan.plan_type] || 'border-[#0a3d5c] hover:border-[#083146]';
+                return (
+                <Card key={plan.id} className={`hover:shadow-xl transition-shadow border ${borderColor}`}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <CardTitle className="text-xl">{plan.plan_name}</CardTitle>
+                          <CardTitle className="text-xl font-bold text-[#0a3d5c]">{plan.plan_name}</CardTitle>
                           <Badge 
-                            variant="outline" 
                             className={
                               plan.is_active 
-                                ? 'bg-green-100 text-green-800 border-green-300' 
-                                : 'bg-gray-100 text-gray-800 border-gray-300'
+                                ? 'bg-green-600 text-white border-0 font-semibold px-3 py-1' 
+                                : 'bg-gray-500 text-white border-0 font-semibold px-3 py-1'
                             }
                           >
                             {plan.is_active ? 'Active' : 'Inactive'}
                           </Badge>
-                          <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 capitalize">
+                          <Badge className="bg-blue-600 text-white border-0 font-semibold px-3 py-1 capitalize">
                             {plan.plan_type}
                           </Badge>
                         </div>
                         {plan.description && (
-                          <CardDescription className="text-base mt-2">
+                          <CardDescription className="text-base mt-2 font-medium">
                             {plan.description}
                           </CardDescription>
                         )}
@@ -507,24 +509,25 @@ const AdminPricing: React.FC = () => {
                       <div className="flex gap-2 ml-4">
                         <Button
                           variant="outline"
-                          size="sm"
+                          size="default"
                           onClick={() => handleEditClick(plan)}
                           disabled={saving || deleting || showNewForm}
+                          className="border border-[#0a3d5c] hover:border-[#083146] text-[#0a3d5c] hover:bg-[#0a3d5c] hover:text-white font-semibold"
                         >
-                          <Edit className="h-4 w-4 mr-1" />
+                          <Edit className="h-5 w-5 mr-2" />
                           Edit
                         </Button>
                         <Button
                           variant="outline"
-                          size="sm"
+                          size="default"
                           onClick={() => handleDeleteClick(plan)}
                           disabled={saving || deleting}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-600 hover:border-red-700 font-semibold"
                         >
                           {deleting && planToDelete?.id === plan.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-5 w-5 animate-spin" />
                           ) : (
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-5 w-5" />
                           )}
                         </Button>
                       </div>
@@ -533,32 +536,33 @@ const AdminPricing: React.FC = () => {
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                       <div>
-                        <p className="text-sm font-medium text-gray-600 mb-1">User Type</p>
-                        <p className="text-base font-semibold text-[#0a3d5c]">
+                        <p className="text-base font-bold text-[#0a3d5c] mb-1">User Type</p>
+                        <p className="text-lg font-semibold text-gray-700">
                           {plan.user_type || 'All User Types'}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-600 mb-1">Country</p>
-                        <p className="text-base font-semibold text-[#0a3d5c]">
+                        <p className="text-base font-bold text-[#0a3d5c] mb-1">Country</p>
+                        <p className="text-lg font-semibold text-gray-700">
                           {plan.country || 'All Countries'}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-600 mb-1">Monthly Price</p>
-                        <p className="text-base font-semibold text-[#0a3d5c] flex items-center gap-1">
-                          <DollarSign className="h-4 w-4" />
+                        <p className="text-base font-bold text-[#0a3d5c] mb-1">Monthly Price</p>
+                        <p className="text-lg font-semibold text-gray-700 flex items-center gap-1">
+                          <DollarSign className="h-5 w-5" />
                           {plan.monthly_price.toFixed(2)} {plan.currency}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-600 mb-1">Billing Period</p>
-                        <p className="text-base font-semibold text-[#0a3d5c]">Monthly</p>
+                        <p className="text-base font-bold text-[#0a3d5c] mb-1">Billing Period</p>
+                        <p className="text-lg font-semibold text-gray-700">Monthly</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              );
+              })}
             </div>
           )}
 
@@ -598,6 +602,7 @@ const AdminPricing: React.FC = () => {
           </AlertDialog>
         </div>
       </div>
+    </AdminLayout>
   );
 };
 
@@ -702,7 +707,7 @@ const PricingPlanForm: React.FC<PricingPlanFormProps> = ({ plan, onSave, onCance
             onChange={(e) => setFormData({ ...formData, plan_name: e.target.value })}
             required
             placeholder="e.g., Monthly Subscription - Inventor"
-            className="w-full"
+            className="w-full border border-[#0a3d5c] focus:border-[#083146] focus:ring-1 focus:ring-[#0a3d5c]"
           />
         </div>
 
@@ -714,7 +719,7 @@ const PricingPlanForm: React.FC<PricingPlanFormProps> = ({ plan, onSave, onCance
             value={formData.plan_type || ''}
             onValueChange={(value) => setFormData({ ...formData, plan_type: value })}
           >
-            <SelectTrigger id="plan_type" className="w-full">
+            <SelectTrigger id="plan_type" className="w-full border border-[#0a3d5c] focus:border-[#083146]">
               <SelectValue placeholder="Select plan type" />
             </SelectTrigger>
             <SelectContent>
@@ -732,7 +737,7 @@ const PricingPlanForm: React.FC<PricingPlanFormProps> = ({ plan, onSave, onCance
             value={formData.user_type || 'all'}
             onValueChange={(value) => setFormData({ ...formData, user_type: value === 'all' ? null : value })}
           >
-            <SelectTrigger id="user_type" className="w-full">
+            <SelectTrigger id="user_type" className="w-full border border-[#0a3d5c] focus:border-[#083146]">
               <SelectValue placeholder="Select user type (optional)" />
             </SelectTrigger>
             <SelectContent>
@@ -752,7 +757,7 @@ const PricingPlanForm: React.FC<PricingPlanFormProps> = ({ plan, onSave, onCance
             value={formData.country || ''}
             onChange={(e) => setFormData({ ...formData, country: e.target.value || null })}
             placeholder="Leave empty for all countries"
-            className="w-full"
+            className="w-full border border-[#0a3d5c] focus:border-[#083146] focus:ring-1 focus:ring-[#0a3d5c]"
           />
         </div>
 
@@ -794,7 +799,7 @@ const PricingPlanForm: React.FC<PricingPlanFormProps> = ({ plan, onSave, onCance
             }}
             required
             placeholder="0.00"
-            className="w-full"
+            className="w-full border border-[#0a3d5c] focus:border-[#083146] focus:ring-1 focus:ring-[#0a3d5c]"
           />
         </div>
 
@@ -806,7 +811,7 @@ const PricingPlanForm: React.FC<PricingPlanFormProps> = ({ plan, onSave, onCance
             value={formData.currency || 'USD'}
             onValueChange={(value) => setFormData({ ...formData, currency: value })}
           >
-            <SelectTrigger id="currency" className="w-full">
+            <SelectTrigger id="currency" className="w-full border border-[#0a3d5c] focus:border-[#083146]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -826,7 +831,7 @@ const PricingPlanForm: React.FC<PricingPlanFormProps> = ({ plan, onSave, onCance
           onChange={(e) => setFormData({ ...formData, description: e.target.value || null })}
           rows={3}
           placeholder="Describe this pricing plan..."
-          className="w-full"
+          className="w-full border border-[#0a3d5c] focus:border-[#083146] focus:ring-1 focus:ring-[#0a3d5c]"
         />
       </div>
 
@@ -836,19 +841,19 @@ const PricingPlanForm: React.FC<PricingPlanFormProps> = ({ plan, onSave, onCance
           id="is_active"
           checked={formData.is_active}
           onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-          className="h-4 w-4 rounded border-gray-300 text-[#0a3d5c] focus:ring-[#0a3d5c]"
+          className="h-4 w-4 rounded border border-[#0a3d5c] text-[#0a3d5c] focus:ring-1 focus:ring-[#0a3d5c]"
         />
         <Label htmlFor="is_active" className="text-sm font-medium cursor-pointer">
           Mark as active
         </Label>
       </div>
 
-      <div className="flex gap-4 pt-4 border-t">
+      <div className="flex gap-4 pt-4 border-t border-[#0a3d5c]">
         <Button 
           type="button" 
           variant="outline" 
           onClick={onCancel} 
-          className="flex-1"
+          className="flex-1 border border-[#0a3d5c] hover:border-[#083146] text-[#0a3d5c] hover:bg-[#0a3d5c] hover:text-white font-semibold"
           disabled={saving}
         >
           Cancel

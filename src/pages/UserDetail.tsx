@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ThumbsUp, Eye, MoveLeft, Share2, Lock, Edit } from 'lucide-react';
+import { ThumbsUp, Eye, MoveLeft, Share2, Lock, Edit, UserCheck } from 'lucide-react';
 import { fetchUserProfile, fetchUserProfileAsAdmin, getAvailableOptions, type ProfileData } from '@/lib/profile';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
@@ -160,6 +160,47 @@ const UserDetail: React.FC = () => {
   }
 
   const { user, profile, proposals, materials } = profileData;
+  
+  // Check profile status - block access if pending or rejected (unless admin)
+  const profileStatus = user.profile_status || 'pending';
+  if (!isAdmin && (profileStatus === 'pending' || profileStatus === 'rejected')) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+        <div className="max-w-md w-full text-center bg-white rounded-xl p-8 shadow-lg">
+          <div className="h-20 w-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <UserCheck className="h-10 w-10 text-yellow-600" />
+          </div>
+          
+          <h1 className="text-3xl font-bold text-[#0a3d5c] mb-3">
+            {profileStatus === 'pending' ? 'Account Pending Approval' : 'Account Not Approved'}
+          </h1>
+          
+          <p className="text-gray-600 mb-8">
+            {profileStatus === 'pending' 
+              ? 'This profile is pending admin approval. Once approved, it will be visible on the platform. Please check back soon.'
+              : 'This profile has been rejected and is not available for viewing.'}
+          </p>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => navigate('/')}
+              className="w-full px-4 py-2 bg-[#0a3d5c] text-white rounded-lg font-medium hover:bg-[#0a3d5c]/90 transition"
+            >
+              Return Home
+            </button>
+            {isOwnProfile && (
+              <button
+                onClick={() => navigate('/subscription')}
+                className="w-full px-4 py-2 border border-[#0a3d5c] text-[#0a3d5c] rounded-lg font-medium hover:bg-[#0a3d5c]/10 transition"
+              >
+                Check Subscription Status
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
   const availableOptions = getAvailableOptions(proposals, profile);
 
   // Determine visible photos based on login status
