@@ -106,54 +106,24 @@ export function useAuth() {
   async function fetchUserProfile(userId: string, isInitialLoad: boolean = false) {
     // Prevent concurrent fetches
     if (fetchingProfileRef.current) {
+     
       return;
     }
 
     try {
       fetchingProfileRef.current = true;
       
+      
       // Only set loading to true if this is not the initial load
       // (initial load already has loading = true from useState)
       if (!isInitialLoad) {
         setLoading(true);
       }
+   
 
       if (!mountedRef.current) {
+      
         return;
-      }
-
-      // Fetch user profile from database
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, user_type, full_name, personal_email, photo_url, cover_image_url, country, city')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('❌ Error fetching user profile:', error);
-        if (mountedRef.current) {
-          setProfile(null);
-        }
-        return;
-      }
-
-      if (!mountedRef.current) {
-        return;
-      }
-
-      if (data) {
-        setProfile({
-          id: data.id,
-          user_type: data.user_type as 'Inventor' | 'StartUp' | 'Company' | 'Investor',
-          full_name: data.full_name,
-          personal_email: data.personal_email,
-          photo_url: data.photo_url,
-          cover_image_url: data.cover_image_url,
-          country: data.country,
-          city: data.city,
-        });
-      } else {
-        setProfile(null);
       }
 
     } catch (error) {
@@ -164,6 +134,7 @@ export function useAuth() {
     } finally {
       // Always set loading to false, even if there's an error or component unmounted
       if (mountedRef.current) {
+      
         setLoading(false);
       }
       fetchingProfileRef.current = false;

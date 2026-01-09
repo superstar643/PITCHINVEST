@@ -1,4 +1,4 @@
-`-- Enable admin access to projects table
+-- Enable admin access to projects table
 -- This allows authenticated users (including admins) to view all projects
 
 -- Enable RLS on projects table (if not already enabled)
@@ -26,4 +26,3 @@ FOR UPDATE
 TO authenticated
 USING (true)
 WITH CHECK (true);
-`
