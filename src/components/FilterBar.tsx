@@ -173,15 +173,17 @@ const FilterBar: React.FC<FilterBarProps> = ({
       {showTag && (
         <Select value={tagValue} onValueChange={onTagChange}>
           <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
-            <SelectValue placeholder="Tags" />
+            <SelectValue placeholder="All Tags" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Tags</SelectItem>
-            {tags?.map((tag) => (
-              <SelectItem key={tag} value={tag}>
-                {tag}
-              </SelectItem>
-            ))}
+            {tags && tags.length > 0 ? (
+              tags.map((tag) => (
+                <SelectItem key={tag} value={tag}>
+                  {tag}
+                </SelectItem>
+              ))
+            ) : null}
           </SelectContent>
         </Select>
       )}

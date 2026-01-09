@@ -96,11 +96,13 @@ const Gallery: React.FC = () => {
         loadGalleryItems();
     }, []);
 
-    // Extract unique statuses from gallery items
+    // Extract unique statuses from gallery items - Always include both Available and Unavailable
     const statuses = useMemo(() => {
-        const statusSet = new Set<string>();
+        const statusSet = new Set<string>(['Available', 'Unavailable']); // Always include both
         galleryItems.forEach(item => {
-            if (item.availableLabel) statusSet.add(item.availableLabel);
+            if (item.availableLabel) {
+                statusSet.add(item.availableLabel);
+            }
         });
         return Array.from(statusSet).sort();
     }, [galleryItems]);
@@ -114,11 +116,22 @@ const Gallery: React.FC = () => {
     const tags = useMemo(() => {
         const tagSet = new Set<string>();
         galleryItems.forEach(item => {
+            // Extract tags from badges
             if (item.badges && item.badges.length > 0) {
-                item.badges.forEach(badge => tagSet.add(badge));
+                item.badges.forEach(badge => {
+                    if (badge && badge.trim()) {
+                        tagSet.add(badge.trim());
+                    }
+                });
+            }
+            // Also include category as a tag if it exists
+            if (item.category && item.category.trim()) {
+                tagSet.add(item.category.trim());
             }
         });
-        return Array.from(tagSet).sort();
+        const tagsArray = Array.from(tagSet).sort();
+        console.log('Extracted tags:', tagsArray); // Debug logging
+        return tagsArray;
     }, [galleryItems]);
 
     // Popularity options based on likes/views

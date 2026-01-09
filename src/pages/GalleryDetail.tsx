@@ -60,7 +60,6 @@ const GalleryDetail: React.FC = () => {
             loadGalleryItem();
         }
     }, [id]);
-
     const loadGalleryItem = async () => {
         try {
             setLoading(true);
@@ -539,54 +538,56 @@ const GalleryDetail: React.FC = () => {
                             )}
                         </div>
 
-                        {/* Auction/Bidding Section */}
-                        <div className="mt-6 bg-white rounded-xl p-6 shadow-sm border">
-                            <div className="flex items-center justify-between mb-4">
-                                <div>
-                                    <div className="text-xs text-gray-500">CURRENT BID</div>
-                                    <div className="text-xl font-bold">
-                                        {bidData.hasBids ? formatCurrency(bidData.currentBid) : '$0'}
+                        {/* Auction/Bidding Section - Only visible to Investor users */}
+                        {user?.user_metadata?.user_type === 'Investor' && (
+                            <div className="mt-6 bg-white rounded-xl p-6 shadow-sm border">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <div className="text-xs text-gray-500">CURRENT BID</div>
+                                        <div className="text-xl font-bold">
+                                            {bidData.hasBids ? formatCurrency(bidData.currentBid) : '$0'}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="text-xs text-gray-500">TOTAL BIDS</div>
+                                        <div className="text-xl font-bold">{bidData.totalBids}</div>
                                     </div>
                                 </div>
-                                <div>
-                                    <div className="text-xs text-gray-500">TOTAL BIDS</div>
-                                    <div className="text-xl font-bold">{bidData.totalBids}</div>
+                                <div className="mt-6 flex gap-2">
+                                    {bidData.hasBids ? (
+                                        <button 
+                                            onClick={handleAuctionClick}
+                                            disabled={startingAuction}
+                                            className="flex-1 px-4 py-2 rounded-full bg-[#0a3d5c] text-white font-medium hover:bg-[#062a3d] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            View Auction
+                                        </button>
+                                    ) : (
+                                        <button 
+                                            onClick={handleAuctionClick}
+                                            disabled={startingAuction}
+                                            className="flex-1 px-4 py-2 rounded-full bg-[#0a3d5c] text-white font-medium hover:bg-[#062a3d] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        >
+                                            {startingAuction ? (
+                                                <>
+                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                    Starting...
+                                                </>
+                                            ) : (
+                                                'Start Auction'
+                                            )}
+                                        </button>
+                                    )}
+                                    <button 
+                                        onClick={handlePlaceBidClick}
+                                        disabled={startingAuction}
+                                        className="px-4 py-2 rounded-full border border-[#0a3d5c] text-[#0a3d5c] font-medium hover:bg-[#0a3d5c] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Place a bid
+                                    </button>
                                 </div>
                             </div>
-                            <div className="mt-6 flex gap-2">
-                                {bidData.hasBids ? (
-                                    <button 
-                                        onClick={handleAuctionClick}
-                                        disabled={startingAuction}
-                                        className="flex-1 px-4 py-2 rounded-full bg-[#0a3d5c] text-white font-medium hover:bg-[#062a3d] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        View Auction
-                                    </button>
-                                ) : (
-                                    <button 
-                                        onClick={handleAuctionClick}
-                                        disabled={startingAuction}
-                                        className="flex-1 px-4 py-2 rounded-full bg-[#0a3d5c] text-white font-medium hover:bg-[#062a3d] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                    >
-                                        {startingAuction ? (
-                                            <>
-                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                                Starting...
-                                            </>
-                                        ) : (
-                                            'Start Auction'
-                                        )}
-                                    </button>
-                                )}
-                                <button 
-                                    onClick={handlePlaceBidClick}
-                                    disabled={startingAuction}
-                                    className="px-4 py-2 rounded-full border border-[#0a3d5c] text-[#0a3d5c] font-medium hover:bg-[#0a3d5c] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Place a bid
-                                </button>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -691,15 +692,18 @@ const GalleryDetail: React.FC = () => {
                                     <span className="font-semibold">{item.date}</span>
                                 </div>
                             )}
-                            <div className="flex justify-between items-center py-2">
-                                <span className="text-gray-500">Auction</span>
-                                <button 
-                                    onClick={handleAuctionClick}
-                                    className="font-semibold text-[#0a3d5c] hover:underline flex items-center gap-1"
-                                >
-                                    View Live Auction →
-                                </button>
-                            </div>
+                            {/* Auction link - Only visible to Investor users */}
+                            {user?.user_metadata?.user_type === 'Investor' && (
+                                <div className="flex justify-between items-center py-2">
+                                    <span className="text-gray-500">Auction</span>
+                                    <button 
+                                        onClick={handleAuctionClick}
+                                        className="font-semibold text-[#0a3d5c] hover:underline flex items-center gap-1"
+                                    >
+                                        View Live Auction →
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
 
