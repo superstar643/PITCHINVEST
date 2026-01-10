@@ -374,7 +374,7 @@ const Settings: React.FC = () => {
               setDetectedCountryCode(detectedCountry.code);
               // Auto-select phone country code
               setPhoneCountryCode(detectedCountry.phoneCode);
-              console.log('Auto-detected location:', detectedCountry.name, geoData.city, 'Code:', detectedCountry.code);
+           
             }
           }
         })

@@ -158,9 +158,7 @@ export const createCheckoutSession = async (
     const sessionId = data.sessionId || data.session_id || data.id || data.checkout_session_id;
     const url = data.url || data.checkout_url || null;
     
-    // Log response for debugging
-    console.log('Checkout session response:', { sessionId, url, hasUrl: !!url, fullData: data });
-    
+   
     if (!sessionId && sessionId !== 'free_subscription') {
       console.error('No session ID in response:', data);
       return { 

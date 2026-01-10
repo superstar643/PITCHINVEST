@@ -10,9 +10,9 @@ export default defineConfig(({ mode }) => {
   const envExamplePath = path.resolve(process.cwd(), '.env.example');
   
   if (!existsSync(envPath) && existsSync(envExamplePath)) {
-    console.log('⚠️  .env file not found. Copying from .env.example...');
+   
     copyFileSync(envExamplePath, envPath);
-    console.log('✅ Created .env from .env.example');
+   
   }
 
   // Load env file based on `mode` in the current working directory.

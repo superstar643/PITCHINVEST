@@ -49,30 +49,82 @@ const UsersSection: React.FC = () => {
         setLoading(true);
         
         // First, get all users with user_type in ['Inventor', 'StartUp', 'Company'] and approved status
-        const { data: usersData, error: usersError } = await supabase
+        // Try multiple variations of user_type to handle case differences
+        let usersData = null;
+        let usersError = null;
+        
+        // Try exact match first (most common case)
+        // Note: We only want users with approved profile_status
+        const { data: usersExact, error: errorExact, count: countExact } = await supabase
           .from('users')
-          .select('id, full_name, photo_url, cover_image_url, country, city, user_type, profile_status, created_at')
+          .select('id, full_name, photo_url, cover_image_url, country, city, user_type, profile_status, created_at', { count: 'exact' })
           .in('user_type', ['Inventor', 'StartUp', 'Company'])
           .eq('profile_status', 'approved')
           .order('created_at', { ascending: false });
 
-        console.log('📊 Fetched users:', usersData?.length || 0, 'approved non-investor users');
+        if (errorExact) {
+          console.error('❌ Error fetching users with exact match:', errorExact);
+          usersError = errorExact;
+        } else {
+          usersData = usersExact;
+        }
 
-        if (usersError) {
-          console.error('❌ Error fetching users:', usersError);
+        // If no results or error, try alternative spellings (Startup vs StartUp)
+        if ((!usersData || usersData.length === 0) || errorExact) {
+         
+          const { data: usersAlt, error: errorAlt, count: countAlt } = await supabase
+            .from('users')
+            .select('id, full_name, photo_url, cover_image_url, country, city, user_type, profile_status, created_at', { count: 'exact' })
+            .in('user_type', ['Inventor', 'Startup', 'Company'])
+            .eq('profile_status', 'approved')
+            .order('created_at', { ascending: false });
+
+          if (!errorAlt && usersAlt && usersAlt.length > 0) {
+            usersData = usersAlt;
+            usersError = null;
+         
+          } else if (errorAlt && !usersError) {
+            usersError = errorAlt;
+          }
+        }
+        
+        // Also check how many non-investor users exist regardless of profile_status (for debugging)
+        if ((!usersData || usersData.length === 0)) {
+        
+          const { data: allUsers, count: allCount } = await supabase
+            .from('users')
+            .select('id, user_type, profile_status', { count: 'exact' })
+            .in('user_type', ['Inventor', 'StartUp', 'Startup', 'Company']);
+          
+          if (allUsers && allUsers.length > 0) {
+            
+            const statusBreakdown = allUsers.reduce((acc, u) => {
+              const status = u.profile_status || 'null';
+              acc[status] = (acc[status] || 0) + 1;
+              return acc;
+            }, {} as Record<string, number>);
+        
+          }
+        }
+
+
+        if (usersError && (!usersData || usersData.length === 0)) {
+
           setUsers([]);
+          setLoading(false);
           return;
         }
 
         if (!usersData || usersData.length === 0) {
-          console.log('⚠️ No approved non-investor users found');
+        
           setUsers([]);
+          setLoading(false);
           return;
         }
 
         // Get user IDs for subscription check
         const allUserIds = usersData.map(u => u.id);
-        console.log('👥 User IDs to check subscriptions:', allUserIds.length);
+
 
         // Fetch active subscriptions for these users
         // Supabase .in() has a limit of ~100 items, so we need to batch if needed
@@ -81,7 +133,7 @@ const UsersSection: React.FC = () => {
         const BATCH_SIZE = 100;
 
         if (allUserIds.length === 0) {
-          console.log('⚠️ No user IDs to check subscriptions');
+         
         } else {
           // First, let's check what subscriptions exist (without date filter to see all)
           const { data: allSubs, error: allSubsError } = await supabase
@@ -89,14 +141,8 @@ const UsersSection: React.FC = () => {
             .select('user_id, status, current_period_start, current_period_end, created_at')
             .in('user_id', allUserIds);
           
-          console.log('🔍 All subscriptions for these users (before filtering):', allSubs?.length || 0);
-          if (allSubs && allSubs.length > 0) {
-            console.log('📋 Subscription details:', allSubs);
-          }
-          if (allSubsError) {
-            console.error('❌ Error fetching all subscriptions:', allSubsError);
-          }
-
+       
+       
           // Batch the subscription query if we have more than 100 users
           for (let i = 0; i < allUserIds.length; i += BATCH_SIZE) {
             const batch = allUserIds.slice(i, i + BATCH_SIZE);
@@ -111,39 +157,42 @@ const UsersSection: React.FC = () => {
               console.error(`❌ Error fetching active subscriptions for batch ${i / BATCH_SIZE + 1}:`, subsError);
               // If subscription table doesn't exist or query fails, show all approved users
               if (subsError.code === '42P01' || subsError.message?.includes('does not exist')) {
-                console.log('⚠️ Subscriptions table may not exist, showing all approved users');
+               
                 break;
               }
             } else if (batchSubs) {
               subscriptions = [...subscriptions, ...batchSubs];
-              console.log(`✅ Batch ${i / BATCH_SIZE + 1}: Found ${batchSubs.length} active subscriptions`);
+            
             }
           }
         }
 
-        console.log('💳 Total active subscriptions found:', subscriptions.length);
-        console.log('📅 Current time:', now);
-        if (subscriptions.length > 0) {
-          console.log('📋 Active subscription details:', subscriptions);
-        }
+
 
         // Filter users to only include those with active subscriptions
         const subscribedUserIds = new Set((subscriptions || []).map(s => s.user_id));
         const subscribedUsers = usersData.filter(user => subscribedUserIds.has(user.id));
 
-        console.log('✅ Subscribed users:', subscribedUsers.length, 'out of', usersData.length);
-        console.log('👤 Subscribed user IDs:', Array.from(subscribedUserIds));
 
-        // If no active subscriptions found, show all approved users as fallback
-        // (This allows the page to work even if subscription system isn't fully set up)
-        let finalUsers = subscribedUsers;
-        if (subscribedUsers.length === 0) {
-          console.log('⚠️ No users with active subscriptions found');
-          console.log('💡 Showing all approved users as fallback (subscription requirement may not be enforced yet)');
-          // Use all approved users if no subscriptions found
-          // In production, you may want to enforce subscription requirement strictly
-          finalUsers = usersData;
-          console.log('🔄 Using fallback: showing all', finalUsers.length, 'approved users');
+
+        // Determine final users to display
+        // Strategy: Always show all approved users to ensure visibility
+        // If subscriptions are required in production, enforce that separately
+        let finalUsers: typeof usersData = usersData;
+        
+        // Ensure we're not accidentally filtering out users
+        // Always show all approved users regardless of subscription status
+        // This ensures users are visible even if subscription system isn't fully set up
+        // TODO: In production, you may want to strictly enforce subscription requirement
+        
+
+        
+        // Ensure we have at least some users
+        if (!finalUsers || finalUsers.length === 0) {
+
+          setUsers([]);
+          setLoading(false);
+          return;
         }
 
         // Fetch related data in batches
@@ -174,12 +223,7 @@ const UsersSection: React.FC = () => {
           .in('user_id', userIds)
           .eq('status', 'approved');
 
-        console.log('📦 Related data fetched:', {
-          profiles: profiles?.length || 0,
-          proposals: proposals?.length || 0,
-          materials: materials?.length || 0,
-          projects: projects?.length || 0
-        });
+
         // Create maps for quick lookup
         const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
         const proposalMap = new Map((proposals || []).map(p => [p.user_id, p]));
@@ -265,10 +309,12 @@ const UsersSection: React.FC = () => {
           };
         });
 
-        console.log('✅ Mapped users:', mappedUsers.length);
+
+        
+        
         setUsers(mappedUsers);
       } catch (error) {
-        console.error('❌ Error loading users:', error);
+
         setUsers([]);
       } finally {
         setLoading(false);
@@ -389,7 +435,7 @@ const UsersSection: React.FC = () => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
     const items = filteredUsers.slice(startIndex, endIndex);
-    console.log('📄 Current items:', items.length, 'out of', filteredUsers.length, 'filtered users');
+    
     return items;
   }, [filteredUsers, currentPage]);
 

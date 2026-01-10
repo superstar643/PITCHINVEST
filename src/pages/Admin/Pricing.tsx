@@ -99,7 +99,7 @@ const AdminPricing: React.FC = () => {
       }));
       
       setPricingPlans(plansWithNumbers as PricingPlan[]);
-      console.log('Loaded pricing plans:', plansWithNumbers);
+     
     } catch (error: any) {
       console.error('Error loading pricing plans:', error);
       toast({
@@ -182,7 +182,7 @@ const AdminPricing: React.FC = () => {
         updated_at: new Date().toISOString(),
       };
 
-      console.log('Updating plan with data:', { id: plan.id, updateData });
+    
 
       let error;
       let updatedData;
@@ -200,7 +200,7 @@ const AdminPricing: React.FC = () => {
           throw new Error(`Pricing plan with ID ${plan.id} not found or access denied. Error: ${checkError?.message || 'Unknown error'}`);
         }
         
-        console.log('Plan exists, current data:', existingPlan);
+     
         
         // Update existing plan - use upsert approach if update fails
         // First try direct update
@@ -248,12 +248,12 @@ const AdminPricing: React.FC = () => {
           
           // Update succeeded but couldn't return data (RLS blocking return)
           updatedData = fetchedData;
-          console.log('Update succeeded but RLS blocked return. Using fetched data:', updatedData);
+          
         } else {
           updatedData = updateResult[0];
         }
         
-        console.log('Updated plan data:', updatedData);
+       
       } else {
         // Create new plan - use select() to get inserted data
         const { data: insertResult, error: insertError } = await supabase
@@ -296,21 +296,21 @@ const AdminPricing: React.FC = () => {
           : Number(updatedData.monthly_price) || 0
       } as PricingPlan;
       
-      console.log('Updating state with plan:', updatedPlan);
+    
       
       // Immediately update the local state with the returned data for instant UI update
       if (plan.id) {
         // Update existing plan in state immediately
         setPricingPlans(prevPlans => {
           const updated = prevPlans.map(p => p.id === plan.id ? updatedPlan : p);
-          console.log('Updated plans state:', updated);
+         
           return updated;
         });
       } else {
         // Add new plan to state
         setPricingPlans(prevPlans => {
           const updated = [...prevPlans, updatedPlan];
-          console.log('Added new plan to state:', updated);
+          
           return updated;
         });
       }

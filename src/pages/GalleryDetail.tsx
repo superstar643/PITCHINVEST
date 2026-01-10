@@ -69,27 +69,39 @@ const GalleryDetail: React.FC = () => {
             const checkLikeStatus = async () => {
                 try {
                     // First check gallery_engagement (preferred for gallery items)
-                    const { data: galleryEngagement } = await supabase
+                    const { data: galleryEngagement, error: galleryError } = await supabase
                         .from('gallery_engagement')
                         .select('liked')
                         .eq('gallery_item_id', item.id.toString())
                         .eq('user_id', user.id)
-                        .single();
+                        .maybeSingle();
+                    
+                    // If there's an RLS error (like 406), treat as no engagement yet
+                    if (galleryError && galleryError.code !== 'PGRST116') {
+                        console.error('Error checking gallery engagement:', galleryError);
+                    }
                     
                     if (galleryEngagement) {
                         setHasLiked(galleryEngagement.liked || false);
-                    } else {
-                        // Fallback to project_engagement
-                        const { data: projectEngagement } = await supabase
-                            .from('project_engagement')
-                            .select('liked')
-                            .eq('project_id', item.project_id)
-                            .eq('user_id', user.id)
-                            .single();
-                        
-                        setHasLiked(projectEngagement?.liked || false);
+                        return;
                     }
+                    
+                    // Fallback to project_engagement
+                    const { data: projectEngagement, error: projectError } = await supabase
+                        .from('project_engagement')
+                        .select('liked')
+                        .eq('project_id', item.project_id)
+                        .eq('user_id', user.id)
+                        .maybeSingle();
+                    
+                    // If there's an RLS error (like 406), treat as no engagement yet
+                    if (projectError && projectError.code !== 'PGRST116') {
+                        console.error('Error checking project engagement:', projectError);
+                    }
+                    
+                    setHasLiked(projectEngagement?.liked || false);
                 } catch (error) {
+                    console.error('Error checking like status:', error);
                     setHasLiked(false);
                 }
             };
@@ -122,11 +134,15 @@ const GalleryDetail: React.FC = () => {
 
             // Fetch project data for investment information
             if (galleryItem.project_id) {
-                const { data: project } = await supabase
+                const { data: project, error: projectError } = await supabase
                     .from('projects')
                     .select('*')
                     .eq('id', galleryItem.project_id)
-                    .single();
+                    .maybeSingle();
+                
+                if (projectError && projectError.code !== 'PGRST116') {
+                    console.error('Error fetching project data:', projectError);
+                }
                 
                 if (project) {
                     setProjectData(project);
@@ -151,28 +167,39 @@ const GalleryDetail: React.FC = () => {
             if (user && galleryItem.project_id) {
                 try {
                     // First check gallery_engagement (preferred for gallery items)
-                    const { data: galleryEngagement } = await supabase
+                    const { data: galleryEngagement, error: galleryError } = await supabase
                         .from('gallery_engagement')
                         .select('liked')
                         .eq('gallery_item_id', galleryItem.id)
                         .eq('user_id', user.id)
-                        .single();
+                        .maybeSingle();
+                    
+                    // If there's an RLS error (like 406), treat as no engagement yet
+                    if (galleryError && galleryError.code !== 'PGRST116') {
+                        console.error('Error checking gallery engagement:', galleryError);
+                    }
                     
                     if (galleryEngagement) {
                         setHasLiked(galleryEngagement.liked || false);
                     } else {
                         // Fallback to project_engagement
-                        const { data: projectEngagement } = await supabase
+                        const { data: projectEngagement, error: projectError } = await supabase
                             .from('project_engagement')
                             .select('liked')
                             .eq('project_id', galleryItem.project_id)
                             .eq('user_id', user.id)
-                            .single();
+                            .maybeSingle();
+                        
+                        // If there's an RLS error (like 406), treat as no engagement yet
+                        if (projectError && projectError.code !== 'PGRST116') {
+                            console.error('Error checking project engagement:', projectError);
+                        }
                         
                         setHasLiked(projectEngagement?.liked || false);
                     }
                 } catch (error) {
                     // User hasn't liked yet or table doesn't exist
+                    console.error('Error checking like status:', error);
                     setHasLiked(false);
                 }
             }

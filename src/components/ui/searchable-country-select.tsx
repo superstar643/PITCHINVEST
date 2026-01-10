@@ -145,6 +145,8 @@ export const SearchableCountrySelect: React.FC<SearchableCountrySelectProps> = (
       }}
       open={open}
       onOpenChange={setOpen}
+      onOpenAutoFocus={(e) => e.preventDefault()}
+      onCloseAutoFocus={(e) => e.preventDefault()}
     >
       <SelectPrimitive.Trigger
         className={cn(
@@ -210,8 +212,6 @@ export const SearchableCountrySelect: React.FC<SearchableCountrySelectProps> = (
           side="bottom"
           align="start"
           sideOffset={5}
-          onOpenAutoFocus={(e) => e.preventDefault()}
-          onCloseAutoFocus={(e) => e.preventDefault()}
           onKeyDown={(e) => {
             // Only prevent Select from handling keys when search input is actually focused
             if (searchInputRef.current === document.activeElement) {

@@ -156,7 +156,7 @@ const AdminProfileApproval: React.FC = () => {
       setUpdatingProfileId(profileId);
 
       // Update profile status in users table
-      console.log(newStatus)
+
       const { error } = await supabase
         .from('users')
         .update({ 

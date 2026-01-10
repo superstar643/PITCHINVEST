@@ -217,43 +217,35 @@ export default function Register() {
                             !isOAuthUser;
         
         if (shouldDetect) {
-            console.log('🔍 Starting IP-based geolocation detection...', {
-                currentStep,
-                hasCountry,
-                countryValue: formData.country,
-                geolocationLoading,
-                isOAuthUser
-            });
+         
                 setGeolocationLoading(true);
             
             // Use a small timeout to ensure form is ready
             const timeoutId = setTimeout(() => {
                 getCachedGeolocation()
                     .then((geoData) => {
-                        console.log('📍 Geolocation API response:', geoData);
+                    
                         if (geoData && geoData.countryCode) {
                             // Normalize country code to uppercase for matching
                             const normalizedCode = geoData.countryCode.trim().toUpperCase();
-                            console.log('🔎 Normalized country code:', normalizedCode);
+                          
                             
                             // Try to find country by code (case-insensitive)
                             const detectedCountry = getCountryByCode(normalizedCode);
-                            console.log('🔎 Searching for country with code:', normalizedCode, 'Found:', detectedCountry ? { name: detectedCountry.name, code: detectedCountry.code } : 'NOT FOUND');
+                          
                             
                             if (detectedCountry) {
                                 // Auto-select detected country (check again to prevent race conditions)
                                 setFormData((prev) => {
                                     const prevHasCountry = prev.country && prev.country.trim().length > 0;
                                     if (!prevHasCountry) {
-                                        console.log('✅ Setting detected country:', detectedCountry.name);
+                                     
                                         return {
                                             ...prev,
                                             country: detectedCountry.name,
                                             city: geoData.city || prev.city || '',
                                         };
-                                    } else {
-                                        console.log('⚠️ Country already set, skipping update. Current value:', prev.country);
-                                    }
+                                    } 
                                     return prev;
                                 });
                                 // Store the detected country code for proper flag display (important for +1 US/Canada)
@@ -264,16 +256,9 @@ export default function Register() {
                                 if (!formData.companyTelephone) {
                                     setCompanyPhoneCountryCode(detectedCountry.phoneCode);
                                 }
-                                console.log('✅ Auto-detected location successfully:', {
-                                    country: detectedCountry.name,
-                                    city: geoData.city,
-                                    countryCode: detectedCountry.code,
-                                    phoneCode: detectedCountry.phoneCode,
-                                    originalApiResponse: geoData
-                        });
+                                
                     } else {
-                                console.warn('⚠️ Country not found in countries list for code:', normalizedCode);
-                                console.warn('Available country codes sample:', countries.slice(0, 10).map(c => `${c.code}: ${c.name}`));
+                             
                                 
                                 // Try to find by country name as fallback
                                 if (geoData.country && geoData.country.trim()) {
@@ -284,7 +269,7 @@ export default function Register() {
                                         setFormData((prev) => {
                                             const prevHasCountry = prev.country && prev.country.trim().length > 0;
                                             if (!prevHasCountry) {
-                                                console.log('✅ Setting country by name fallback:', countryByName.name);
+                                                
                                                 return {
                                                     ...prev,
                                                     country: countryByName.name,
@@ -295,7 +280,7 @@ export default function Register() {
                                         });
                                         setDetectedCountryCode(countryByName.code);
                                         setPhoneCountryCode(countryByName.phoneCode);
-                                        console.log('✅ Found country by name fallback:', countryByName.name);
+                                       
                                     } else {
                                         console.error('❌ Country not found even by name:', geoData.country);
                                         console.error('Available countries sample:', countries.slice(0, 10).map(c => c.name));
@@ -332,12 +317,7 @@ export default function Register() {
             return () => clearTimeout(timeoutId);
         } else {
             if (currentStep === 'personal') {
-                console.log('⏭️ Skipping geolocation detection:', {
-                    hasCountry,
-                    geolocationLoading,
-                    isOAuthUser,
-                    reason: hasCountry ? 'Country already set' : geolocationLoading ? 'Already loading' : isOAuthUser ? 'OAuth user' : 'Unknown'
-                });
+              
         }
         }
     }, [currentStep, formData.country, geolocationLoading, formData.companyTelephone, isOAuthUser]);
@@ -358,7 +338,7 @@ export default function Register() {
                 const detectedCountry = getCountryByCode(detectedCountryCode);
                 if (detectedCountry) {
                     setCompanyPhoneCountryCode(detectedCountry.phoneCode);
-                    console.log('Using previously detected location for company telephone:', detectedCountry.name, 'Phone:', detectedCountry.phoneCode);
+                  
                 }
             } else if (!geolocationLoading) {
                 // Need to detect location for the first time
@@ -372,7 +352,7 @@ export default function Register() {
                                 setDetectedCountryCode(detectedCountry.code);
                                 // Auto-select company phone country code
                                 setCompanyPhoneCountryCode(detectedCountry.phoneCode);
-                                console.log('Auto-detected company telephone location:', detectedCountry.name, 'Code:', detectedCountry.code, 'Phone:', detectedCountry.phoneCode);
+                              
                             }
                         }
                     })
@@ -787,13 +767,6 @@ export default function Register() {
                 throw new Error('User type is required. Please select your role.');
             }
 
-            console.log('Creating/updating user record:', {
-                userId,
-                user_type: formData.userType,
-                full_name: finalFullName,
-                personal_email: finalEmail,
-                isOAuth: !!oauthUserData,
-            });
 
             const userData = {
                 id: userId,
@@ -828,12 +801,7 @@ export default function Register() {
                 throw new Error(`Failed to create user record: ${userError.message}. ${userError.hint || ''}`);
             }
 
-            if (userRecord) {
-                console.log('✅ User record created/updated successfully:', userRecord.id);
-            } else {
-                console.warn('⚠️ User upsert completed but no record returned');
-            }
-
+           
             // STEP 4: Insert into profiles table (role-specific fields)
             const profileData: Record<string, unknown> = {
                 user_id: userId,
@@ -977,13 +945,7 @@ export default function Register() {
                         verified: false,
                     };
 
-                    console.log('Creating project with data:', {
-                        user_id: userId,
-                        title: projectData.title,
-                        subtitle: projectData.subtitle,
-                        category: projectData.category,
-                        user_type: formData.userType,
-                    });
+                  
 
                     const { data: createdProject, error: projectError } = await supabase
                         .from('projects')
@@ -1007,20 +969,9 @@ export default function Register() {
                             description: `Your account was created, but the project could not be created: ${projectError.message}. Please contact support or try updating your profile.`,
                             variant: 'destructive',
                         });
-                    } else if (createdProject) {
-                        console.log('✅ Project created successfully:', createdProject.id);
-                    }
-                } else {
-                    console.log('Project already exists for this user and title, skipping creation.');
+                    } 
                 }
-            } else {
-                // Log why project wasn't created
-                if (formData.userType === 'Investor') {
-                    console.log('Skipping project creation: User is Investor');
-                } else if (!formData.projectName || !formData.projectName.trim()) {
-                    console.warn('⚠️ Skipping project creation: projectName is missing or empty');
-                }
-            }
+            } 
 
             // Mark all steps as completed
             setRegistrationSteps((prev) => prev.map(step => ({ ...step, status: 'completed' })));
@@ -1034,7 +985,7 @@ export default function Register() {
             setOtpCode('');
             setOtpSecondsLeft(0);
 
-            console.log('✅ Registration completed successfully!');
+           
             setError(''); // Clear any errors
 
             // Wait a bit for overlay to disappear, then show toast
@@ -1138,11 +1089,7 @@ export default function Register() {
         setError('');
 
         try {
-            console.log('🔵 Starting OAuth registration...', {
-                userType: formData.userType,
-                projectName: formData.projectName,
-                hasOAuthData: !!oauthUserData,
-            });
+     
 
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
             if (sessionError) {
@@ -1154,7 +1101,7 @@ export default function Register() {
             }
 
             const userId = session.user.id;
-            console.log('✅ Session found, userId:', userId);
+          
 
             const fallbackName =
                 formData.fullName ||
@@ -1187,10 +1134,10 @@ export default function Register() {
                 { label: 'Saving your profile', status: 'loading' },
             ]);
 
-            console.log('📝 Calling handleRegistrationData for userId:', userId);
+       
             // Proceed with uploads and DB inserts
             await handleRegistrationData(userId);
-            console.log('✅ handleRegistrationData completed successfully');
+          
 
             setRegistrationSteps([
                 { label: 'Uploading files', status: 'completed' },

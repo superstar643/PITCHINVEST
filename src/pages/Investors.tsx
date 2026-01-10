@@ -65,7 +65,7 @@ const Investors: React.FC = () => {
 
         // If no results with exact match or there was an error, try case-insensitive match as fallback
         if ((!users || users.length === 0) || errorExact) {
-          console.log('🔄 No investors found with exact match or error occurred, trying case-insensitive match...');
+          
           const { data: usersIlike, error: errorIlike, count: countIlike } = await supabase
             .from('users')
             .select('id, full_name, personal_email, photo_url, cover_image_url, country, city, user_type, created_at', { count: 'exact' })
@@ -81,7 +81,7 @@ const Investors: React.FC = () => {
             users = usersIlike;
             count = countIlike;
             usersError = null; // Clear error if second query succeeded
-            console.log('✅ Found investors with case-insensitive match:', users.length);
+          
           }
         }
 
@@ -96,8 +96,7 @@ const Investors: React.FC = () => {
           return;
         }
 
-        console.log('📊 Total investors count from database:', count || 0);
-        console.log('📊 Fetched investors from database:', users?.length || 0, 'investors');
+     
         
         // Check if there's a mismatch between count and fetched rows
         if (count && count > (users?.length || 0)) {
@@ -105,20 +104,14 @@ const Investors: React.FC = () => {
         }
 
         if (!users || users.length === 0) {
-          console.log('⚠️ No investors found in database');
+         
           setInvestors([]);
           return;
         }
 
         // Log each investor for debugging
         users.forEach((user, index) => {
-          console.log(`Investor ${index + 1}:`, {
-            id: user.id,
-            name: user.full_name,
-            email: user.personal_email || 'N/A',
-            country: user.country || 'N/A',
-            city: user.city || 'N/A',
-          });
+          
         });
 
         // Fetch profiles for all investors (using LEFT JOIN approach with batch fetch)
@@ -133,7 +126,7 @@ const Investors: React.FC = () => {
           // Don't return - continue without profiles
         }
 
-        console.log('📊 Fetched profiles:', profiles?.length || 0, 'profiles');
+       
 
         // Create profile map for quick lookup
         const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
@@ -162,12 +155,11 @@ const Investors: React.FC = () => {
           return investor;
         });
 
-        console.log('✅ Mapped investors data:', investorData.length, 'investors');
-        console.log('Investor IDs:', investorData.map(i => i.id));
+       
 
         setInvestors(investorData);
       } catch (error) {
-        console.error('Error loading investors:', error);
+        
         toast({
           title: 'Error',
           description: 'Failed to load investors. Please refresh the page.',

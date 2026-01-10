@@ -127,16 +127,14 @@ export const getGeolocationData = async (): Promise<GeolocationData | null> => {
 
   for (const service of services) {
     try {
-      console.log(`🌐 Trying geolocation service: ${service.name}`);
+      
       const data = await service.fn();
       if (data && data.country && data.countryCode) {
-        console.log(`✅ Geolocation data retrieved successfully from ${service.name}:`, data);
+       
         return data;
-      } else {
-        console.warn(`⚠️ ${service.name} returned incomplete data:`, data);
-      }
+      } 
     } catch (error) {
-      console.warn(`❌ ${service.name} geolocation service failed:`, error);
+     
       continue;
     }
   }
@@ -160,13 +158,13 @@ export const getCachedGeolocation = async (forceRefresh: boolean = false): Promi
 
   // Return cached data if available (and not forcing refresh)
   if (cachedGeolocation && !forceRefresh) {
-    console.log('📍 Using cached geolocation data:', cachedGeolocation);
+   
     return cachedGeolocation;
   }
 
   // Return existing promise if request is in progress (and not forcing refresh)
   if (geolocationPromise && !forceRefresh) {
-    console.log('⏳ Geolocation request in progress, waiting...');
+ 
     return geolocationPromise;
   }
 
@@ -175,7 +173,7 @@ export const getCachedGeolocation = async (forceRefresh: boolean = false): Promi
   geolocationPromise = getGeolocationData().then(data => {
     if (data) {
       cachedGeolocation = data;
-      console.log('💾 Cached geolocation data:', data);
+   
     }
     return data;
   }).finally(() => {
@@ -191,5 +189,5 @@ export const getCachedGeolocation = async (forceRefresh: boolean = false): Promi
 export const clearGeolocationCache = (): void => {
   cachedGeolocation = null;
   geolocationPromise = null;
-  console.log('🗑️ Geolocation cache cleared');
+ 
 };

@@ -130,7 +130,7 @@ const Gallery: React.FC = () => {
             }
         });
         const tagsArray = Array.from(tagSet).sort();
-        console.log('Extracted tags:', tagsArray); // Debug logging
+       
         return tagsArray;
     }, [galleryItems]);
 

@@ -110,23 +110,23 @@ const FilterBar: React.FC<FilterBarProps> = ({
   const showPopularity = popularityValue !== undefined && onPopularityChange !== undefined;
 
   return (
-    <div className="flex items-center gap-2 md:gap-3 mb-8 bg-white py-3 px-4 rounded-full shadow-[0_2px_12px_rgba(0,0,0,0.08)] border border-gray-100 overflow-x-auto">
+    <div className="flex flex-wrap md:flex-nowrap items-center gap-2 mb-8 bg-white py-3 px-4 rounded-lg md:rounded-full shadow-[0_2px_12px_rgba(0,0,0,0.08)] border border-gray-100">
       {/* Search Input */}
-      <div className="flex-shrink-0 min-w-[200px] md:min-w-[240px] relative">
+      <div className="flex-shrink-0 w-full sm:w-auto min-w-0 sm:min-w-[200px] md:min-w-[220px] relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
         <input
           type="text"
           placeholder={searchPlaceholder}
           value={searchValue}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-gray-50"
+          className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg md:rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#0a3d5c]/20 focus:border-[#0a3d5c] transition-all bg-gray-50"
         />
       </div>
 
       {/* Status Dropdown - Optional */}
       {showStatus && (
         <Select value={statusValue} onValueChange={onStatusChange}>
-          <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
+          <SelectTrigger className="flex-shrink-0 w-full sm:w-fit min-w-0 sm:min-w-[130px] border-gray-200 rounded-lg md:rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -143,7 +143,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
       {/* Availability Status Dropdown - Optional - Show before Country */}
       {showAvailability && (
         <Select value={availabilityValue} onValueChange={onAvailabilityChange}>
-          <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
+          <SelectTrigger className="flex-shrink-0 w-full sm:w-fit min-w-0 sm:min-w-[130px] border-gray-200 rounded-lg md:rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
           <SelectContent>
@@ -166,13 +166,13 @@ const FilterBar: React.FC<FilterBarProps> = ({
         }}
         type="country"
         placeholder="All Countries"
-        triggerClassName="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20"
+        triggerClassName="flex-shrink-0 w-full sm:w-fit min-w-0 sm:min-w-[130px] border-gray-200 rounded-lg md:rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20"
       />
 
       {/* Tags Dropdown - Optional */}
       {showTag && (
         <Select value={tagValue} onValueChange={onTagChange}>
-          <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
+          <SelectTrigger className="flex-shrink-0 w-full sm:w-fit min-w-0 sm:min-w-[120px] border-gray-200 rounded-lg md:rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
             <SelectValue placeholder="All Tags" />
           </SelectTrigger>
           <SelectContent>
@@ -191,7 +191,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
       {/* Popularity Dropdown - Optional */}
       {showPopularity && (
         <Select value={popularityValue} onValueChange={onPopularityChange}>
-          <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
+          <SelectTrigger className="flex-shrink-0 w-full sm:w-fit min-w-0 sm:min-w-[120px] border-gray-200 rounded-lg md:rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
             <SelectValue placeholder="Popularity" />
           </SelectTrigger>
           <SelectContent>
@@ -209,7 +209,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
       {/* Category Dropdown - Optional */}
       {showCategory && (
         <Select value={categoryValue} onValueChange={onCategoryChange}>
-          <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
+          <SelectTrigger className="flex-shrink-0 w-full sm:w-fit min-w-0 sm:min-w-[120px] border-gray-200 rounded-lg md:rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
@@ -223,12 +223,27 @@ const FilterBar: React.FC<FilterBarProps> = ({
         </Select>
       )}
 
-
+      {/* City Dropdown - Optional */}
+      {showCity && (
+        <Select value={cityValue} onValueChange={onCityChange}>
+          <SelectTrigger className="flex-shrink-0 w-full sm:w-fit min-w-0 sm:min-w-[110px] border-gray-200 rounded-lg md:rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
+            <SelectValue placeholder="City" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Cities</SelectItem>
+            {cities?.map((city) => (
+              <SelectItem key={city} value={city}>
+                {city}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
 
       {/* Proposal Type Dropdown - Optional */}
       {showProposalType && (
         <Select value={proposalTypeValue} onValueChange={onProposalTypeChange}>
-          <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
+          <SelectTrigger className="flex-shrink-0 w-full sm:w-fit min-w-0 sm:min-w-[130px] border-gray-200 rounded-lg md:rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
             <SelectValue placeholder="Proposal Type" />
           </SelectTrigger>
           <SelectContent>
@@ -245,7 +260,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
       {/* Stage Dropdown - Optional */}
       {showStage && (
         <Select value={stageValue} onValueChange={onStageChange}>
-          <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
+          <SelectTrigger className="flex-shrink-0 w-full sm:w-fit min-w-0 sm:min-w-[110px] border-gray-200 rounded-lg md:rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
             <SelectValue placeholder="Stage" />
           </SelectTrigger>
           <SelectContent>
@@ -263,7 +278,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
       {/* Role/Investor Type Dropdown - Optional */}
       {showRole && (
         <Select value={roleValue} onValueChange={onRoleChange}>
-          <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
+          <SelectTrigger className="flex-shrink-0 w-full sm:w-fit min-w-0 sm:min-w-[130px] border-gray-200 rounded-lg md:rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
             <SelectValue placeholder="Investor Type" />
           </SelectTrigger>
           <SelectContent>
@@ -280,7 +295,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
       {/* Investment Amount Range Dropdown - Optional */}
       {showInvestmentRange && (
         <Select value={investmentRangeValue} onValueChange={onInvestmentRangeChange}>
-          <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
+          <SelectTrigger className="flex-shrink-0 w-full sm:w-fit min-w-0 sm:min-w-[140px] border-gray-200 rounded-lg md:rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
             <SelectValue placeholder="Investment Range" />
           </SelectTrigger>
           <SelectContent>
@@ -297,7 +312,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
       {/* Equity Percentage Range Dropdown - Optional */}
       {showEquityRange && (
         <Select value={equityRangeValue} onValueChange={onEquityRangeChange}>
-          <SelectTrigger className="flex-shrink-0 w-fit border-gray-200 rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
+          <SelectTrigger className="flex-shrink-0 w-full sm:w-fit min-w-0 sm:min-w-[100px] border-gray-200 rounded-lg md:rounded-full text-sm h-9 bg-white hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#0a3d5c]/20">
             <SelectValue placeholder="Equity %" />
           </SelectTrigger>
           <SelectContent>
@@ -313,14 +328,20 @@ const FilterBar: React.FC<FilterBarProps> = ({
 
 
 
+      {/* Spacer to center RESET button in remaining space on desktop */}
+      <div className="hidden md:block flex-grow"></div>
+
       {/* Reset Button */}
       <Button
         onClick={onReset}
         variant="outline"
-        className="flex-shrink-0 border-2 border-[#d5b775] text-[#d5b775] hover:bg-[#d5b775]/10 font-semibold px-5 rounded-full h-9 transition-all text-sm"
+        className="flex-shrink-0 w-full sm:w-auto sm:ml-auto md:ml-0 border-2 border-[#d5b775] text-[#d5b775] hover:bg-[#d5b775]/10 font-semibold px-4 md:px-5 rounded-lg md:rounded-full h-9 transition-all text-sm whitespace-nowrap"
       >
         RESET
       </Button>
+      
+      {/* Matching spacer on right for perfect centering */}
+      <div className="hidden md:block flex-grow"></div>
     </div>
   );
 };

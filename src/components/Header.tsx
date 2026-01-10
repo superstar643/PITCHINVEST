@@ -126,14 +126,12 @@ const Header: React.FC = () => {
 
     try {
       setIsSigningOut(true);
-      console.log('🚪 Header: Starting sign out...');
+   
       
       // Call signOut - this will clear state immediately and trigger onAuthStateChange
       await signOut();
       
-      console.log('✅ Header: Sign out completed');
-      console.log('🔍 Header: User state after signOut:', { user: !!user });
-      
+     
       // Show success toast
       toast({
         title: "Signed out successfully",
@@ -214,9 +212,7 @@ const Header: React.FC = () => {
                           flexShrink: 0
                         }}
                         aria-label="User menu"
-                        onClick={(e) => {
-                          console.log('Avatar button clicked!', { user: !!user, profile: !!profile });
-                        }}
+                       
                       >
                         {displayProfileData?.photo_url ? (
                           <img 

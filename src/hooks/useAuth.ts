@@ -196,7 +196,7 @@ export function useAuth() {
     // Reset the ref after a short delay
     setTimeout(() => {
       signingOutRef.current = false;
-      console.log('✅ Sign out process completed');
+     
     }, 500);
   };
 

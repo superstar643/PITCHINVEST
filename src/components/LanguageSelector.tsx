@@ -33,7 +33,7 @@ const LanguageSelector: React.FC = () => {
     setSelectedLanguage(value);
     // You can add logic here to change the app language
     // For example: i18n.changeLanguage(value);
-    console.log('Language changed to:', value);
+   
   };
 
   const currentLanguage = languages.find(lang => lang.code === selectedLanguage);

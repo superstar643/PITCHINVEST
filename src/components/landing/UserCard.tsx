@@ -67,11 +67,43 @@ const UserCard: React.FC<UserCardProps> = ({
       </div>
 
       <div className="pt-8 px-3 pb-3">
-        <div className="text-right text-xs font-semibold text-gray-700 mb-2">{companyName}</div>
+        {/* Company name - positioned to avoid avatar, allows 2-line wrapping */}
+        <div className="mb-2 min-h-[2.75rem] flex items-start gap-2">
+          {/* Spacer for avatar (w-28 = 112px + left-3 = 12px + border = 4px = ~128px, rounded to 9rem = 144px) */}
+          <div className="w-36 flex-shrink-0"></div>
+          {/* Company name - right-aligned, wraps to 2 lines with ellipsis if needed */}
+          <div 
+            className="text-right text-xs font-semibold text-gray-700 break-words flex-1 min-w-0"
+            style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              wordBreak: 'break-word',
+              overflowWrap: 'break-word',
+              lineHeight: '1.5',
+              maxHeight: '2.5rem'
+            }}
+          >
+            {companyName}
+          </div>
+        </div>
 
         <div className="space-y-1 text-xs mb-2">
           <div><span className="font-semibold">Nome:</span> {fullName}</div>
-          <div><span className="font-semibold">Startup:</span> {projectName}</div>
+          <div 
+            className="break-words"
+            style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              wordBreak: 'break-word'
+            }}
+          >
+            <span className="font-semibold">Startup:</span> {projectName}
+          </div>
           <div><span className="font-semibold">Cidade:</span> {city}</div>
           <div className="flex items-center gap-2">
             <span className="font-semibold">País:</span> {country} <span>{countryFlag}</span>

@@ -158,10 +158,13 @@ export const fetchProjectById = async (projectId: string): Promise<Project | nul
       .from('projects')
       .select('*')
       .eq('id', projectId)
-      .single();
+      .maybeSingle();
 
     if (projectError) {
-      console.error('Error fetching project:', projectError);
+      // PGRST116 means no rows found, which is acceptable
+      if (projectError.code !== 'PGRST116') {
+        console.error('Error fetching project:', projectError);
+      }
       return null;
     }
 
@@ -174,9 +177,9 @@ export const fetchProjectById = async (projectId: string): Promise<Project | nul
       .from('users')
       .select('id, full_name, photo_url, country, city, user_type')
       .eq('id', projectData.user_id)
-      .single();
+      .maybeSingle();
 
-    if (userError) {
+    if (userError && userError.code !== 'PGRST116') {
       console.error('Error fetching user:', userError);
     }
 
@@ -185,9 +188,9 @@ export const fetchProjectById = async (projectId: string): Promise<Project | nul
       .from('profiles')
       .select('project_name, company_name, inventor_name')
       .eq('user_id', projectData.user_id)
-      .single();
+      .maybeSingle();
 
-    if (profileError) {
+    if (profileError && profileError.code !== 'PGRST116') {
       console.error('Error fetching profile:', profileError);
     }
 
@@ -218,7 +221,7 @@ export const incrementProjectViews = async (
     // Track view in gallery_engagement if gallery item ID is provided
     if (galleryItemId && userId) {
       try {
-        await supabase
+        const { error: engagementError } = await supabase
           .from('gallery_engagement')
           .upsert({
             gallery_item_id: galleryItemId,
@@ -228,6 +231,13 @@ export const incrementProjectViews = async (
           }, {
             onConflict: 'gallery_item_id,user_id',
           });
+        
+        if (engagementError) {
+          // If table doesn't exist or constraint doesn't match, that's okay
+          if (engagementError.code !== '42P01' && engagementError.code !== '23505') {
+            console.error('Error tracking view in gallery_engagement:', engagementError);
+          }
+        }
       } catch (error) {
         console.error('Error tracking view in gallery_engagement:', error);
         // Continue even if gallery_engagement fails
@@ -242,17 +252,25 @@ export const incrementProjectViews = async (
     if (error) {
       console.error('Error incrementing project views:', error);
       // Fallback to manual update if RPC doesn't exist
-      const { data: project } = await supabase
+      const { data: project, error: projectError } = await supabase
         .from('projects')
         .select('views')
         .eq('id', projectId)
-        .single();
+        .maybeSingle();
+
+      if (projectError && projectError.code !== 'PGRST116') {
+        console.error('Error fetching project for fallback:', projectError);
+      }
 
       if (project) {
-        await supabase
+        const { error: updateError } = await supabase
           .from('projects')
           .update({ views: (project.views || 0) + 1 })
           .eq('id', projectId);
+        
+        if (updateError) {
+          console.error('Error updating project views:', updateError);
+        }
       }
     }
   } catch (error) {
@@ -275,17 +293,22 @@ export const toggleProjectLike = async (
 ): Promise<number> => {
   try {
     // Check if user already liked this project
-    const { data: engagement } = await supabase
+    const { data: engagement, error: engagementError } = await supabase
       .from('project_engagement')
       .select('liked')
       .eq('project_id', projectId)
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
+
+    // If there's an RLS error (like 406), treat as no engagement yet
+    if (engagementError && engagementError.code !== 'PGRST116') {
+      console.error('Error checking project engagement:', engagementError);
+    }
 
     const newLikedStatus = !engagement?.liked;
 
     // Update or insert engagement in project_engagement
-    await supabase
+    const { error: projectEngagementError } = await supabase
       .from('project_engagement')
       .upsert({
         project_id: projectId,
@@ -296,10 +319,17 @@ export const toggleProjectLike = async (
         onConflict: 'project_id,user_id',
       });
 
+    if (projectEngagementError) {
+      // If table doesn't exist or RLS blocks, that's okay - continue
+      if (projectEngagementError.code !== '42P01' && projectEngagementError.code !== '42501') {
+        console.error('Error updating project_engagement:', projectEngagementError);
+      }
+    }
+
     // Also track in gallery_engagement if gallery item ID is provided
     if (galleryItemId) {
       try {
-        await supabase
+        const { error: galleryEngagementError } = await supabase
           .from('gallery_engagement')
           .upsert({
             gallery_item_id: galleryItemId,
@@ -309,6 +339,13 @@ export const toggleProjectLike = async (
           }, {
             onConflict: 'gallery_item_id,user_id',
           });
+        
+        if (galleryEngagementError) {
+          // If table doesn't exist or RLS blocks, that's okay - continue
+          if (galleryEngagementError.code !== '42P01' && galleryEngagementError.code !== '42501' && galleryEngagementError.code !== '23505') {
+            console.error('Error tracking like in gallery_engagement:', galleryEngagementError);
+          }
+        }
       } catch (error) {
         console.error('Error tracking like in gallery_engagement:', error);
         // Continue even if gallery_engagement fails
@@ -316,22 +353,30 @@ export const toggleProjectLike = async (
     }
 
     // Update project like count
-    const { data: project } = await supabase
+    const { data: project, error: projectError } = await supabase
       .from('projects')
       .select('likes')
       .eq('id', projectId)
-      .single();
+      .maybeSingle();
+
+    if (projectError && projectError.code !== 'PGRST116') {
+      console.error('Error fetching project for like update:', projectError);
+    }
 
     if (project) {
       const currentLikes = project.likes || 0;
       const newLikes = newLikedStatus ? currentLikes + 1 : Math.max(0, currentLikes - 1);
 
-      await supabase
+      const { error: updateError } = await supabase
         .from('projects')
         .update({ likes: newLikes })
         .eq('id', projectId);
 
-      return newLikes;
+      if (updateError) {
+        console.error('Error updating project likes:', updateError);
+      } else {
+        return newLikes;
+      }
     }
 
     return project?.likes || 0;
@@ -481,9 +526,13 @@ export const fetchGalleryItemById = async (itemId: string): Promise<GalleryItem 
         )
       `)
       .eq('id', itemId)
-      .single();
+      .maybeSingle();
 
     if (error) {
+      // PGRST116 means no rows found, which is acceptable
+      if (error.code === 'PGRST116') {
+        return null;
+      }
       console.error('Error fetching gallery item:', error);
       return null;
     }
